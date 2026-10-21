@@ -249,7 +249,7 @@ app.get("/portal", requirePortal, async (req, res, next) => {
   try {
     const u = req.portalUser, op = u.operator, ym = validYm(req.query.ym);
     const [byMode, runs, trend, subs, reps, monthsRows] = await Promise.all([
-      q("SELECT v.*, p.price_per_record FROM v_usage_monthly v LEFT JOIN usage_prices p ON p.mode = v.mode WHERE v.ym = ? AND v.operator = ? ORDER BY v.amount_thb DESC", [ym, op]),
+      q("SELECT v.*, v.unit_price AS price_per_record FROM v_usage_monthly v WHERE v.ym = ? AND v.operator = ? ORDER BY v.amount_thb DESC", [ym, op]),
       q("SELECT * FROM usage_runs WHERE DATE_FORMAT(started_at,'%Y-%m') = ? AND operator = ? ORDER BY started_at DESC LIMIT 200", [ym, op]),
       q("SELECT ym, runs, billable_records, amount_thb FROM v_usage_monthly_by_operator WHERE operator = ? ORDER BY ym DESC LIMIT 12", [op]),
       q("SELECT invoice_no, ym, amount_thb, due_at FROM billing_invoices WHERE operator = ? AND status = 'open' ORDER BY ym", [op]),
@@ -537,6 +537,36 @@ admin.post("/portal-users", async (req, res, next) => {
 admin.post("/portal-users/:id/toggle", async (req, res, next) => {
   try { await q("UPDATE portal_users SET is_active = 1 - is_active WHERE id = ?", [Number(req.params.id)]); res.redirect("/admin/portal-users"); }
   catch (e) { next(e); }
+});
+
+// ---- ราคาเฉพาะลูกค้า ----
+admin.get("/customers/:operator/prices", async (req, res, next) => {
+  try {
+    const operator = String(req.params.operator).slice(0, 100);
+    const rows = await q(`SELECT p.mode, p.mode_label, p.price_per_record, p.price_per_run, c.price_per_record c_record, c.price_per_run c_run
+                          FROM usage_prices p LEFT JOIN usage_prices_customer c ON c.mode = p.mode AND c.operator = ? ORDER BY p.mode`, [operator]);
+    res.render("customer_prices", { title: "Customer prices", operator, rows, saved: req.query.saved === "1" });
+  } catch (e) { next(e); }
+});
+admin.post("/customers/:operator/prices", async (req, res, next) => {
+  try {
+    const operator = String(req.params.operator).slice(0, 100);
+    if (req.body.reset) {
+      await q("DELETE FROM usage_prices_customer WHERE operator = ?", [operator]);
+      return res.redirect(`/admin/customers/${encodeURIComponent(operator)}/prices?saved=1`);
+    }
+    const modes = [].concat(req.body.mode || []), rec = [].concat(req.body.price_per_record || []), run = [].concat(req.body.price_per_run || []);
+    for (let i = 0; i < modes.length; i++) {
+      const m = String(modes[i]).slice(0, 40);
+      if (!/^[a-z0-9_]+$/i.test(m)) continue;
+      const r = String(rec[i] ?? "").trim(), u = String(run[i] ?? "").trim();
+      if (r === "" && u === "") { await q("DELETE FROM usage_prices_customer WHERE operator = ? AND mode = ?", [operator, m]); continue; }
+      await q(`INSERT INTO usage_prices_customer (operator, mode, price_per_record, price_per_run) VALUES (?,?,?,?)
+               ON DUPLICATE KEY UPDATE price_per_record = VALUES(price_per_record), price_per_run = VALUES(price_per_run)`,
+        [operator, m, r === "" ? null : Number(r), u === "" ? null : Number(u)]);
+    }
+    res.redirect(`/admin/customers/${encodeURIComponent(operator)}/prices?saved=1`);
+  } catch (e) { next(e); }
 });
 
 // ---- ข้อความติดต่อ ----

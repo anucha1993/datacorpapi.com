@@ -1,0 +1,28 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <h1><a href="/admin/portal-users" class="back">‹</a> Prices for <%= operator %></h1>
+  <div class="tools"><a class="btn" href="/admin/operator/<%= encodeURIComponent(operator) %>">Usage</a> <a class="btn" href="/admin/prices">Default prices</a></div>
+</div>
+<% if (saved) { %><p class="ok">Saved. Amounts for this customer are recalculated immediately, including months not yet invoiced.</p><% } %>
+<form method="post" action="/admin/customers/<%= encodeURIComponent(operator) %>/prices" class="card">
+  <p class="muted">Leave a field empty to use the default price. Only this customer is affected; invoices already issued are not changed (use "Adjust" on the invoice for that).</p>
+  <table>
+    <thead><tr><th>Mode</th><th class="r">Default / record</th><th class="r">This customer / record</th><th class="r">Default / run</th><th class="r">This customer / run</th></tr></thead>
+    <tbody>
+    <% for (const p of rows) { %>
+      <tr class="<%= (p.c_record != null || p.c_run != null) ? 'hl' : '' %>">
+        <td><%= p.mode_label || p.mode %> <small class="muted"><%= p.mode %></small><input type="hidden" name="mode" value="<%= p.mode %>"></td>
+        <td class="r muted"><%= fmtMoney(p.price_per_record) %></td>
+        <td class="r"><input name="price_per_record" type="number" step="0.01" min="0" value="<%= p.c_record != null ? p.c_record : '' %>" placeholder="<%= fmtMoney(p.price_per_record) %>" class="num"></td>
+        <td class="r muted"><%= Number(p.price_per_run) ? fmtMoney(p.price_per_run) : '—' %></td>
+        <td class="r"><input name="price_per_run" type="number" step="0.01" min="0" value="<%= p.c_run != null ? p.c_run : '' %>" placeholder="<%= fmtMoney(p.price_per_run) %>" class="num"></td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table>
+  <div class="actions">
+    <button class="primary">Save prices for <%= operator %></button>
+    <button name="reset" value="1" class="btn" onclick="return confirm('Remove all custom prices for this customer and use defaults?')">Reset to defaults</button>
+  </div>
+</form>
+<%- include('partials/footer') %>

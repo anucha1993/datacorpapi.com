@@ -32,6 +32,7 @@
           <td class="muted nowrap"><%= u.last_login_at || '—' %></td>
           <td><span class="st st-<%= u.is_active ? 'ok' : 'error' %>"><%= u.is_active ? 'Active' : 'Disabled' %></span><% if (u.must_change) { %> <small class="muted">password change pending</small><% } %></td>
           <td class="nowrap">
+            <a class="btn small" href="/admin/customers/<%= encodeURIComponent(u.operator) %>/prices">Prices</a>
             <form method="post" action="/admin/portal-users/<%= u.id %>/toggle" class="inline"><button><%= u.is_active ? 'Disable' : 'Enable' %></button></form>
           </td>
         </tr>

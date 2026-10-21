@@ -61,8 +61,17 @@ INSERT IGNORE INTO usage_prices (mode, mode_label, price_per_record, price_per_r
   ('bt44', 'Employer change (BT.44)',                10.00, 0),
   ('booking_availability', 'Appointment slot checker (real-time)',               0.00, 5.00);
 
--- สรุปรายเดือน ต่อผู้ใช้ ต่อโหมด (ใช้กับเว็บแอป / Excel)
--- จำนวนที่คิดเงิน = record_count ถ้าสำเร็จ, ถ้ายกเลิก/error ใช้ progress_done (งานที่ทำไปแล้วบางส่วน)
+-- ราคาเฉพาะลูกค้า (ไม่ระบุ = ใช้ราคาเริ่มต้นใน usage_prices)
+CREATE TABLE IF NOT EXISTS usage_prices_customer (
+  operator         VARCHAR(100)  NOT NULL,
+  mode             VARCHAR(40)   NOT NULL,
+  price_per_record DECIMAL(10,2) NULL,        -- NULL = use default
+  price_per_run    DECIMAL(10,2) NULL,        -- NULL = use default
+  updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (operator, mode)
+) ENGINE=InnoDB;
+
+-- Monthly summary per operator per mode with the EFFECTIVE unit price (customer override → default)
 CREATE OR REPLACE VIEW v_usage_monthly AS
 SELECT
   DATE_FORMAT(r.started_at, '%Y-%m')                              AS ym,
@@ -77,13 +86,17 @@ SELECT
   SUM(CASE WHEN r.status = 'ok' THEN r.record_count
            ELSE GREATEST(r.record_count, r.progress_done) END)    AS billable_records,
   SUM(r.duration_sec)                                             AS total_sec,
+  COALESCE(pc.price_per_record, p.price_per_record, 0)            AS unit_price,
+  COALESCE(pc.price_per_run, p.price_per_run, 0)                  AS run_price,
+  (pc.operator IS NOT NULL AND (pc.price_per_record IS NOT NULL OR pc.price_per_run IS NOT NULL)) AS custom_price,
   ROUND(SUM(CASE WHEN r.status = 'ok' THEN r.record_count
                  ELSE GREATEST(r.record_count, r.progress_done) END)
-        * COALESCE(p.price_per_record, 0)
-        + COUNT(*) * COALESCE(p.price_per_run, 0), 2)             AS amount_thb
+        * COALESCE(pc.price_per_record, p.price_per_record, 0)
+        + COUNT(*) * COALESCE(pc.price_per_run, p.price_per_run, 0), 2) AS amount_thb
 FROM usage_runs r
 LEFT JOIN usage_prices p ON p.mode = r.mode
-GROUP BY ym, r.operator, r.mode, mode_label, r.mode_group;
+LEFT JOIN usage_prices_customer pc ON pc.operator = r.operator AND pc.mode = r.mode
+GROUP BY ym, r.operator, r.mode, mode_label, r.mode_group, unit_price, run_price, custom_price;
 
 -- สรุปรายเดือนต่อคน (รวมทุกโหมด)
 CREATE OR REPLACE VIEW v_usage_monthly_by_operator AS

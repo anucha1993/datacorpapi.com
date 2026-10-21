@@ -4,6 +4,7 @@
   <div class="tools">
     <%- include('partials/monthpicker', { action: '/admin/operator/' + encodeURIComponent(name) }) %>
     <a class="btn" href="/admin/runs?ym=<%= ym %>&operator=<%= encodeURIComponent(name) %>">All runs</a>
+    <a class="btn" href="/admin/customers/<%= encodeURIComponent(name) %>/prices">Customer prices</a>
   </div>
 </div>
 
@@ -16,7 +17,7 @@
       <tbody>
       <% let sum = 0; for (const r of byMode) { sum += Number(r.amount_thb || 0); %>
         <tr>
-          <td><%= r.mode_label %> <span class="tag g-<%= r.mode_group %>"><%= GROUP_LABELS[r.mode_group] || '' %></span></td>
+          <td><%= r.mode_label %> <span class="tag g-<%= r.mode_group %>"><%= GROUP_LABELS[r.mode_group] || '' %></span><% if (Number(r.custom_price)) { %> <span class="tag">custom ฿<%= fmtMoney(r.unit_price) %></span><% } %></td>
           <td class="r"><%= fmtNum(r.runs) %><% if (Number(r.runs_error) || Number(r.runs_cancelled)) { %> <small class="muted">(cancelled <%= r.runs_cancelled %>, error <%= r.runs_error %>)</small><% } %></td>
           <td class="r"><%= fmtNum(r.billable_records) %></td>
           <td class="r muted"><%= fmtDur(r.total_sec) %></td>

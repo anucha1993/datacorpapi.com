@@ -33,7 +33,7 @@
           <td><%= r.mode_label %> <span class="tag g-<%= r.mode_group %>"><%= GROUP_LABELS[r.mode_group] || '' %></span></td>
           <td class="r"><%= fmtNum(r.runs) %></td>
           <td class="r"><%= fmtNum(r.billable_records) %></td>
-          <td class="r muted"><%= r.price_per_record != null ? fmtMoney(r.price_per_record) : '—' %></td>
+          <td class="r muted"><%= r.price_per_record != null ? fmtMoney(r.price_per_record) : '—' %><% if (Number(r.custom_price)) { %> <small>(your rate)</small><% } %></td>
           <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
         </tr>
       <% } %>
