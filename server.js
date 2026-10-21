@@ -26,10 +26,9 @@ const LS_WEBHOOK_SECRET = (process.env.LS_WEBHOOK_SECRET || "").trim();
 const LS_USAGE_ACTION = (process.env.LS_USAGE_ACTION || "set").trim() === "increment" ? "increment" : "set";
 const LS_USAGE_QUANTITY = (process.env.LS_USAGE_QUANTITY || "amount").trim() === "records" ? "records" : "amount";
 
-if (!ADMIN_PASSWORD) {
-  console.error("✗ ยังไม่ได้ตั้ง ADMIN_PASSWORD ใน .env");
-  process.exit(1);
-}
+// ไม่ปิดแอปถ้ายังไม่ได้ตั้งรหัส admin — หน้าเว็บสาธารณะต้องเปิดได้เสมอ แค่ปิดการ login หลังบ้านไว้
+const ADMIN_DISABLED = !ADMIN_PASSWORD;
+if (ADMIN_DISABLED) console.error("⚠ ยังไม่ได้ตั้ง ADMIN_PASSWORD ใน .env — หน้า /admin จะเข้าไม่ได้จนกว่าจะตั้งค่า");
 {
   const co = company();
   if (!co.isComplete) console.warn("⚠ ข้อมูลธุรกิจยังไม่ครบใน .env (ผู้ให้บริการรับชำระเงินต้องเห็นบนเว็บ):", co.missing.join(", "));
@@ -208,12 +207,14 @@ app.get("/checkout/:plan", (req, res) => {
 });
 app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nAllow: /\n"));
 app.get("/api/health", async (req, res) => {
-  try { await q("SELECT 1"); res.json({ ok: true }); } catch (e) { res.status(500).json({ ok: false, error: e.code || "db" }); }
+  const cfg = { admin_password: !ADMIN_DISABLED, company_complete: company().isComplete, lemonsqueezy_api: !!LS_API_KEY, webhook_secret: !!LS_WEBHOOK_SECRET, node: process.version };
+  try { await q("SELECT 1"); res.json({ ok: true, ...cfg }); } catch (e) { res.status(500).json({ ok: false, error: e.code || "db", ...cfg }); }
 });
 
 // =========================== auth ===========================
-app.get("/login", (req, res) => res.render("login", { error: null, title: "เข้าสู่ระบบ" }));
+app.get("/login", (req, res) => res.render("login", { error: ADMIN_DISABLED ? "ยังไม่ได้ตั้ง ADMIN_PASSWORD ในไฟล์ .env ของเซิร์ฟเวอร์" : null, title: "เข้าสู่ระบบ" }));
 app.post("/login", (req, res) => {
+  if (ADMIN_DISABLED) return res.status(503).render("login", { error: "ยังไม่ได้ตั้ง ADMIN_PASSWORD ในไฟล์ .env ของเซิร์ฟเวอร์", title: "เข้าสู่ระบบ" });
   if (!hit("login:" + req.ip, 5, 60 * 1000)) return res.status(429).render("login", { error: "ลองผิดหลายครั้ง รอ 1 นาทีแล้วลองใหม่", title: "เข้าสู่ระบบ" });
   if (safeEq(req.body.password || "", ADMIN_PASSWORD)) { req.session.auth = true; return res.redirect("/admin"); }
   res.status(401).render("login", { error: "รหัสผ่านไม่ถูกต้อง", title: "เข้าสู่ระบบ" });
