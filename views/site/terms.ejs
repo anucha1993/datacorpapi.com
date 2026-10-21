@@ -1,0 +1,63 @@
+<%- include('partials/head') %>
+<section class="page legaldoc">
+  <h1>ข้อกำหนดการใช้บริการ</h1>
+  <p class="muted">มีผลตั้งแต่ <%= co.EFFECTIVE_DATE %> · ผู้ให้บริการ: <%= co.COMPANY_NAME %><% if (co.COMPANY_NAME_EN) { %> (<%= co.COMPANY_NAME_EN %>)<% } %> ("เรา") · ผลิตภัณฑ์: <%= co.PRODUCT_NAME %> ("ซอฟต์แวร์")</p>
+
+  <h2>1. การยอมรับข้อกำหนด</h2>
+  <p>การสมัครใช้งาน ชำระเงิน ติดตั้ง หรือใช้ซอฟต์แวร์ ถือว่าคุณ ("ผู้ใช้") ยอมรับข้อกำหนดนี้ รวมถึง<a href="/privacy">นโยบายความเป็นส่วนตัว</a>และ<a href="/refund">นโยบายการคืนเงินและยกเลิก</a> หากคุณใช้งานในนามองค์กร คุณรับรองว่ามีอำนาจผูกพันองค์กรนั้น</p>
+
+  <h2>2. ลักษณะของบริการ</h2>
+  <p>ซอฟต์แวร์เป็นโปรแกรมสำหรับระบบปฏิบัติการ Windows ที่ทำงานบนเครื่องของผู้ใช้ เพื่อช่วยทำงานซ้ำ ๆ ในเว็บไซต์ e-WorkPermit ของกรมการจัดหางาน (เช่น ดึงรายงาน ดาวน์โหลดเอกสาร กรอกแบบฟอร์มจากไฟล์ Excel) โดยใช้บัญชีผู้ใช้ e-WorkPermit ของผู้ใช้เอง เรา<b>ไม่ใช่</b>ผู้ให้บริการรับทำเอกสารหรือตัวแทนยื่นคำขอ ไม่มีส่วนเกี่ยวข้องกับกรมการจัดหางาน และไม่รับรองผลการพิจารณาคำขอใด ๆ</p>
+
+  <h2>3. สิทธิการใช้งาน (License)</h2>
+  <p>เมื่อสมัครและชำระเงินตามแพ็กเกจ เราอนุญาตให้ผู้ใช้ติดตั้งและใช้ซอฟต์แวร์แบบไม่จำกัดจำนวนเครื่องภายในองค์กรเดียวกัน เพื่อการใช้งานภายในธุรกิจของผู้ใช้ ห้ามขายต่อ ให้เช่า ให้บริการแก่บุคคลที่สามในลักษณะ service bureau แก้ไขดัดแปลง หรือนำซอร์สโค้ดไปเผยแพร่โดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษร ลิขสิทธิ์และสิทธิในทรัพย์สินทางปัญญาทั้งหมดในซอฟต์แวร์เป็นของเรา</p>
+
+  <h2>4. บัญชีผู้ใช้งานและความรับผิดชอบของผู้ใช้</h2>
+  <ul>
+    <li>ผู้ใช้ต้องมีบัญชี e-WorkPermit ที่ถูกต้องและมีสิทธิ์ใช้งานตามกฎหมาย และรับผิดชอบการกระทำทุกอย่างที่ซอฟต์แวร์ทำผ่านบัญชีนั้นตามคำสั่งของผู้ใช้</li>
+    <li>ผู้ใช้ต้องตรวจสอบความถูกต้องของข้อมูลในไฟล์ Excel และผลลัพธ์ก่อนนำไปใช้ โดยเฉพาะขั้นตอนที่มีการส่งคำขอจริงหรือมีค่าธรรมเนียมต่อหน่วยงานราชการ ซึ่งซอฟต์แวร์จะขอให้ยืนยันก่อนทุกครั้ง</li>
+    <li>ชื่อผู้ใช้งาน (operator) ที่ระบุตอนสมัครต้องตรงกับที่ใส่ในโปรแกรม เพื่อให้ยอดการใช้งานถูกผูกกับบัญชีของผู้ใช้ ผู้ใช้รับผิดชอบค่าบริการจากการใช้งานภายใต้ชื่อผู้ใช้งานของตน</li>
+    <li>ห้ามใช้ซอฟต์แวร์เพื่อละเมิดข้อกำหนดการใช้งานของระบบ e-WorkPermit กฎหมายคุ้มครองข้อมูลส่วนบุคคล หรือกฎหมายอื่นใด</li>
+  </ul>
+
+  <h2>5. ราคา การเรียกเก็บเงิน และการชำระเงิน</h2>
+  <ul>
+    <li>ราคาและวิธีคิดค่าบริการเป็นไปตามหน้า<a href="/pricing">ราคา</a> ณ เวลาที่สมัคร ค่าบริการแบบตามการใช้งาน (usage-based) คำนวณจากจำนวนรายการที่ซอฟต์แวร์ประมวลผลสำเร็จ ซึ่งซอฟต์แวร์บันทึกและส่งให้เราโดยอัตโนมัติ และเรียกเก็บเมื่อสิ้นรอบบิลรายเดือน</li>
+    <li>การชำระเงินดำเนินการโดย <b>Lemon Squeezy, LLC</b> ในฐานะผู้ขายต่อที่ได้รับอนุญาตและ Merchant of Record ซึ่งเป็นผู้ออกใบเสร็จ จัดเก็บภาษีที่เกี่ยวข้อง และดูแลเรื่องการชำระเงิน การยกเลิก และการคืนเงิน ภายใต้<a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Buyer Terms ของ Lemon Squeezy</a></li>
+    <li>หากการเรียกเก็บเงินล้มเหลว เราอาจระงับสิทธิการใช้งานจนกว่าจะชำระครบ</li>
+    <li>การเปลี่ยนแปลงราคาจะแจ้งล่วงหน้าทางอีเมลอย่างน้อย 30 วัน ผู้ใช้ยกเลิกได้ก่อนราคาใหม่มีผล</li>
+  </ul>
+
+  <h2>6. ระยะเวลา การยกเลิก และการคืนเงิน</h2>
+  <p>แพ็กเกจแบบสมัครสมาชิกต่ออายุอัตโนมัติทุกรอบบิลจนกว่าจะยกเลิก ผู้ใช้ยกเลิกได้ทุกเมื่อผ่าน Customer Portal โดยมีผลสิ้นรอบบิลปัจจุบัน รายละเอียดการคืนเงินเป็นไปตาม<a href="/refund">นโยบายการคืนเงินและยกเลิก</a> เราอาจระงับหรือยกเลิกสิทธิการใช้งานหากผู้ใช้ละเมิดข้อกำหนดนี้</p>
+
+  <h2>7. การสนับสนุนและการอัปเดต</h2>
+  <p>เราให้การสนับสนุนทางอีเมล<% if (co.COMPANY_EMAIL) { %> (<%= co.COMPANY_EMAIL %>)<% } %> ใน<%= co.SUPPORT_HOURS %> และจัดส่งการอัปเดตซอฟต์แวร์ให้ตลอดระยะเวลาที่สิทธิการใช้งานยังมีผล ระบบ e-WorkPermit เป็นของบุคคลที่สามและอาจเปลี่ยนแปลงได้ เราจะพยายามปรับซอฟต์แวร์ให้ทำงานได้ตามสมควร แต่ไม่รับประกันว่าทุกฟังก์ชันจะใช้งานได้ตลอดเวลา</p>
+
+  <h2>8. ข้อจำกัดการรับประกันและความรับผิด</h2>
+  <p>ซอฟต์แวร์ให้บริการ "ตามสภาพ" (as is) เราไม่รับประกันว่าซอฟต์แวร์จะปราศจากข้อผิดพลาดหรือทำงานได้ต่อเนื่องไม่หยุดชะงัก ผู้ใช้เป็นผู้ตัดสินใจและรับผิดชอบการยื่นคำขอต่อหน่วยงานราชการเอง ความรับผิดรวมของเราต่อผู้ใช้ไม่ว่ากรณีใดจำกัดไม่เกินค่าบริการที่ผู้ใช้ชำระให้เราใน 3 เดือนก่อนเกิดเหตุ และเราไม่รับผิดต่อความเสียหายทางอ้อม ค่าปรับ ค่าธรรมเนียมราชการ หรือผลการพิจารณาคำขอ</p>
+
+  <h2>9. ข้อมูลส่วนบุคคล</h2>
+  <p>การเก็บและใช้ข้อมูลเป็นไปตาม<a href="/privacy">นโยบายความเป็นส่วนตัว</a> ซึ่งสอดคล้องกับพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
+
+  <h2>10. กฎหมายที่ใช้บังคับ</h2>
+  <p>ข้อกำหนดนี้อยู่ภายใต้กฎหมายไทย ข้อพิพาทให้อยู่ในเขตอำนาจศาลไทย</p>
+
+  <h2>11. การติดต่อ</h2>
+  <p><%= co.COMPANY_NAME %><% if (co.COMPANY_ADDRESS) { %> · <%= co.COMPANY_ADDRESS %><% } %><% if (co.COMPANY_EMAIL) { %> · <a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } %><% if (co.COMPANY_PHONE) { %> · <%= co.COMPANY_PHONE %><% } %></p>
+
+  <hr>
+  <h1 class="en">Terms of Service (English summary)</h1>
+  <p class="en muted">Effective <%= co.EFFECTIVE_DATE %>. In case of conflict, the Thai version prevails.</p>
+  <ol class="en">
+    <li><b>Service.</b> <%= co.PRODUCT_NAME %> is Windows software, installed and operated by you on your own computers with your own e-WorkPermit credentials, that automates repetitive tasks (reports, document downloads, form filling from Excel). We are a software vendor, not a filing agent, and are not affiliated with the Department of Employment.</li>
+    <li><b>License.</b> Non-exclusive, non-transferable license for internal business use on unlimited devices within one organisation. No resale, service-bureau use, modification or redistribution.</li>
+    <li><b>Your responsibilities.</b> You are responsible for every action the software performs under your account at your instruction, for verifying input data and results, and for usage under your operator name.</li>
+    <li><b>Fees &amp; payment.</b> Usage-based fees are calculated from records actually processed, as recorded and reported by the software, and billed monthly in arrears. Payments are processed by Lemon Squeezy, LLC as Merchant of Record under the <a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Lemon Squeezy Buyer Terms</a>. Price changes are announced at least 30 days in advance.</li>
+    <li><b>Term &amp; cancellation.</b> Subscriptions renew automatically until cancelled from the Customer Portal; cancellation takes effect at the end of the current billing period. Refunds per our <a href="/refund">Refund &amp; Cancellation Policy</a>.</li>
+    <li><b>Support &amp; updates.</b> Email support during business hours and software updates for the duration of your subscription. The e-WorkPermit system is third-party and may change; we make reasonable efforts to keep the software working but do not guarantee uninterrupted operation.</li>
+    <li><b>Warranty &amp; liability.</b> Provided "as is". Our total liability is limited to fees paid in the 3 months before the claim; no liability for indirect damages, government fees, penalties or application outcomes.</li>
+    <li><b>Governing law.</b> Thailand.</li>
+  </ol>
+</section>
+<%- include('partials/foot') %>

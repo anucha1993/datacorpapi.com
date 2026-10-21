@@ -1,0 +1,13 @@
+<form method="get" class="monthpick" action="<%= typeof action !== 'undefined' ? action : '' %>">
+  <% if (typeof extra !== 'undefined') { for (const [k, v] of Object.entries(extra)) { if (v) { %>
+    <input type="hidden" name="<%= k %>" value="<%= v %>">
+  <% } } } %>
+  <label>เดือน
+    <select name="ym" onchange="this.form.submit()">
+      <% for (const m of months) { %>
+        <option value="<%= m %>" <%= m === ym ? 'selected' : '' %>><%= m %></option>
+      <% } %>
+    </select>
+  </label>
+  <noscript><button>ดู</button></noscript>
+</form>

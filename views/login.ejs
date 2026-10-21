@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เข้าสู่ระบบ · e-WorkPermit Usage</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="center">
+<form method="post" action="/login" class="card login">
+  <h1>e-WorkPermit Usage</h1>
+  <p class="muted">ยอดการใช้งานโปรแกรม — กรอกรหัสผ่านเพื่อเข้าดู</p>
+  <% if (error) { %><p class="alert"><%= error %></p><% } %>
+  <input type="password" name="password" placeholder="รหัสผ่าน" autofocus required>
+  <button class="primary">เข้าสู่ระบบ</button>
+</form>
+</body>
+</html>

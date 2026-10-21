@@ -1,0 +1,30 @@
+<%- include('partials/header') %>
+<div class="pagehead"><h1>ตั้งราคาต่อหน่วย</h1></div>
+<% if (saved) { %><p class="ok">บันทึกราคาแล้ว — ยอดเงินในทุกหน้าจะคำนวณใหม่ทันที (รวมเดือนก่อน ๆ)</p><% } %>
+<form method="post" action="/admin/prices" class="card">
+  <p class="muted">ยอดเงิน = รายการที่คิดเงิน × ราคา/รายการ + จำนวนครั้งที่รัน × ราคา/ครั้ง<br>
+  งานที่ยกเลิกหรือผิดพลาดคิดตามจำนวนที่ทำไปแล้วจริง (progress) ไม่ใช่ 0</p>
+  <table>
+    <thead><tr><th>โหมด</th><th>ชื่อที่แสดง</th><th class="r">ราคา/รายการ (บาท)</th><th class="r">ราคา/ครั้ง (บาท)</th></tr></thead>
+    <tbody>
+    <% for (const p of prices) { %>
+      <tr>
+        <td><code><%= p.mode %></code><input type="hidden" name="mode" value="<%= p.mode %>"></td>
+        <td><input name="mode_label" value="<%= p.mode_label %>" class="w"></td>
+        <td class="r"><input name="price_per_record" type="number" step="0.01" min="0" value="<%= p.price_per_record %>" class="num"></td>
+        <td class="r"><input name="price_per_run" type="number" step="0.01" min="0" value="<%= p.price_per_run %>" class="num"></td>
+      </tr>
+    <% } %>
+    <% for (const m of missing) { %>
+      <tr class="hl">
+        <td><code><%= m %></code> <small class="muted">(ยังไม่มีราคา)</small><input type="hidden" name="mode" value="<%= m %>"></td>
+        <td><input name="mode_label" value="<%= MODE_LABELS[m] %>" class="w"></td>
+        <td class="r"><input name="price_per_record" type="number" step="0.01" min="0" value="0" class="num"></td>
+        <td class="r"><input name="price_per_run" type="number" step="0.01" min="0" value="0" class="num"></td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table>
+  <div class="actions"><button class="primary">บันทึกราคา</button></div>
+</form>
+<%- include('partials/footer') %>

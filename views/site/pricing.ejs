@@ -1,0 +1,31 @@
+<%- include('partials/head') %>
+<section class="page">
+  <h1>ราคาและการเรียกเก็บเงิน</h1>
+  <p class="lead">ทุกราคาเป็นเงินบาท (THB) ยังไม่รวมภาษีมูลค่าเพิ่ม/ภาษีการขายซึ่ง Lemon Squeezy จะคำนวณและแสดงตอนชำระเงินตามประเทศของผู้ซื้อ
+    ชำระด้วยบัตรเครดิต/เดบิต หรือ PayPal</p>
+  <p class="lead en">All prices in Thai Baht (THB), excluding VAT/sales tax which Lemon Squeezy calculates at checkout. Pay by card or PayPal.</p>
+
+  <%- include('partials/plans', { compact: false }) %>
+
+  <h2>ราคาต่อรายการของแต่ละโหมด</h2>
+  <p class="muted">ใช้คำนวณค่าใช้งานรายเดือน · 1 รายการ = 1 คำขอ / 1 เอกสาร / 1 คน ที่ประมวลผลสำเร็จ</p>
+  <table class="prices">
+    <thead><tr><th>โหมด</th><th>กลุ่ม</th><th class="r">ราคา / รายการ</th><th class="r">ราคา / ครั้งที่รัน</th></tr></thead>
+    <tbody>
+    <% for (const p of prices) { %>
+      <tr><td><%= p.mode_label || p.mode %></td><td><span class="tag g-<%= p.mode_group || '' %>"><%= GROUP_LABELS[p.mode_group] || '' %></span></td>
+        <td class="r">฿<%= fmtMoney(p.price_per_record) %></td><td class="r"><%= Number(p.price_per_run) ? '฿' + fmtMoney(p.price_per_run) : '—' %></td></tr>
+    <% } %>
+    </tbody>
+  </table>
+
+  <h2>การเรียกเก็บเงินทำงานอย่างไร</h2>
+  <ul class="bullets">
+    <li><b>Pay as you go:</b> สมัครฟรี ไม่มีค่าใช้จ่ายตอนสมัคร ทุกสิ้นรอบบิล (รายเดือน) ระบบรวมจำนวนรายการที่ประมวลผลจริงในเดือนนั้น × ราคาต่อรายการ แล้ว Lemon Squeezy เรียกเก็บจากบัตรที่ลงทะเบียนไว้ (billed in arrears)</li>
+    <li>ยอดการใช้งานตรวจสอบได้ก่อนเรียกเก็บ: ขอรายงานรายเดือนได้ที่ <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>อีเมลซัพพอร์ต<% } %> หรือดูจาก log ในโปรแกรม</li>
+    <li>งานที่ยกเลิกหรือเกิดข้อผิดพลาดกลางทาง คิดเฉพาะจำนวนรายการที่ประมวลผลสำเร็จแล้วก่อนหยุด</li>
+    <li>ยกเลิกได้ทุกเมื่อผ่าน Customer Portal (ลิงก์ในอีเมลใบเสร็จ) มีผลสิ้นรอบบิลปัจจุบัน — ดู<a href="/refund">นโยบายการคืนเงินและยกเลิก</a></li>
+    <li>เปลี่ยนแปลงราคา: แจ้งล่วงหน้าทางอีเมลอย่างน้อย 30 วันก่อนมีผล</li>
+  </ul>
+</section>
+<%- include('partials/foot') %>

@@ -1,0 +1,14 @@
+<%- include('partials/head') %>
+<section class="page center">
+  <h1>ขอบคุณที่สมัครใช้งาน</h1>
+  <p class="lead">Lemon Squeezy ส่งอีเมลยืนยันคำสั่งซื้อและใบเสร็จให้แล้ว (ตรวจกล่อง Spam หากไม่พบ)
+    เราจะส่งลิงก์ดาวน์โหลดโปรแกรมและคู่มือติดตั้งไปที่อีเมลเดียวกันภายใน 1 วันทำการ</p>
+  <ol class="steps left">
+    <li>ติดตั้งโปรแกรมตามคู่มือ (Windows 10/11)</li>
+    <li>ใส่ <b>ชื่อผู้ใช้งาน</b> ที่กรอกตอนสมัครในช่อง "ผู้ใช้งาน" มุมขวาบนของโปรแกรม</li>
+    <li>เริ่มใช้งานได้ทันที ยอดการใช้งานจะสรุปและเรียกเก็บปลายเดือน</li>
+  </ol>
+  <p>มีคำถาม ติดต่อ <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %><a href="/contact">ส่งข้อความหาเรา</a><% } %></p>
+  <a href="/" class="btn">กลับหน้าแรก</a>
+</section>
+<%- include('partials/foot') %>

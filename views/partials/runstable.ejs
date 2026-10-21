@@ -1,0 +1,25 @@
+<% if (!rows.length) { %><p class="muted">ไม่มีรายการ</p><% } else { %>
+<div class="scroll">
+<table class="dense">
+  <thead><tr>
+    <th>เริ่ม</th><% if (showOperator) { %><th>ผู้ใช้งาน</th><% } %><th>โหมด</th><th>บัญชี e-WP</th>
+    <th class="r">รายการ</th><th class="r">คืบหน้า</th><th class="r">เวลา</th><th>สถานะ</th><th>เครื่อง</th>
+  </tr></thead>
+  <tbody>
+  <% for (const r of rows) { let accts = []; try { accts = typeof r.accounts === 'string' ? JSON.parse(r.accounts) : (r.accounts || []); } catch (e) {} %>
+    <tr>
+      <td class="nowrap"><%= r.started_at %></td>
+      <% if (showOperator) { %><td><a href="/admin/operator/<%= encodeURIComponent(r.operator) %>?ym=<%= String(r.started_at).slice(0, 7) %>"><%= r.operator %></a></td><% } %>
+      <td><%= MODE_LABELS[r.mode] || r.mode %></td>
+      <td class="muted" title="<%= accts.join(', ') %>"><%= r.ewp_username %><% if (accts.length > 1) { %> <small>+<%= accts.length - 1 %></small><% } %></td>
+      <td class="r"><%= fmtNum(r.record_count) %></td>
+      <td class="r muted"><%= r.progress_total ? `${r.progress_done}/${r.progress_total}` : '' %></td>
+      <td class="r muted"><%= fmtDur(r.duration_sec) %></td>
+      <td><span class="st st-<%= r.status %>" title="<%= r.error_msg || '' %>"><%= STATUS_LABELS[r.status] || r.status %></span></td>
+      <td class="muted nowrap" title="<%= r.install_id %>"><%= r.machine %><small> / <%= r.windows_user %></small></td>
+    </tr>
+  <% } %>
+  </tbody>
+</table>
+</div>
+<% } %>

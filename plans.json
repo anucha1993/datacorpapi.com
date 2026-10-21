@@ -1,0 +1,26 @@
+{
+  "_comment": "แพ็กเกจที่แสดงบนหน้าเว็บ — checkout_url คือลิงก์ Checkout ของ variant ใน Lemon Squeezy (Products → Share → Checkout link). type: usage = คิดตามการใช้งานจริง (เปิด Usage-based billing ที่ variant, aggregation = 'Most recent usage during period'), subscription = เหมารายเดือน, one_time = ซื้อครั้งเดียว",
+  "currency": "THB",
+  "plans": [
+    {
+      "key": "payg",
+      "name": "Pay as you go",
+      "name_th": "จ่ายตามการใช้งานจริง",
+      "type": "usage",
+      "price_label": "฿0 / เดือน + ค่าใช้งานตามจริง",
+      "price_label_en": "฿0 / month + usage",
+      "unit_label": "คิดตามจำนวนรายการที่ประมวลผล (ราคาต่อรายการตามตารางด้านล่าง) เรียกเก็บปลายเดือน",
+      "unit_label_en": "Billed in arrears at month end for the records actually processed (see unit prices below)",
+      "checkout_url": "",
+      "featured": true,
+      "features": [
+        "ใช้ได้ทุกโหมดของโปรแกรม (รายงาน / ดาวน์โหลดเอกสาร / ยื่นคำขอ)",
+        "ไม่มีค่าแรกเข้า ไม่มีขั้นต่ำ ไม่ผูกมัด ยกเลิกได้ทุกเมื่อ",
+        "ติดตั้งได้ไม่จำกัดเครื่องภายใต้ชื่อผู้ใช้งานเดียวกัน",
+        "ดูยอดการใช้งานของตัวเองได้จากรายงานรายเดือน",
+        "อัปเดตโปรแกรมฟรีตลอดอายุการใช้งาน และตอบคำถามทางอีเมลภายใน 1 วันทำการ"
+      ]
+    }
+  ],
+  "unit_prices_note": "ราคาต่อรายการของแต่ละโหมดดึงจากตาราง usage_prices ในฐานข้อมูล (แก้ได้ที่หน้า admin → ตั้งราคา)"
+}

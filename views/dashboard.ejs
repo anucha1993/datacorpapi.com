@@ -1,0 +1,75 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <h1>ภาพรวมเดือน <%= ym %></h1>
+  <div class="tools">
+    <%- include('partials/monthpicker', { action: '/admin' }) %>
+    <a class="btn" href="/admin/export.csv?ym=<%= ym %>">⬇ CSV</a>
+  </div>
+</div>
+
+<section class="tiles">
+  <div class="tile"><div class="k">ยอดเงินรวม</div><div class="v"><%= fmtMoney(totals.amount) %> <small>บาท</small></div></div>
+  <div class="tile"><div class="k">รายการที่คิดเงิน</div><div class="v"><%= fmtNum(totals.records) %></div></div>
+  <div class="tile"><div class="k">จำนวนครั้งที่รัน</div><div class="v"><%= fmtNum(totals.runs) %>
+    <small class="muted">สำเร็จ <%= fmtNum(totals.ok) %> · ยกเลิก <%= fmtNum(totals.cancelled) %> · ผิดพลาด <%= fmtNum(totals.error) %></small></div></div>
+  <div class="tile"><div class="k">ผู้ใช้งาน / เครื่อง</div><div class="v"><%= fmtNum(totals.operators) %> <small>คน</small> / <%= fmtNum(totals.installs) %> <small>เครื่อง</small></div></div>
+  <div class="tile"><div class="k">เวลาทำงานรวม</div><div class="v"><%= fmtDur(totals.total_sec) %></div></div>
+</section>
+
+<div class="grid2">
+  <section class="card">
+    <h2>ยอดต่อผู้ใช้งาน</h2>
+    <% if (!byOp.length) { %><p class="muted">ยังไม่มีข้อมูลในเดือนนี้</p><% } else { %>
+    <table>
+      <thead><tr><th>ผู้ใช้งาน</th><th class="r">ครั้ง</th><th class="r">รายการ</th><th class="r">เวลา</th><th class="r">ยอดเงิน (บาท)</th></tr></thead>
+      <tbody>
+      <% for (const r of byOp) { %>
+        <tr>
+          <td><a href="/admin/operator/<%= encodeURIComponent(r.operator) %>?ym=<%= ym %>"><%= r.operator || '(ไม่ระบุ)' %></a></td>
+          <td class="r"><%= fmtNum(r.runs) %></td>
+          <td class="r"><%= fmtNum(r.billable_records) %></td>
+          <td class="r muted"><%= fmtDur(r.total_sec) %></td>
+          <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
+        </tr>
+      <% } %>
+      </tbody>
+      <tfoot><tr><th>รวม</th><th class="r"><%= fmtNum(totals.runs) %></th><th class="r"><%= fmtNum(totals.records) %></th><th class="r"><%= fmtDur(totals.total_sec) %></th><th class="r"><%= fmtMoney(totals.amount) %></th></tr></tfoot>
+    </table>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <h2>ยอดต่อโหมด</h2>
+    <% if (!byMode.length) { %><p class="muted">ยังไม่มีข้อมูลในเดือนนี้</p><% } else { %>
+    <table>
+      <thead><tr><th>โหมด</th><th>กลุ่ม</th><th class="r">ครั้ง</th><th class="r">รายการ</th><th class="r">ยอดเงิน (บาท)</th></tr></thead>
+      <tbody>
+      <% for (const r of byMode) { %>
+        <tr>
+          <td><a href="/admin/runs?ym=<%= ym %>&mode=<%= r.mode %>"><%= r.mode_label %></a></td>
+          <td><span class="tag g-<%= r.mode_group %>"><%= GROUP_LABELS[r.mode_group] || r.mode_group %></span></td>
+          <td class="r"><%= fmtNum(r.runs) %></td>
+          <td class="r"><%= fmtNum(r.billable_records) %></td>
+          <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
+        </tr>
+      <% } %>
+      </tbody>
+    </table>
+    <% } %>
+  </section>
+</div>
+
+<% if (daily.length) { %>
+<section class="card">
+  <h2>จำนวนครั้งที่รันรายวัน</h2>
+  <div class="bars">
+    <% for (const d of daily) { %>
+      <div class="bar" title="<%= d.d %> — <%= d.runs %> ครั้ง, <%= fmtNum(d.records) %> รายการ">
+        <div class="fill" style="height:<%= Math.round(Number(d.runs) / maxDaily * 100) %>%"></div>
+        <div class="lbl"><%= String(d.d).slice(8, 10) %></div>
+      </div>
+    <% } %>
+  </div>
+</section>
+<% } %>
+<%- include('partials/footer') %>

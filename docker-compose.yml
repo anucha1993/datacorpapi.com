@@ -1,0 +1,40 @@
+# รันเว็บแอป + MySQL บนเซิร์ฟเวอร์เดียวด้วยคำสั่งเดียว:
+#   cp .env.example .env   (แก้รหัสผ่าน)
+#   docker compose up -d
+# MySQL จะสร้างตารางจาก ../sql/usage_schema.sql ให้อัตโนมัติตอนสร้างครั้งแรก
+# (อย่าลืมแก้รหัสผ่าน ewp_app / ewp_web ในไฟล์ SQL ให้ตรงกับ .env ก่อนรันครั้งแรก)
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME_root}
+      TZ: Asia/Bangkok
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone=+07:00
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ../sql/usage_schema.sql:/docker-entrypoint-initdb.d/01_usage_schema.sql:ro
+    ports:
+      - "3306:3306"   # ให้โปรแกรมบนเครื่องผู้ใช้ต่อเข้ามา (ปิดถ้าไม่ต้องการเปิดออกนอกเครื่อง)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-CHANGE_ME_root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      TZ: Asia/Bangkok
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dbdata:

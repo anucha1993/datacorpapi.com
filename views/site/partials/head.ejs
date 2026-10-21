@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> · <%= co.PRODUCT_NAME %></title>
+<meta name="description" content="<%= typeof metaDesc !== 'undefined' ? metaDesc : (co.PRODUCT_NAME + ' — ซอฟต์แวร์ช่วยดึงรายงาน ดาวน์โหลดเอกสาร และกรอกคำขอในระบบ e-WorkPermit อัตโนมัติ คิดค่าบริการตามการใช้งานจริง') %>">
+<% if (co.SITE_URL) { %><link rel="canonical" href="<%= co.SITE_URL %><%= path %>"><% } %>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/site.css">
+<script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
+</head>
+<body class="site">
+<header class="sitehead">
+  <div class="wrap">
+    <a href="/" class="logo"><%= co.PRODUCT_NAME %></a>
+    <nav>
+      <a href="/#features">ความสามารถ</a>
+      <a href="/pricing">ราคา</a>
+      <a href="/#faq">คำถามที่พบบ่อย</a>
+      <a href="/contact">ติดต่อเรา</a>
+      <a href="/pricing" class="cta">เริ่มใช้งาน</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">

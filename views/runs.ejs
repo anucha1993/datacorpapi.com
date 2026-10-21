@@ -1,0 +1,32 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <h1>รายการงาน <span class="muted">· <%= ym %> · <%= fmtNum(total) %> รายการ</span></h1>
+</div>
+<form method="get" action="/admin/runs" class="card filters">
+  <label>เดือน
+    <select name="ym"><% for (const m of months) { %><option value="<%= m %>" <%= m === ym ? 'selected' : '' %>><%= m %></option><% } %></select>
+  </label>
+  <label>ผู้ใช้งาน
+    <select name="operator"><option value="">ทั้งหมด</option><% for (const o of ops) { %><option value="<%= o.operator %>" <%= o.operator === filters.operator ? 'selected' : '' %>><%= o.operator || '(ไม่ระบุ)' %></option><% } %></select>
+  </label>
+  <label>โหมด
+    <select name="mode"><option value="">ทั้งหมด</option><% for (const [k, v] of Object.entries(MODE_LABELS)) { %><option value="<%= k %>" <%= k === filters.mode ? 'selected' : '' %>><%= v %></option><% } %></select>
+  </label>
+  <label>สถานะ
+    <select name="status"><option value="">ทั้งหมด</option><% for (const [k, v] of Object.entries(STATUS_LABELS)) { %><option value="<%= k %>" <%= k === filters.status ? 'selected' : '' %>><%= v %></option><% } %></select>
+  </label>
+  <button class="primary">กรอง</button>
+  <a class="btn" href="/admin/runs">ล้าง</a>
+</form>
+
+<section class="card">
+  <%- include('partials/runstable', { rows, showOperator: true }) %>
+  <% if (pages > 1) { const qs = (p) => `?ym=${ym}&operator=${encodeURIComponent(filters.operator)}&mode=${filters.mode}&status=${filters.status}&page=${p}`; %>
+  <div class="pager">
+    <% if (page > 1) { %><a class="btn" href="/admin/runs<%= qs(page - 1) %>">‹ ก่อนหน้า</a><% } %>
+    <span>หน้า <%= page %> / <%= pages %></span>
+    <% if (page < pages) { %><a class="btn" href="/admin/runs<%= qs(page + 1) %>">ถัดไป ›</a><% } %>
+  </div>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

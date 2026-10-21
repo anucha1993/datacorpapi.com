@@ -1,0 +1,23 @@
+{
+  "name": "ewp-usage-web",
+  "version": "1.0.0",
+  "description": "เว็บแอปดูยอดการใช้งานโปรแกรม e-WorkPermit Tools (อ่านจาก MySQL ewp_usage)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cookie-session": "^2.1.0",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "mysql2": "^3.11.5"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

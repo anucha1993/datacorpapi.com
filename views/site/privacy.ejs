@@ -1,0 +1,62 @@
+<%- include('partials/head') %>
+<section class="page legaldoc">
+  <h1>นโยบายความเป็นส่วนตัว</h1>
+  <p class="muted">มีผลตั้งแต่ <%= co.EFFECTIVE_DATE %> · ผู้ควบคุมข้อมูล: <%= co.COMPANY_NAME %><% if (co.COMPANY_ADDRESS) { %> · <%= co.COMPANY_ADDRESS %><% } %> · จัดทำตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
+
+  <h2>1. ข้อมูลที่เราเก็บ</h2>
+  <table class="prices">
+    <thead><tr><th>ข้อมูล</th><th>ได้มาจาก</th><th>ใช้เพื่อ</th><th>เก็บนาน</th></tr></thead>
+    <tbody>
+      <tr><td>ชื่อ อีเมล ชื่อบริษัท ชื่อผู้ใช้งาน (operator)</td><td>ฟอร์มสมัคร/ชำระเงิน และฟอร์มติดต่อ</td><td>เปิดสิทธิการใช้งาน ออกใบเสร็จ ติดต่อซัพพอร์ต</td><td>ตลอดอายุบัญชี + 5 ปี (ตามกฎหมายบัญชี/ภาษี)</td></tr>
+      <tr><td>สถิติการใช้งานซอฟต์แวร์: ชื่อผู้ใช้งาน, ชื่อผู้ใช้ Windows, ชื่อเครื่อง, รหัสเครื่อง (UUID), โหมดที่ใช้, ชื่อบัญชี e-WorkPermit (อีเมล) ที่ใช้รันงาน, เวลาเริ่ม-จบ, จำนวนรายการ, สถานะงาน, ชื่อไฟล์ผลลัพธ์, ข้อความข้อผิดพลาด</td><td>ซอฟต์แวร์ส่งให้อัตโนมัติเมื่องานจบ</td><td>คำนวณค่าบริการตามการใช้งาน ตรวจสอบยอด แก้ปัญหาการใช้งาน</td><td>5 ปี</td></tr>
+      <tr><td>ข้อมูลการชำระเงิน (สถานะคำสั่งซื้อ ยอดเงิน 4 หลักท้ายบัตรไม่ถูกส่งมาให้เรา)</td><td>Lemon Squeezy (webhook)</td><td>ผูกการชำระเงินกับบัญชีผู้ใช้</td><td>5 ปี</td></tr>
+      <tr><td>IP address และ log ของเว็บไซต์</td><td>เว็บเซิร์ฟเวอร์</td><td>ความปลอดภัย ป้องกันการใช้งานผิดวัตถุประสงค์</td><td>90 วัน</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. ข้อมูลที่เรา<u>ไม่</u>เก็บ</h2>
+  <ul>
+    <li><b>รหัสผ่าน e-WorkPermit</b> ของคุณ — ซอฟต์แวร์เก็บไว้ในหน่วยความจำของเครื่องคุณระหว่างทำงานเท่านั้น ไม่บันทึกลงไฟล์ และไม่ส่งให้เรา</li>
+    <li><b>ข้อมูลคนต่างด้าว นายจ้าง เอกสาร PDF และไฟล์ Excel</b> — อยู่ในเครื่องของคุณทั้งหมด เราไม่ได้รับและไม่สามารถเข้าถึงได้</li>
+    <li>หมายเลขบัตรเครดิต — Lemon Squeezy เป็นผู้ประมวลผลการชำระเงินตามมาตรฐาน PCI DSS</li>
+  </ul>
+
+  <h2>3. ฐานทางกฎหมาย</h2>
+  <p>การปฏิบัติตามสัญญา (ให้บริการและเรียกเก็บเงิน), หน้าที่ตามกฎหมาย (บัญชี/ภาษี), และประโยชน์โดยชอบด้วยกฎหมาย (ความปลอดภัยของระบบ การปรับปรุงซอฟต์แวร์)</p>
+
+  <h2>4. การเปิดเผยข้อมูลแก่บุคคลที่สาม</h2>
+  <ul>
+    <li><b>Lemon Squeezy, LLC (สหรัฐอเมริกา)</b> — ผู้ประมวลผลการชำระเงินและ Merchant of Record ได้รับชื่อ อีเมล ชื่อผู้ใช้งาน และยอดการใช้งานเพื่อเรียกเก็บเงิน ดู <a href="https://lemonsqueezy.com/privacy" rel="noopener" target="_blank">Lemon Squeezy Privacy Policy</a></li>
+    <li>ผู้ให้บริการโฮสติ้งของเว็บไซต์และฐานข้อมูล (ประมวลผลตามคำสั่งของเราภายใต้สัญญา)</li>
+    <li>หน่วยงานราชการเมื่อกฎหมายกำหนด</li>
+  </ul>
+  <p>เราไม่ขายหรือให้เช่าข้อมูลส่วนบุคคล และไม่ใช้เพื่อการโฆษณาของบุคคลที่สาม</p>
+
+  <h2>5. การโอนข้อมูลไปต่างประเทศ</h2>
+  <p>ข้อมูลการชำระเงินถูกประมวลผลโดย Lemon Squeezy ในสหรัฐอเมริกา ซึ่งมีมาตรการคุ้มครองตามสัญญาและมาตรฐานอุตสาหกรรม</p>
+
+  <h2>6. ความปลอดภัย</h2>
+  <p>ข้อมูลส่งผ่าน HTTPS ฐานข้อมูลจำกัดสิทธิ์การเข้าถึงด้วยบัญชีแยกตามหน้าที่ (ซอฟต์แวร์มีสิทธิ์เพิ่มข้อมูลเท่านั้น ไม่สามารถอ่านหรือแก้ไข) และการเข้าถึงหน้าบริหารจัดการต้องยืนยันตัวตน</p>
+
+  <h2>7. สิทธิของคุณ</h2>
+  <p>คุณมีสิทธิขอเข้าถึง ขอสำเนา แก้ไข ลบ ระงับการใช้ คัดค้าน หรือโอนย้ายข้อมูลส่วนบุคคล และถอนความยินยอม (ในส่วนที่อาศัยความยินยอม) โดยติดต่อ<% if (co.COMPANY_EMAIL) { %> <a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>อีเมลซัพพอร์ต<% } %> เราจะตอบกลับภายใน 30 วัน และคุณมีสิทธิร้องเรียนต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล</p>
+
+  <h2>8. คุกกี้</h2>
+  <p>เว็บไซต์ใช้คุกกี้ที่จำเป็นเท่านั้น (session สำหรับการเข้าสู่ระบบหน้าบริหารจัดการ) ไม่มีคุกกี้โฆษณาหรือติดตามพฤติกรรม หน้าชำระเงินของ Lemon Squeezy ใช้คุกกี้ตามนโยบายของ Lemon Squeezy</p>
+
+  <h2>9. การเปลี่ยนแปลงนโยบาย</h2>
+  <p>หากมีการเปลี่ยนแปลงสำคัญ เราจะแจ้งทางอีเมลและแสดงวันที่มีผลใหม่บนหน้านี้</p>
+
+  <hr>
+  <h1 class="en">Privacy Policy (English summary)</h1>
+  <ul class="en">
+    <li><b>Controller:</b> <%= co.COMPANY_NAME_EN || co.COMPANY_NAME %><% if (co.COMPANY_EMAIL) { %>, <%= co.COMPANY_EMAIL %><% } %>. Compliant with Thailand's PDPA (B.E. 2562).</li>
+    <li><b>We collect:</b> name, email, company and operator name (from checkout and contact forms); software usage statistics sent automatically when a job finishes (operator, Windows user, machine name/ID, mode, e-WorkPermit account email used, start/end time, record count, status, output file name, error text); payment status from Lemon Squeezy webhooks; web server logs (IP, 90 days).</li>
+    <li><b>We do not collect:</b> your e-WorkPermit password, foreign-worker/employer data, PDFs or Excel files (these stay on your computer), or card numbers (handled by Lemon Squeezy, PCI DSS).</li>
+    <li><b>Purpose &amp; basis:</b> providing the service and usage-based billing (contract), accounting/tax (legal obligation), security and product improvement (legitimate interest). Retained for the account lifetime plus 5 years; logs 90 days.</li>
+    <li><b>Sharing:</b> Lemon Squeezy, LLC (USA) as payment processor and Merchant of Record; our hosting providers under contract; authorities where required by law. No selling of data, no third-party advertising.</li>
+    <li><b>Your rights:</b> access, copy, rectify, erase, restrict, object, port, withdraw consent — email us; we respond within 30 days. You may complain to Thailand's PDPC.</li>
+    <li><b>Cookies:</b> strictly necessary only (admin session). No tracking or advertising cookies.</li>
+  </ul>
+</section>
+<%- include('partials/foot') %>

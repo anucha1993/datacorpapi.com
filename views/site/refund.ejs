@@ -1,0 +1,42 @@
+<%- include('partials/head') %>
+<section class="page legaldoc">
+  <h1>นโยบายการคืนเงินและการยกเลิก</h1>
+  <p class="muted">มีผลตั้งแต่ <%= co.EFFECTIVE_DATE %> · ใช้กับทุกแพ็กเกจของ <%= co.PRODUCT_NAME %></p>
+
+  <h2>การยกเลิก</h2>
+  <ul>
+    <li>ยกเลิกได้<b>ทุกเมื่อ</b> ด้วยตนเองผ่าน <b>Customer Portal</b> (ลิงก์อยู่ในอีเมลยืนยันคำสั่งซื้อและใบเสร็จทุกฉบับจาก Lemon Squeezy) หรือแจ้งเราทางอีเมล<% if (co.COMPANY_EMAIL) { %> <a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } %> เราจะดำเนินการให้ภายใน 1 วันทำการ</li>
+    <li>การยกเลิกมีผล<b>สิ้นรอบบิลปัจจุบัน</b> ไม่มีค่าธรรมเนียมการยกเลิก ไม่มีสัญญาผูกมัดขั้นต่ำ</li>
+    <li><b>แพ็กเกจตามการใช้งาน (Pay as you go):</b> เมื่อยกเลิก ยอดการใช้งานที่เกิดขึ้นจริงจนถึงวันยกเลิกจะถูกเรียกเก็บเป็นครั้งสุดท้ายเมื่อสิ้นรอบบิล หลังจากนั้นไม่มีการเรียกเก็บอีก</li>
+  </ul>
+
+  <h2>การคืนเงิน</h2>
+  <ul>
+    <li><b>ซอฟต์แวร์ใช้งานไม่ได้:</b> หากซอฟต์แวร์ไม่สามารถใช้งานได้ตามที่ระบุบนเว็บไซต์กับระบบ e-WorkPermit ของคุณ และเราแก้ไขให้ไม่ได้ภายใน 5 วันทำการหลังได้รับแจ้ง เราคืนค่าบริการของเดือนที่เกิดปัญหาเต็มจำนวน</li>
+    <li><b>ค่าบริการตามการใช้งาน (usage-based):</b> เป็นค่าบริการจากงานที่ประมวลผลสำเร็จแล้ว จึง<b>ไม่สามารถคืนเงินได้</b> เว้นแต่พิสูจน์ได้ว่ายอดถูกบันทึกผิดพลาดจากซอฟต์แวร์ (เช่น นับซ้ำ) ซึ่งเราจะปรับยอดหรือคืนเงินส่วนต่างให้เต็มจำนวน</li>
+    <li><b>การเรียกเก็บซ้ำซ้อนหรือผิดพลาดทางเทคนิค:</b> คืนเงินเต็มจำนวนทุกกรณี</li>
+    <li>ไม่คืนเงินสำหรับกรณี: บัญชี e-WorkPermit ของผู้ใช้ถูกระงับหรือใช้งานไม่ได้, ผลการพิจารณาคำขอของหน่วยงานราชการ, หรือค่าธรรมเนียมราชการใด ๆ ซึ่งไม่ใช่ค่าบริการของเรา</li>
+  </ul>
+
+  <h2>วิธีขอคืนเงิน</h2>
+  <ol>
+    <li>อีเมลถึง<% if (co.COMPANY_EMAIL) { %> <a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>อีเมลซัพพอร์ต<% } %> ระบุอีเมลที่ใช้สั่งซื้อ เลขที่คำสั่งซื้อ (Order #) จากใบเสร็จ และเหตุผล</li>
+    <li>เราตอบกลับภายใน 2 วันทำการ และเมื่ออนุมัติ การคืนเงินจะดำเนินการผ่าน Lemon Squeezy กลับไปยังช่องทางที่ชำระเดิมภายใน 5–10 วันทำการ (ขึ้นกับธนาคารผู้ออกบัตร)</li>
+    <li>หรือติดต่อ Lemon Squeezy โดยตรงจากลิงก์ในอีเมลใบเสร็จ ในฐานะ Merchant of Record Lemon Squeezy มีสิทธิ์พิจารณาคืนเงินตาม <a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Buyer Terms</a> ด้วย</li>
+  </ol>
+
+  <h2>ข้อพิพาท (Chargeback)</h2>
+  <p>กรุณาติดต่อเราก่อนยื่นปฏิเสธรายการกับธนาคาร เราแก้ไขปัญหาส่วนใหญ่ได้ภายใน 2 วันทำการ</p>
+
+  <hr>
+  <h1 class="en">Refund &amp; Cancellation Policy (English)</h1>
+  <ul class="en">
+    <li><b>Cancel anytime</b> from the Customer Portal (link in every Lemon Squeezy order email) or by emailing us. Cancellation takes effect at the end of the current billing period. No cancellation fee, no minimum term.</li>
+    <li><b>Pay as you go:</b> usage incurred up to the cancellation date is billed once at the end of the period; nothing afterwards.</li>
+    <li><b>Software not working:</b> if the software does not work with your e-WorkPermit account as described and we cannot fix it within 5 business days of your report, the usage fees for the affected month are refunded in full.</li>
+    <li><b>Usage-based charges</b> are for work already processed and are non-refundable, except where the software recorded usage incorrectly (e.g. double counting) — then we correct or refund the difference in full. Duplicate or technically erroneous charges are always refunded in full.</li>
+    <li>No refunds for suspended e-WorkPermit accounts, government decisions, or government fees.</li>
+    <li><b>How:</b> email us with your order number; we reply within 2 business days and refunds are issued via Lemon Squeezy to the original payment method within 5–10 business days. You may also contact Lemon Squeezy directly as Merchant of Record. Please contact us before filing a chargeback.</li>
+  </ul>
+</section>
+<%- include('partials/foot') %>

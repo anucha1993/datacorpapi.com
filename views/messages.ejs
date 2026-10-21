@@ -1,0 +1,21 @@
+<%- include('partials/header') %>
+<div class="pagehead"><h1>ข้อความจากหน้าเว็บ <span class="muted">· <%= rows.length %> รายการ</span></h1></div>
+<section class="card">
+  <% if (!rows.length) { %><p class="muted">ยังไม่มีข้อความ</p><% } else { %>
+  <table class="dense">
+    <thead><tr><th>เวลา</th><th>ชื่อ / บริษัท</th><th>อีเมล</th><th>ข้อความ</th><th></th></tr></thead>
+    <tbody>
+    <% for (const m of rows) { %>
+      <tr class="<%= m.is_read ? '' : 'hl' %>">
+        <td class="nowrap muted"><%= m.created_at %></td>
+        <td><%= m.name %><% if (m.company) { %><br><small class="muted"><%= m.company %></small><% } %></td>
+        <td><a href="mailto:<%= m.email %>"><%= m.email %></a></td>
+        <td><pre class="msg"><%= m.message %></pre></td>
+        <td><% if (!m.is_read) { %><form method="post" action="/admin/messages/<%= m.id %>/read"><button>อ่านแล้ว</button></form><% } %></td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table>
+  <% } %>
+</section>
+<%- include('partials/footer') %>
