@@ -212,6 +212,15 @@ app.get("/checkout/:plan", (req, res) => {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !operator) return res.redirect("/pricing#plan-" + plan.key);
   res.redirect(ls.buildCheckoutUrl(plan.checkout_url, { email, operator, company: co }));
 });
+/** โปรแกรมเรียกตรวจ serial ก่อนทำงาน: POST JSON { serial, install_id, machine, windows_user, app_version } */
+app.post("/api/license/verify", express.json({ limit: "8kb" }), async (req, res) => {
+  if (!hit("lic:" + req.ip, 60, 10 * 60 * 1000)) return res.status(429).json({ ok: false, error: "rate_limited", message: "Too many requests" });
+  try {
+    const b = req.body || {};
+    const r = await portal.verifySerial(q, { serial: b.serial, install_id: b.install_id, machine: b.machine, windows_user: b.windows_user, app_version: b.app_version, ip: String(req.ip).slice(0, 64) });
+    res.status(r.ok ? 200 : 403).json(r);
+  } catch (e) { console.error("[license]", e.message); res.status(500).json({ ok: false, error: "server", message: "Server error" }); }
+});
 app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nDisallow: /portal\nAllow: /\n"));
 app.get("/api/health", async (req, res) => {
   const cfg = { admin_password: !ADMIN_DISABLED, company_complete: company().isComplete, lemonsqueezy_api: !!LS_API_KEY, lemonsqueezy_test_mode: LS_TEST_MODE, webhook_secret: !!LS_WEBHOOK_SECRET, node: process.version };
@@ -226,6 +235,7 @@ const requirePortal = async (req, res, next) => {
     const rows = await q("SELECT * FROM portal_users WHERE operator = ? AND is_active = 1 LIMIT 1", [op]);
     if (!rows[0]) { req.session.portal = null; return res.redirect("/portal/login"); }
     req.portalUser = rows[0];
+    if (!req.portalUser.serial_no) req.portalUser.serial_no = await portal.ensureSerial(q, req.portalUser.operator);
     next();
   } catch (e) { next(e); }
 };
@@ -363,7 +373,11 @@ admin.get("/operator/:name", async (req, res, next) => {
       monthsAvailable(),
       q("SELECT ym, runs, billable_records, amount_thb FROM v_usage_monthly_by_operator WHERE operator = ? ORDER BY ym DESC LIMIT 12", [name]),
     ]);
-    res.render("operator", { title: `Operator: ${name}`, ym, months, name, byMode, runs, trend });
+    const [devices, acct] = await Promise.all([
+      q("SELECT * FROM license_devices WHERE operator = ? ORDER BY last_seen DESC", [name]),
+      q("SELECT serial_no, display_name, is_active FROM portal_users WHERE operator = ?", [name]),
+    ]);
+    res.render("operator", { title: `Operator: ${name}`, ym, months, name, byMode, runs, trend, devices, acct: acct[0] || null });
   } catch (e) { next(e); }
 });
 
@@ -516,7 +530,7 @@ admin.post("/invoices/:id/void", async (req, res, next) => {
 async function renderPortalUsers(req, res, next, extra = {}) {
   try {
     const [rows, ops1, ops2] = await Promise.all([
-      q("SELECT id, operator, display_name, email, is_active, must_change, last_login_at FROM portal_users ORDER BY operator"),
+      q("SELECT p.id, p.operator, p.serial_no, p.display_name, p.email, p.is_active, p.must_change, p.last_login_at, p.last_verified_at, (SELECT COUNT(*) FROM license_devices d WHERE d.operator = p.operator) devices FROM portal_users p ORDER BY p.operator"),
       q("SELECT DISTINCT operator FROM usage_runs WHERE operator <> ''"),
       q("SELECT DISTINCT operator FROM billing_customers WHERE operator <> ''"),
     ]);
@@ -533,6 +547,10 @@ admin.post("/portal-users", async (req, res, next) => {
     if (e.code && String(e.code).startsWith("ER_")) return next(e);
     renderPortalUsers(req, res, next, { error: e.message });
   }
+});
+admin.post("/portal-users/:id/serial", async (req, res, next) => {
+  try { const sn = await portal.regenerateSerial(q, Number(req.params.id)); res.redirect("/admin/portal-users?msg=" + encodeURIComponent("New serial issued: " + sn + " (the old one no longer works)")); }
+  catch (e) { next(e); }
 });
 admin.post("/portal-users/:id/toggle", async (req, res, next) => {
   try { await q("UPDATE portal_users SET is_active = 1 - is_active WHERE id = ?", [Number(req.params.id)]); res.redirect("/admin/portal-users"); }
@@ -593,6 +611,7 @@ app.use((req, res) => {
   res.status(404).render(pub ? "site/error" : "error", { co: company(), path: req.path, title: "Page not found", message: "The page you requested does not exist.", detail: req.path });
 });
 app.use((err, req, res, _next) => {
+  if (err && err.type === "entity.parse.failed") return res.status(400).json({ ok: false, error: "invalid_json", message: "Request body must be valid JSON" });
   console.error(err);
   const dbDown = ["ECONNREFUSED", "ETIMEDOUT", "ER_ACCESS_DENIED_ERROR", "ENOTFOUND", "PROTOCOL_CONNECTION_LOST", "ER_NO_SUCH_TABLE"].includes(err.code);
   const pub = !req.path.startsWith("/admin") && !req.path.startsWith("/api") && !req.path.startsWith("/portal");

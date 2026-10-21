@@ -12,6 +12,7 @@
   </div>
 </div>
 
+<p class="muted small">Your serial number: <code style="font-weight:600"><%= user.serial_no || '—' %></code> — enter it in the desktop app so usage is recorded to this account (<a href="/portal/profile">details</a>).</p>
 <% if (user.must_change) { %><p class="alert">Please <a href="/portal/password">change the password</a> you were given before continuing.</p><% } %>
 
 <section class="tiles">

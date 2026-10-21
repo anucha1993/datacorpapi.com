@@ -6,7 +6,7 @@
 <div class="grid2">
   <section class="card">
     <h2>Create account / reset password</h2>
-    <p class="muted">The operator name must match the "Operator" field in the customer's desktop app — the customer only sees usage recorded under that name. Submitting an existing name resets its password.</p>
+    <p class="muted">Each account gets a <b>serial number</b> (DCA-XXXX-XXXX-XXXX). The customer enters it in the desktop app; the app verifies it with this server before every job and records usage under this operator. Disabling the account blocks the app. Submitting an existing name resets its password.</p>
     <form method="post" action="/admin/portal-users" class="stack">
       <input name="operator" list="ops" placeholder="Operator name" required maxlength="100">
       <datalist id="ops"><% for (const o of operators) { %><option value="<%= o %>"><% } %></datalist>
@@ -23,16 +23,18 @@
     <h2>All accounts</h2>
     <% if (!rows.length) { %><p class="muted">No accounts yet</p><% } else { %>
     <table class="dense">
-      <thead><tr><th>Operator</th><th>Name / email</th><th>Last login</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Operator</th><th>Serial number</th><th>Name / email</th><th>Last login</th><th>Status</th><th></th></tr></thead>
       <tbody>
       <% for (const u of rows) { %>
         <tr class="<%= u.is_active ? '' : 'hl' %>">
           <td><a href="/admin/operator/<%= encodeURIComponent(u.operator) %>"><%= u.operator %></a></td>
+          <td class="nowrap"><code><%= u.serial_no || '—' %></code><% if (u.serial_no) { %> <button type="button" class="link" onclick="navigator.clipboard.writeText('<%= u.serial_no %>');this.textContent='Copied'">Copy</button><% } %><br><small class="muted"><%= u.devices %> device<%= u.devices === 1 ? '' : 's' %><% if (u.last_verified_at) { %> · verified <%= u.last_verified_at %><% } %></small></td>
           <td><%= u.display_name %><% if (u.email) { %><br><small class="muted"><%= u.email %></small><% } %></td>
           <td class="muted nowrap"><%= u.last_login_at || '—' %></td>
           <td><span class="st st-<%= u.is_active ? 'ok' : 'error' %>"><%= u.is_active ? 'Active' : 'Disabled' %></span><% if (u.must_change) { %> <small class="muted">password change pending</small><% } %></td>
           <td class="nowrap">
             <a class="btn small" href="/admin/customers/<%= encodeURIComponent(u.operator) %>/prices">Prices</a>
+            <form method="post" action="/admin/portal-users/<%= u.id %>/serial" class="inline" onsubmit="return confirm('Issue a NEW serial number? The current one will stop working on all of this customer\'s machines.')"><button>New serial</button></form>
             <form method="post" action="/admin/portal-users/<%= u.id %>/toggle" class="inline"><button><%= u.is_active ? 'Disable' : 'Enable' %></button></form>
           </td>
         </tr>

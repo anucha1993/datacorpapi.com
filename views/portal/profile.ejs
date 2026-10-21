@@ -6,6 +6,9 @@
   <p class="muted">Enter these once. Every time you pay an invoice, the Lemon Squeezy checkout is pre-filled with this information so the receipt is issued to your company name and address.</p>
   <div class="stack">
     <label>Operator name (cannot be changed) <input value="<%= user.operator %>" disabled></label>
+    <label>Serial number — enter this in the desktop app (Settings → Serial number)
+      <span style="display:flex;gap:8px"><input value="<%= user.serial_no || '' %>" readonly style="font-family:Consolas,monospace;font-weight:600"><button type="button" class="btn" onclick="navigator.clipboard.writeText('<%= user.serial_no || '' %>');this.textContent='Copied'">Copy</button></span>
+    </label>
     <label>Company / buyer name (as it should appear on receipts) <input name="company_name" value="<%= user.company_name || '' %>" maxlength="190" required></label>
     <label>Tax ID (13 digits) <input name="tax_id" value="<%= user.tax_id || '' %>" maxlength="32" pattern="[0-9\-]{10,20}" placeholder="0105500000000"></label>
     <label>Address <textarea name="address" rows="3" maxlength="500" required><%= user.address || '' %></textarea></label>

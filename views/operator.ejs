@@ -49,6 +49,17 @@
 </div>
 
 <section class="card">
+  <h2>License &amp; devices</h2>
+  <% if (!acct) { %><p class="muted">No portal account for this operator — <a href="/admin/portal-users">create one</a> to issue a serial number.</p><% } else { %>
+  <p>Serial: <code><%= acct.serial_no || '—' %></code> · <span class="st st-<%= acct.is_active ? 'ok' : 'error' %>"><%= acct.is_active ? 'Active' : 'Disabled' %></span></p>
+  <% if (!devices.length) { %><p class="muted">No device has verified this serial yet.</p><% } else { %>
+  <table class="dense"><thead><tr><th>Machine</th><th>Windows user</th><th>App</th><th>IP</th><th>First seen</th><th>Last seen</th><th class="r">Checks</th></tr></thead><tbody>
+  <% for (const d of devices) { %><tr><td><%= d.machine %></td><td><%= d.windows_user %></td><td><%= d.app_version %></td><td class="muted"><%= d.ip %></td><td class="muted nowrap"><%= d.first_seen %></td><td class="nowrap"><%= d.last_seen %></td><td class="r"><%= d.verify_count %></td></tr><% } %>
+  </tbody></table>
+  <% } } %>
+</section>
+
+<section class="card">
   <h2>Recent runs this month <span class="muted">(<%= runs.length %><%= runs.length >= 200 ? ' shown' : '' %>)</span></h2>
   <%- include('partials/runstable', { rows: runs, showOperator: false }) %>
 </section>
