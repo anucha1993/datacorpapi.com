@@ -11,8 +11,8 @@ Node.js (Express + EJS) + MySQL/MariaDB ทำ 3 หน้าที่ในแ�
 ## 1. ฐานข้อมูล (ครั้งเดียว)
 สร้าง database + user ผ่านหน้าควบคุมของโฮสต์ (cPanel/DirectAdmin) หรือใช้ `sql/grants_optional.sql` ถ้าโฮสต์เอง แล้วรัน 2 ไฟล์นี้ใน database นั้น (phpMyAdmin → SQL หรือ):
 ```bash
-mysql -h HOST -u USER -p DATABASE < ../sql/usage_schema.sql
-mysql -h HOST -u USER -p DATABASE < ../sql/billing_schema.sql
+mysql -h HOST -u USER -p DATABASE < sql/usage_schema.sql
+mysql -h HOST -u USER -p DATABASE < sql/billing_schema.sql
 ```
 ได้ตาราง `usage_runs` `usage_prices` `billing_*` `contact_messages` และ view `v_usage_monthly*` `v_usage_installs`
 

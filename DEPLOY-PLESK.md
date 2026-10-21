@@ -4,7 +4,7 @@
 
 ## 0. สิ่งที่ต้องมีก่อน
 - โดเมน `datacorpapi.com` ชี้ A record มาที่ IP ของเซิร์ฟเวอร์ Plesk แล้ว
-- database `thaidata_ewp` + user สร้างแล้วและรัน `sql/usage_schema.sql`, `sql/billing_schema.sql` แล้ว (ทำไปแล้ว)
+- database `thaidata_ewp` + user สร้างแล้วและรัน `sql/usage_schema.sql`, `sql/billing_schema.sql` (อยู่ในโฟลเดอร์ `sql/` ของ repo นี้) แล้ว (ทำไปแล้ว)
 - โค้ดอยู่บน GitHub `anucha1993/datacorpapi.com` (ต้อง `git push` ก่อน) หรือจะอัปโหลดโฟลเดอร์ `webapp/` ผ่าน File Manager ก็ได้
 
 ## 1. เอาโค้ดขึ้นเซิร์ฟเวอร์
