@@ -8,6 +8,7 @@
       </label>
     </form>
     <a class="btn" href="/portal/export.csv?ym=<%= ym %>">⬇ CSV</a>
+    <a class="btn" href="/portal/billing">การชำระเงิน</a>
   </div>
 </div>
 
@@ -62,14 +63,9 @@
     </table>
     <% } %>
 
-    <h2 style="margin-top:18px">การสมัครใช้งาน</h2>
-    <% if (!subs.length) { %>
-      <p class="muted">ยังไม่มีการสมัครใช้งานที่ผูกกับบัญชีนี้</p>
-      <a class="btn primary" href="/portal/billing">สมัครและชำระเงินผ่าน Lemon Squeezy</a>
-    <% } else { for (const s of subs) { %>
-      <p><b><%= s.product_name %></b> <span class="st st-<%= ['active','on_trial'].includes(s.status) ? 'ok' : 'cancelled' %>"><%= s.status_formatted || s.status %></span>
-        <% if (s.renews_at) { %><span class="muted"> · รอบถัดไป <%= String(s.renews_at).slice(0, 10) %></span><% } %>
-        · <a href="/portal/billing">รายละเอียดการชำระเงิน</a></p>
+    <h2 style="margin-top:18px">ใบแจ้งหนี้ค้างชำระ</h2>
+    <% if (!openInvoices.length) { %><p class="muted">ไม่มียอดค้างชำระ</p><% } else { for (const i of openInvoices) { %>
+      <p><b><%= i.invoice_no %></b> เดือน <%= i.ym %> · <b><%= fmtMoney(i.amount_thb) %></b> บาท · ครบกำหนด <%= i.due_at || '-' %> → <a href="/portal/billing">ชำระเงิน</a></p>
     <% } } %>
   </section>
 </div>

@@ -22,14 +22,14 @@
 
   <h2>5. ราคา การเรียกเก็บเงิน และการชำระเงิน</h2>
   <ul>
-    <li>ราคาและวิธีคิดค่าบริการเป็นไปตามหน้า<a href="/pricing">ราคา</a> ณ เวลาที่สมัคร ค่าบริการแบบตามการใช้งาน (usage-based) คำนวณจากจำนวนรายการที่ซอฟต์แวร์ประมวลผลสำเร็จ ซึ่งซอฟต์แวร์บันทึกและส่งให้เราโดยอัตโนมัติ และเรียกเก็บเมื่อสิ้นรอบบิลรายเดือน</li>
+    <li>ราคาและวิธีคิดค่าบริการเป็นไปตามหน้า<a href="/pricing">ราคา</a> ค่าบริการคำนวณจากจำนวนรายการที่ซอฟต์แวร์ประมวลผลสำเร็จ ซึ่งซอฟต์แวร์บันทึกและส่งให้เราโดยอัตโนมัติ เราออกใบแจ้งหนี้ในวันที่ 1 ของเดือนถัดไป และผู้ใช้ชำระภายใน 15 วันผ่านลิงก์ชำระเงินในระบบลูกค้า ยอดต่ำกว่าขั้นต่ำของผู้ให้บริการรับชำระเงินจะยกไปรวมเดือนถัดไป</li>
     <li>การชำระเงินดำเนินการโดย <b>Lemon Squeezy, LLC</b> ในฐานะผู้ขายต่อที่ได้รับอนุญาตและ Merchant of Record ซึ่งเป็นผู้ออกใบเสร็จ จัดเก็บภาษีที่เกี่ยวข้อง และดูแลเรื่องการชำระเงิน การยกเลิก และการคืนเงิน ภายใต้<a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Buyer Terms ของ Lemon Squeezy</a></li>
-    <li>หากการเรียกเก็บเงินล้มเหลว เราอาจระงับสิทธิการใช้งานจนกว่าจะชำระครบ</li>
+    <li>หากค้างชำระเกินกำหนด เราอาจระงับสิทธิการใช้งานจนกว่าจะชำระครบ</li>
     <li>การเปลี่ยนแปลงราคาจะแจ้งล่วงหน้าทางอีเมลอย่างน้อย 30 วัน ผู้ใช้ยกเลิกได้ก่อนราคาใหม่มีผล</li>
   </ul>
 
   <h2>6. ระยะเวลา การยกเลิก และการคืนเงิน</h2>
-  <p>แพ็กเกจแบบสมัครสมาชิกต่ออายุอัตโนมัติทุกรอบบิลจนกว่าจะยกเลิก ผู้ใช้ยกเลิกได้ทุกเมื่อผ่าน Customer Portal โดยมีผลสิ้นรอบบิลปัจจุบัน รายละเอียดการคืนเงินเป็นไปตาม<a href="/refund">นโยบายการคืนเงินและยกเลิก</a> เราอาจระงับหรือยกเลิกสิทธิการใช้งานหากผู้ใช้ละเมิดข้อกำหนดนี้</p>
+  <p>ไม่มีระยะเวลาผูกมัดและไม่มีการตัดบัตรอัตโนมัติ ผู้ใช้หยุดใช้งานได้ทุกเมื่อ โดยยังต้องชำระใบแจ้งหนี้ของเดือนที่ใช้งานไปแล้ว รายละเอียดการคืนเงินเป็นไปตาม<a href="/refund">นโยบายการคืนเงินและยกเลิก</a> เราอาจระงับหรือยกเลิกสิทธิการใช้งานหากผู้ใช้ค้างชำระหรือละเมิดข้อกำหนดนี้</p>
 
   <h2>7. การสนับสนุนและการอัปเดต</h2>
   <p>เราให้การสนับสนุนทางอีเมล<% if (co.COMPANY_EMAIL) { %> (<%= co.COMPANY_EMAIL %>)<% } %> ใน<%= co.SUPPORT_HOURS %> และจัดส่งการอัปเดตซอฟต์แวร์ให้ตลอดระยะเวลาที่สิทธิการใช้งานยังมีผล ระบบ e-WorkPermit เป็นของบุคคลที่สามและอาจเปลี่ยนแปลงได้ เราจะพยายามปรับซอฟต์แวร์ให้ทำงานได้ตามสมควร แต่ไม่รับประกันว่าทุกฟังก์ชันจะใช้งานได้ตลอดเวลา</p>
@@ -53,8 +53,8 @@
     <li><b>Service.</b> <%= co.PRODUCT_NAME %> is Windows software, installed and operated by you on your own computers with your own e-WorkPermit credentials, that automates repetitive tasks (reports, document downloads, form filling from Excel). We are a software vendor, not a filing agent, and are not affiliated with the Department of Employment.</li>
     <li><b>License.</b> Non-exclusive, non-transferable license for internal business use on unlimited devices within one organisation. No resale, service-bureau use, modification or redistribution.</li>
     <li><b>Your responsibilities.</b> You are responsible for every action the software performs under your account at your instruction, for verifying input data and results, and for usage under your operator name.</li>
-    <li><b>Fees &amp; payment.</b> Usage-based fees are calculated from records actually processed, as recorded and reported by the software, and billed monthly in arrears. Payments are processed by Lemon Squeezy, LLC as Merchant of Record under the <a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Lemon Squeezy Buyer Terms</a>. Price changes are announced at least 30 days in advance.</li>
-    <li><b>Term &amp; cancellation.</b> Subscriptions renew automatically until cancelled from the Customer Portal; cancellation takes effect at the end of the current billing period. Refunds per our <a href="/refund">Refund &amp; Cancellation Policy</a>.</li>
+    <li><b>Fees &amp; payment.</b> Fees are calculated from records actually processed, as recorded by the software. An invoice is issued on the 1st of each month for the previous month and is payable within 15 days via the payment link in the customer portal. Payments are processed by Lemon Squeezy, LLC as Merchant of Record under the <a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Lemon Squeezy Buyer Terms</a>. Price changes are announced at least 30 days in advance.</li>
+    <li><b>Term &amp; cancellation.</b> No fixed term and no automatic charges; stop using the software at any time. Invoices for months already used remain payable. Refunds per our <a href="/refund">Refund &amp; Cancellation Policy</a>.</li>
     <li><b>Support &amp; updates.</b> Email support during business hours and software updates for the duration of your subscription. The e-WorkPermit system is third-party and may change; we make reasonable efforts to keep the software working but do not guarantee uninterrupted operation.</li>
     <li><b>Warranty &amp; liability.</b> Provided "as is". Our total liability is limited to fees paid in the 3 months before the claim; no liability for indirect damages, government fees, penalties or application outcomes.</li>
     <li><b>Governing law.</b> Thailand.</li>

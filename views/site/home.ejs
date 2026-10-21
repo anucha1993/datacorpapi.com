@@ -9,8 +9,9 @@
     <p class="lead en">Windows software that automates repetitive work in Thailand's e-WorkPermit system (Department of Employment):
       bulk status reports to Excel, batch document downloads and form filling from spreadsheets. Priced per record actually processed.</p>
     <div class="actions">
-      <a href="/pricing" class="btn primary big">ดูราคาและเริ่มใช้งาน</a>
-      <a href="/contact" class="btn big">ขอทดลองใช้ / สอบถาม</a>
+      <a href="/contact" class="btn primary big">ขอเปิดบัญชีใช้งาน</a>
+      <a href="/pricing" class="btn big">ดูราคา</a>
+      <a href="/portal/login" class="btn big">เข้าสู่ระบบลูกค้า</a>
     </div>
   </div>
   <div class="shot"><img src="/screenshot-app.png" alt="หน้าจอโปรแกรม <%= co.PRODUCT_NAME %>" loading="lazy" onerror="this.parentNode.style.display='none'"></div>
@@ -41,25 +42,25 @@
 <section class="how">
   <h2>ขั้นตอนการใช้งาน</h2>
   <ol class="steps">
-    <li><b>สมัครแพ็กเกจ</b> กรอกอีเมลและชื่อผู้ใช้งาน แล้วชำระเงินผ่าน Lemon Squeezy (บัตรเครดิต/เดบิต, PayPal)</li>
+    <li><b>เปิดบัญชี</b> แจ้งชื่อผู้ใช้งานและอีเมลผ่านหน้าติดต่อ เราเปิดบัญชีให้ฟรีภายใน 1 วันทำการ</li>
     <li><b>ติดตั้งโปรแกรม</b> เราส่งลิงก์ดาวน์โหลดและคู่มือให้ทางอีเมลภายใน 1 วันทำการ ติดตั้งบน Windows 10/11 ได้ไม่จำกัดเครื่อง</li>
     <li><b>ใช้งาน</b> ใส่ชื่อผู้ใช้งานที่สมัครไว้ในโปรแกรม เลือกโหมด กดเริ่ม โปรแกรมบันทึกจำนวนรายการที่ประมวลผล</li>
-    <li><b>เรียกเก็บเงินปลายเดือน</b> ยอดตามจำนวนรายการจริง × ราคาต่อรายการของแต่ละโหมด ใบเสร็จส่งทางอีเมลอัตโนมัติ</li>
+    <li><b>รับใบแจ้งหนี้ต้นเดือน</b> ยอดตามจำนวนรายการจริง × ราคาต่อรายการ ชำระผ่าน Lemon Squeezy ในระบบลูกค้า ใบเสร็จส่งทางอีเมลทันที</li>
   </ol>
 </section>
 
 <section id="pricing" class="pricing">
   <h2>ราคา</h2>
-  <%- include('partials/plans', { compact: true }) %>
-  <p class="center"><a href="/pricing" class="btn">ดูราคาต่อรายการของแต่ละโหมด →</a></p>
+  <p class="lead">ไม่มีค่าแรกเข้า ไม่มีขั้นต่ำ จ่ายตามจำนวนรายการที่ประมวลผลจริง ออกใบแจ้งหนี้ทุกวันที่ 1 ชำระผ่าน Lemon Squeezy</p>
+  <p class="center"><a href="/pricing" class="btn primary">ดูราคาต่อรายการของแต่ละโหมด →</a></p>
 </section>
 
 <section id="faq" class="faq">
   <h2>คำถามที่พบบ่อย</h2>
   <details><summary>โปรแกรมนี้เป็นบริการรับทำเอกสารหรือไม่</summary><p>ไม่ใช่ นี่คือ<b>ซอฟต์แวร์</b>ที่คุณติดตั้งและสั่งงานเองด้วยบัญชี e-WorkPermit ของคุณ เราไม่ได้เข้าถึงบัญชีหรือยื่นเอกสารแทนคุณ</p></details>
-  <details><summary>คิดเงินอย่างไร "รายการ" คืออะไร</summary><p>1 รายการ = 1 คำขอ/1 เอกสาร/1 คน ที่โปรแกรมประมวลผลสำเร็จในแต่ละโหมด ราคาต่อรายการต่างกันตามโหมด (ดูหน้า<a href="/pricing">ราคา</a>) งานที่ยกเลิกกลางทางคิดเฉพาะส่วนที่ทำไปแล้ว ยอดสรุปปลายเดือนเรียกเก็บผ่าน Lemon Squeezy</p></details>
+  <details><summary>คิดเงินอย่างไร "รายการ" คืออะไร</summary><p>1 รายการ = 1 คำขอ/1 เอกสาร/1 คน ที่โปรแกรมประมวลผลสำเร็จในแต่ละโหมด ราคาต่อรายการต่างกันตามโหมด (ดูหน้า<a href="/pricing">ราคา</a>) งานที่ยกเลิกกลางทางคิดเฉพาะส่วนที่ทำไปแล้ว วันที่ 1 ของทุกเดือนระบบออกใบแจ้งหนี้ของเดือนก่อน ชำระผ่าน Lemon Squeezy ในระบบลูกค้า</p></details>
   <details><summary>ต้องใช้อะไรบ้าง</summary><p>Windows 10/11, Python 3.12 ขึ้นไป (ตัวติดตั้งมีให้), บัญชีผู้ใช้ e-WorkPermit ที่ใช้งานได้ และอินเทอร์เน็ต</p></details>
-  <details><summary>ยกเลิกได้ไหม</summary><p>ได้ทุกเมื่อจาก Customer Portal ในอีเมลใบเสร็จ การยกเลิกมีผลสิ้นรอบบิลปัจจุบัน ไม่มีค่าปรับ ดูรายละเอียดที่<a href="/refund">นโยบายการคืนเงินและยกเลิก</a></p></details>
+  <details><summary>มีสัญญาผูกมัดไหม</summary><p>ไม่มี ไม่ต้องผูกบัตรล่วงหน้า หยุดใช้งานเดือนไหนก็ไม่มีบิลเดือนนั้น ค้างเพียงบิลของเดือนที่ใช้งานไปแล้ว ดูรายละเอียดที่<a href="/refund">นโยบายการคืนเงินและยกเลิก</a></p></details>
   <details><summary>ใบเสร็จออกในชื่อใคร</summary><p>Lemon Squeezy เป็น Merchant of Record จึงเป็นผู้ออกใบเสร็จและจัดการภาษีการขาย รายการในบัตรของคุณจะแสดงชื่อ Lemon Squeezy</p></details>
   <details><summary>ข้อมูลของเราปลอดภัยไหม</summary><p>รหัสผ่านและข้อมูลคนต่างด้าวอยู่ในเครื่องของคุณเท่านั้น โปรแกรมส่งให้เราเฉพาะสถิติการใช้งานเพื่อคิดค่าบริการ อ่านเพิ่มที่<a href="/privacy">นโยบายความเป็นส่วนตัว</a></p></details>
 </section>

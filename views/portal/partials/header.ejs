@@ -14,6 +14,7 @@
     <span class="muted" style="padding:6px 10px">👤 <%= user.display_name || user.operator %></span>
     <a href="/portal" class="<%= title === 'ยอดการใช้งาน' ? 'on' : '' %>">ยอดการใช้งาน</a>
     <a href="/portal/billing" class="<%= title === 'การชำระเงิน' ? 'on' : '' %>">การชำระเงิน</a>
+    <a href="/portal/profile" class="<%= title === 'ข้อมูลใบเสร็จ' ? 'on' : '' %>">ข้อมูลใบเสร็จ</a>
     <a href="/portal/password" class="<%= title === 'เปลี่ยนรหัสผ่าน' ? 'on' : '' %>">เปลี่ยนรหัสผ่าน</a>
     <a href="/pricing" target="_blank" rel="noopener">ราคา ↗</a>
     <form method="post" action="/portal/logout" class="inline"><button class="link">ออกจากระบบ</button></form>

@@ -18,6 +18,7 @@ const ls = require("./lib/lemonsqueezy");
 const billing = require("./lib/billing");
 const { company } = require("./lib/company");
 const portal = require("./lib/portal");
+const invoices = require("./lib/invoices");
 
 const PORT = Number(process.env.PORT || 3000);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
@@ -25,6 +26,8 @@ const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toSt
 const LS_API_KEY = (process.env.LS_API_KEY || "").trim();
 const LS_WEBHOOK_SECRET = (process.env.LS_WEBHOOK_SECRET || "").trim();
 const LS_USAGE_ACTION = (process.env.LS_USAGE_ACTION || "set").trim() === "increment" ? "increment" : "set";
+const LS_TEST_MODE = /^(1|true|yes)$/i.test(process.env.LS_TEST_MODE || "");
+const STATUS_INV = { open: "รอชำระ", paid: "ชำระแล้ว", void: "ยกเลิก", carried: "ยกไปเดือนถัดไป" };
 const LS_USAGE_QUANTITY = (process.env.LS_USAGE_QUANTITY || "amount").trim() === "records" ? "records" : "amount";
 
 // ไม่ปิดแอปถ้ายังไม่ได้ตั้งรหัส admin — หน้าเว็บสาธารณะต้องเปิดได้เสมอ แค่ปิดการ login หลังบ้านไว้
@@ -147,6 +150,9 @@ app.locals.fmtDur = fmtDur;
 app.locals.MODE_LABELS = MODE_LABELS;
 app.locals.GROUP_LABELS = GROUP_LABELS;
 app.locals.STATUS_LABELS = STATUS_LABELS;
+app.locals.STATUS_INV = STATUS_INV;
+app.locals.MIN_THB = invoices.MIN_THB;
+app.locals.DUE_DAYS = invoices.DUE_DAYS;
 
 // ---- Webhook (ต้องอ่าน raw body ก่อน body parser อื่น) ----
 app.post("/webhooks/lemonsqueezy", express.raw({ type: () => true, limit: "2mb" }), async (req, res) => {
@@ -208,7 +214,7 @@ app.get("/checkout/:plan", (req, res) => {
 });
 app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nDisallow: /portal\nAllow: /\n"));
 app.get("/api/health", async (req, res) => {
-  const cfg = { admin_password: !ADMIN_DISABLED, company_complete: company().isComplete, lemonsqueezy_api: !!LS_API_KEY, webhook_secret: !!LS_WEBHOOK_SECRET, node: process.version };
+  const cfg = { admin_password: !ADMIN_DISABLED, company_complete: company().isComplete, lemonsqueezy_api: !!LS_API_KEY, lemonsqueezy_test_mode: LS_TEST_MODE, webhook_secret: !!LS_WEBHOOK_SECRET, node: process.version };
   try { await q("SELECT 1"); res.json({ ok: true, ...cfg }); } catch (e) { res.status(500).json({ ok: false, error: e.code || "db", ...cfg }); }
 });
 
@@ -246,7 +252,7 @@ app.get("/portal", requirePortal, async (req, res, next) => {
       q("SELECT v.*, p.price_per_record FROM v_usage_monthly v LEFT JOIN usage_prices p ON p.mode = v.mode WHERE v.ym = ? AND v.operator = ? ORDER BY v.amount_thb DESC", [ym, op]),
       q("SELECT * FROM usage_runs WHERE DATE_FORMAT(started_at,'%Y-%m') = ? AND operator = ? ORDER BY started_at DESC LIMIT 200", [ym, op]),
       q("SELECT ym, runs, billable_records, amount_thb FROM v_usage_monthly_by_operator WHERE operator = ? ORDER BY ym DESC LIMIT 12", [op]),
-      q("SELECT s.product_name, s.status, s.status_formatted, s.renews_at, s.customer_portal_url FROM billing_subscriptions s JOIN billing_customers c ON c.customer_id = s.customer_id WHERE c.operator = ? ORDER BY s.updated_at DESC LIMIT 5", [op]),
+      q("SELECT invoice_no, ym, amount_thb, due_at FROM billing_invoices WHERE operator = ? AND status = 'open' ORDER BY ym", [op]),
       q("SELECT ym, quantity, amount_thb, ok, sent_at FROM billing_usage_reports WHERE operator = ? ORDER BY sent_at DESC", [op]),
       q("SELECT DISTINCT DATE_FORMAT(started_at,'%Y-%m') ym FROM usage_runs WHERE operator = ? ORDER BY ym DESC LIMIT 24", [op]),
     ]);
@@ -254,7 +260,7 @@ app.get("/portal", requirePortal, async (req, res, next) => {
     const reports = {}; for (const r of reps) if (!reports[r.ym]) reports[r.ym] = r;
     const sum = (k) => byMode.reduce((a, r) => a + Number(r[k] || 0), 0);
     const totals = { amount: sum("amount_thb"), records: sum("billable_records"), runs: sum("runs"), ok: sum("runs_ok"), cancelled: sum("runs_cancelled"), error: sum("runs_error"), total_sec: sum("total_sec") };
-    res.render("portal/dashboard", { co: company(), title: "ยอดการใช้งาน", user: u, ym, months, byMode, runs, trend, subs, reports, totals });
+    res.render("portal/dashboard", { co: company(), title: "ยอดการใช้งาน", user: u, ym, months, byMode, runs, trend, openInvoices: subs, reports, totals });
   } catch (e) { next(e); }
 });
 app.get("/portal/export.csv", requirePortal, async (req, res, next) => {
@@ -268,25 +274,31 @@ app.get("/portal/export.csv", requirePortal, async (req, res, next) => {
     res.send("\uFEFF" + lines.join("\r\n"));
   } catch (e) { next(e); }
 });
-/** หน้าการชำระเงินของลูกค้า: สมัคร/จ่ายผ่าน Lemon Squeezy, สถานะ subscription, คำสั่งซื้อ, ยอดที่เรียกเก็บ */
+/** หน้าการชำระเงินของลูกค้า: ใบแจ้งหนี้รายเดือน + ปุ่มจ่ายผ่าน Lemon Squeezy */
 app.get("/portal/billing", requirePortal, async (req, res, next) => {
   try {
     const u = req.portalUser, op = u.operator;
-    // ผูกอัตโนมัติ: ลูกค้าที่จ่ายผ่าน LS ด้วยอีเมลเดียวกันแต่ยังไม่ได้ระบุชื่อผู้ใช้งาน
-    let linked = false;
-    if (u.email) {
-      const r = await q("UPDATE billing_customers SET operator = ? WHERE operator = '' AND email = ?", [op, u.email]);
-      linked = r.affectedRows > 0;
-    }
-    const custIds = (await q("SELECT customer_id FROM billing_customers WHERE operator = ?", [op])).map(r => r.customer_id);
-    const [subs, orders, reports] = await Promise.all([
-      custIds.length ? q(`SELECT * FROM billing_subscriptions WHERE customer_id IN (${custIds.map(() => "?").join(",")}) ORDER BY FIELD(status,'active','on_trial','past_due','paused','cancelled','unpaid','expired'), updated_at DESC`, custIds) : [],
-      custIds.length ? q(`SELECT * FROM billing_orders WHERE customer_id IN (${custIds.map(() => "?").join(",")}) ORDER BY ordered_at DESC LIMIT 50`, custIds) : [],
-      q("SELECT r.*, (SELECT SUM(billable_records) FROM v_usage_monthly v WHERE v.ym = r.ym AND v.operator = r.operator) records FROM billing_usage_reports r WHERE r.operator = ? ORDER BY r.ym DESC, r.sent_at DESC", [op]),
+    const [inv, cur] = await Promise.all([
+      q(`SELECT i.*, o.receipt_url FROM billing_invoices i LEFT JOIN billing_orders o ON o.order_id = i.ls_order_id WHERE i.operator = ? ORDER BY i.ym DESC, i.id DESC LIMIT 36`, [op]),
+      q("SELECT COALESCE(SUM(amount_thb),0) amt FROM v_usage_monthly WHERE ym = ? AND operator = ?", [thisMonth(), op]),
     ]);
-    // แผนที่สมัครได้ + ลิงก์ checkout ที่เติมอีเมล/ชื่อผู้ใช้งานให้แล้ว
-    const plans = loadPlans().map(p => ({ ...p, checkout: p.checkout_url ? ls.buildCheckoutUrl(p.checkout_url, { email: u.email, name: u.display_name, operator: op, company: u.display_name }) : "" }));
-    res.render("portal/billing", { co: company(), title: "การชำระเงิน", user: u, subs, orders, reports, plans, linked });
+    const sum = { open: 0, open_n: 0, paid: 0 };
+    for (const r of inv) { if (r.status === "open") { sum.open += Number(r.amount_thb); sum.open_n++; } if (r.status === "paid") sum.paid += Number(r.amount_thb); }
+    const profileComplete = !!(u.company_name && u.address && u.zip && (u.billing_email || u.email));
+    res.render("portal/billing", { co: company(), title: "การชำระเงิน", user: u, invoices: inv, sum, currentEstimate: Number(cur[0].amt || 0),
+      today: new Date().toISOString().slice(0, 10), paidNo: String(req.query.paid || "").slice(0, 32) || null, profileComplete });
+  } catch (e) { next(e); }
+});
+app.get("/portal/profile", requirePortal, (req, res) => res.render("portal/profile", { co: company(), title: "ข้อมูลใบเสร็จ", user: req.portalUser, error: null, saved: req.query.saved === "1" }));
+app.post("/portal/profile", requirePortal, async (req, res, next) => {
+  try {
+    const f = (k, n) => String(req.body[k] || "").trim().slice(0, n);
+    const data = { company_name: f("company_name", 190), tax_id: f("tax_id", 32).replace(/[^0-9-]/g, ""), address: f("address", 500), zip: f("zip", 16), billing_email: f("billing_email", 190), display_name: f("display_name", 190) };
+    if (!data.company_name || !data.address || !/^\d{5}$/.test(data.zip) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.billing_email))
+      return res.status(400).render("portal/profile", { co: company(), title: "ข้อมูลใบเสร็จ", user: { ...req.portalUser, ...data }, error: "กรุณากรอกชื่อบริษัท ที่อยู่ รหัสไปรษณีย์ 5 หลัก และอีเมลให้ถูกต้อง", saved: false });
+    await q("UPDATE portal_users SET company_name = ?, tax_id = ?, address = ?, zip = ?, billing_email = ?, display_name = ? WHERE id = ?",
+      [data.company_name, data.tax_id, data.address, data.zip, data.billing_email, data.display_name || req.portalUser.display_name, req.portalUser.id]);
+    res.redirect("/portal/profile?saved=1");
   } catch (e) { next(e); }
 });
 app.get("/portal/password", requirePortal, (req, res) => res.render("portal/password", { co: company(), title: "เปลี่ยนรหัสผ่าน", user: req.portalUser, error: null, saved: req.query.saved === "1" }));
@@ -442,12 +454,48 @@ admin.post("/billing/operator", async (req, res, next) => {
     res.redirect("/admin/billing");
   } catch (e) { next(e); }
 });
-admin.post("/billing/report-usage", async (req, res, next) => {
-  const ym = validYm(req.body.ym);
+
+// ---- ใบแจ้งหนี้รายเดือน ----
+async function renderInvoices(req, res, next, extra = {}) {
   try {
-    const results = await billing.reportUsage(q, ym, { apiKey: LS_API_KEY, action: LS_USAGE_ACTION, quantityMode: LS_USAGE_QUANTITY, log: console.log });
-    renderBilling(req, res, next, { report: { ym, results } });
+    const ym = validYm(req.query.ym || (req.body && req.body.ym));
+    const [rows, months, carried] = await Promise.all([
+      q("SELECT i.*, p.company_name FROM billing_invoices i LEFT JOIN portal_users p ON p.operator = i.operator WHERE i.ym = ? ORDER BY FIELD(i.status,'open','carried','paid','void'), i.operator", [ym]),
+      monthsAvailable(),
+      q("SELECT COALESCE(SUM(amount_thb),0) s FROM billing_invoices WHERE status = 'carried'"),
+    ]);
+    const today = new Date().toISOString().slice(0, 10);
+    const sum = { open: 0, open_n: 0, paid: 0, paid_n: 0, overdue_n: 0, carried: Number(carried[0].s || 0) };
+    for (const r of rows) {
+      if (r.status === "open") { sum.open += Number(r.amount_thb); sum.open_n++; if (r.due_at && r.due_at < today) sum.overdue_n++; }
+      if (r.status === "paid") { sum.paid += Number(r.amount_thb); sum.paid_n++; }
+    }
+    res.render("invoices", { title: "ใบแจ้งหนี้", ym, months, rows, sum, today, lsReady: !!LS_API_KEY, testMode: LS_TEST_MODE, msg: req.query.msg || null, error: null, report: null, ...extra });
   } catch (e) { next(e); }
+}
+admin.get("/invoices", (req, res, next) => renderInvoices(req, res, next));
+admin.post("/invoices/generate", async (req, res, next) => {
+  try {
+    const ym = validYm(req.body.ym);
+    const report = await invoices.generateInvoices(q, ym, { apiReady: !!LS_API_KEY, testMode: LS_TEST_MODE, log: console.log });
+    req.query.ym = ym;
+    renderInvoices(req, res, next, { report });
+  } catch (e) { next(e); }
+});
+const invRedirect = (req, res, id, msg) => q("SELECT ym FROM billing_invoices WHERE id = ?", [id]).then(r => res.redirect("/admin/invoices?ym=" + (r[0] ? r[0].ym : thisMonth()) + (msg ? "&msg=" + encodeURIComponent(msg) : "")));
+admin.post("/invoices/:id/adjust", async (req, res, next) => {
+  try { const inv = await invoices.adjustInvoice(q, Number(req.params.id), { adjust_thb: req.body.adjust_thb, note: req.body.note }, { apiReady: !!LS_API_KEY, testMode: LS_TEST_MODE }); invRedirect(req, res, inv.id, `แก้ยอด ${inv.invoice_no} เป็น ฿${inv.amount_thb} แล้ว`); }
+  catch (e) { renderInvoices(req, res, next, { error: e.message }); }
+});
+admin.post("/invoices/:id/link", async (req, res, next) => {
+  try { await invoices.regenerateLink(q, Number(req.params.id), { testMode: LS_TEST_MODE }); invRedirect(req, res, Number(req.params.id), "สร้างลิงก์ชำระเงินแล้ว"); }
+  catch (e) { renderInvoices(req, res, next, { error: e.message }); }
+});
+admin.post("/invoices/:id/paid", async (req, res, next) => {
+  try { await invoices.markPaidManual(q, Number(req.params.id), "รับชำระเอง (admin)"); invRedirect(req, res, Number(req.params.id), "มาร์คชำระแล้ว"); } catch (e) { next(e); }
+});
+admin.post("/invoices/:id/void", async (req, res, next) => {
+  try { await invoices.voidInvoice(q, Number(req.params.id), "ยกเลิกโดย admin"); invRedirect(req, res, Number(req.params.id), "ยกเลิกใบแจ้งหนี้แล้ว"); } catch (e) { next(e); }
 });
 
 // ---- บัญชีลูกค้า Customer Portal ----

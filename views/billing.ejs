@@ -1,13 +1,8 @@
 <%- include('partials/header') %>
 <div class="pagehead">
-  <h1>ลูกค้าและการชำระเงิน <span class="muted">· Lemon Squeezy</span></h1>
+  <h1>Lemon Squeezy <span class="muted">· ลูกค้า / คำสั่งซื้อ / webhook</span></h1>
   <div class="tools">
-    <form method="post" action="/admin/billing/report-usage" class="monthpick" onsubmit="return confirm('ส่งยอดการใช้งานเดือน ' + this.ym.value + ' ไป Lemon Squeezy ทุก subscription ที่ผูกผู้ใช้งานแล้ว?')">
-      <label>ส่งยอดเดือน
-        <select name="ym"><% for (const m of months) { %><option value="<%= m %>" <%= m === ym ? 'selected' : '' %>><%= m %></option><% } %></select>
-      </label>
-      <button class="primary" <%= lsReady ? '' : 'disabled title="ตั้ง LS_API_KEY ใน .env ก่อน"' %>>ส่งยอดไป Lemon Squeezy</button>
-    </form>
+    <a class="btn" href="/admin/invoices">ไปหน้าใบแจ้งหนี้ →</a>
   </div>
 </div>
 

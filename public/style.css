@@ -104,3 +104,8 @@ body.center { display: grid; place-items: center; min-height: 100vh; }
 .plan ul { padding-left: 18px; margin: 10px 0; font-size: 14px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .small { font-size: 12px; }
+
+.btn.small { padding: 3px 8px; font-size: 12px; }
+.inlinedetails { display: inline-block; vertical-align: top; }
+.inlinedetails summary { list-style: none; cursor: pointer; display: inline-block; }
+.inlinedetails[open] { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px; }

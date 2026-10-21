@@ -4,7 +4,7 @@
 
 ## 0. สิ่งที่ต้องมีก่อน
 - โดเมน `datacorpapi.com` ชี้ A record มาที่ IP ของเซิร์ฟเวอร์ Plesk แล้ว
-- database `thaidata_ewp` + user สร้างแล้วและรัน `sql/usage_schema.sql`, `sql/billing_schema.sql` (อยู่ในโฟลเดอร์ `sql/` ของ repo นี้) แล้ว (ทำไปแล้ว)
+- database `thaidata_ewp` + user สร้างแล้วและรัน `sql/usage_schema.sql`, `sql/billing_schema.sql`, `sql/portal_schema.sql`, `sql/invoice_schema.sql` แล้ว (ทำไปแล้ว)
 - โค้ดอยู่บน GitHub `anucha1993/datacorpapi.com` (ต้อง `git push` ก่อน) หรือจะอัปโหลดโฟลเดอร์ `webapp/` ผ่าน File Manager ก็ได้
 
 ## 1. เอาโค้ดขึ้นเซิร์ฟเวอร์
@@ -61,16 +61,16 @@ Websites & Domains → **SSL/TLS Certificates** → Install Let's Encrypt (ต�
 - ถ้าขึ้นหน้า error ของ Passenger ให้ดู log: Node.js → **Show logs** หรือ Websites & Domains → Logs
 
 ## 6. Lemon Squeezy ชี้มาที่เซิร์ฟเวอร์
-- Webhook URL: `https://datacorpapi.com/webhooks/lemonsqueezy` (signing secret = `LS_WEBHOOK_SECRET`)
-- Redirect after purchase: `https://datacorpapi.com/thanks`
-- ทดสอบใน Test mode แล้วดูที่ `/admin/billing` ส่วน "Webhook ล่าสุด"
+- Webhook URL: `https://datacorpapi.com/webhooks/lemonsqueezy` (signing secret = `LS_WEBHOOK_SECRET`) events: `order_created`, `order_refunded`
+- ใส่ `LS_API_KEY` ใน `.env` และตั้ง `LS_TEST_MODE=true` ระหว่างทดสอบ → Restart App
+- ทดสอบ: ออกบิลที่ `/admin/invoices` → ลูกค้า login `/portal/billing` กด "ชำระเงิน" ด้วยบัตร 4242 4242 4242 4242 → ดูที่ `/admin/invoices` ว่าเป็น "ชำระแล้ว" และ `/admin/billing` ส่วน "Webhook ล่าสุด"
 
-## 7. ส่งยอดอัตโนมัติทุกวัน (Scheduled Task)
-Tools & Settings → **Scheduled Tasks** (หรือใน Subscription) → Add task → Run a command
+## 7. ออกใบแจ้งหนี้อัตโนมัติทุกวันที่ 1 (Scheduled Task)
+Tools & Settings → **Scheduled Tasks** → Add task → Run a command
 ```
-/opt/plesk/node/22/bin/node /var/www/vhosts/datacorpapi.com/httpdocs/webapp/report_usage.js
+/opt/plesk/node/22/bin/node /var/www/vhosts/thaidatacorp.com/datacorpapi.com/invoices.js
 ```
-(เปลี่ยน `22` ให้ตรงเวอร์ชัน Node ที่เลือก และ path ตาม Document root จริง ดูได้จาก File Manager) ตั้งเวลา ทุกวัน 23:50 — ส่งแบบ `set` ค่าใหม่ทับค่าเดิม จึงรันซ้ำได้ปลอดภัย
+ตั้งเวลา วันที่ 1 ของทุกเดือน 06:00 (ออกบิลของเดือนก่อน) — รันซ้ำได้ ไม่ออกบิลซ้ำ
 
 ## 8. ให้โปรแกรมบนเครื่องผู้ใช้ส่งข้อมูลเข้า MariaDB ตัวนี้
 - Plesk → Databases → user ที่โปรแกรมใช้ → **Access control: Allow remote connections from any host** (หรือระบุ IP ออฟฟิศ) — user `thaidata_ewp_web` เปิดอยู่แล้ว (ทดสอบจากภายนอกผ่าน)

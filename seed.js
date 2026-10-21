@@ -53,7 +53,9 @@ async function main() {
       const r4 = await q("DELETE FROM billing_orders WHERE customer_id BETWEEN 900001 AND 900099");
       const r5 = await q("DELETE FROM billing_customers WHERE customer_id BETWEEN 900001 AND 900099");
       const r6 = await q("DELETE FROM contact_messages WHERE email LIKE '%@example.com' AND name LIKE 'demo %'");
-      console.log(`✓ ลบข้อมูลตัวอย่าง: usage_runs ${r1.affectedRows}, reports ${r2.affectedRows}, subscriptions ${r3.affectedRows}, orders ${r4.affectedRows}, customers ${r5.affectedRows}, messages ${r6.affectedRows}`);
+      const r7 = await q("DELETE FROM billing_invoices WHERE operator LIKE 'demo-%'");
+      const r8 = await q("DELETE FROM portal_users WHERE operator LIKE 'demo-%'");
+      console.log(`✓ ลบข้อมูลตัวอย่าง: usage_runs ${r1.affectedRows}, reports ${r2.affectedRows}, subscriptions ${r3.affectedRows}, orders ${r4.affectedRows}, customers ${r5.affectedRows}, messages ${r6.affectedRows}, invoices ${r7.affectedRows}, portal users ${r8.affectedRows}`);
       return;
     }
 

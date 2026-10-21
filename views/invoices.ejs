@@ -1,0 +1,78 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <h1>ใบแจ้งหนี้ <span class="muted">· <%= ym %></span></h1>
+  <div class="tools">
+    <form method="get" class="monthpick" action="/admin/invoices">
+      <label>เดือน <select name="ym" onchange="this.form.submit()"><% for (const m of months) { %><option value="<%= m %>" <%= m === ym ? 'selected' : '' %>><%= m %></option><% } %></select></label>
+    </form>
+    <form method="post" action="/admin/invoices/generate" onsubmit="return confirm('ออก/อัปเดตใบแจ้งหนี้เดือน <%= ym %> ให้ทุกลูกค้าที่มีการใช้งาน?')">
+      <input type="hidden" name="ym" value="<%= ym %>">
+      <button class="primary">ออกใบแจ้งหนี้เดือนนี้</button>
+    </form>
+  </div>
+</div>
+
+<% if (!lsReady) { %><p class="alert">ยังไม่ได้ตั้ง <code>LS_API_KEY</code> — ออกบิลได้แต่จะไม่มีลิงก์ชำระเงิน Lemon Squeezy</p><% } %>
+<% if (testMode) { %><p class="alert">โหมดทดสอบ (LS_TEST_MODE=true): ลิงก์ชำระเงินเป็น Test mode จ่ายด้วยบัตรทดสอบ 4242 4242 4242 4242 ไม่ตัดเงินจริง</p><% } %>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+
+<% if (report) { %>
+<section class="card">
+  <h2>ผลการออกบิล</h2>
+  <table class="dense"><thead><tr><th>ลูกค้า</th><th>เลขที่</th><th class="r">รายการ</th><th class="r">ค่าใช้งาน</th><th class="r">ยกมา</th><th class="r">ยอดบิล</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead><tbody>
+  <% for (const r of report) { %>
+    <tr><td><%= r.operator %></td><td><%= r.invoice_no %></td><td class="r"><%= fmtNum(r.records) %></td><td class="r"><%= fmtMoney(r.usage) %></td><td class="r"><%= fmtMoney(r.carried) %></td><td class="r strong"><%= fmtMoney(r.amount) %></td>
+      <td><span class="st st-<%= r.status === 'open' ? 'cancelled' : r.status === 'paid' ? 'ok' : 'error' %>"><%= STATUS_INV[r.status] || r.status %></span></td><td class="muted"><%= r.message %></td></tr>
+  <% } %>
+  </tbody></table>
+</section>
+<% } %>
+
+<section class="tiles">
+  <div class="tile"><div class="k">รอชำระ</div><div class="v"><%= fmtMoney(sum.open) %> <small>บาท · <%= sum.open_n %> ใบ</small></div></div>
+  <div class="tile"><div class="k">ชำระแล้ว</div><div class="v"><%= fmtMoney(sum.paid) %> <small>บาท · <%= sum.paid_n %> ใบ</small></div></div>
+  <div class="tile"><div class="k">เกินกำหนด</div><div class="v"><%= fmtNum(sum.overdue_n) %> <small>ใบ</small></div></div>
+  <div class="tile"><div class="k">ยกไปเดือนถัดไป</div><div class="v"><%= fmtMoney(sum.carried) %> <small>บาท</small></div></div>
+</section>
+
+<section class="card">
+  <% if (!rows.length) { %><p class="muted">ยังไม่มีใบแจ้งหนี้ของเดือนนี้ — กด "ออกใบแจ้งหนี้เดือนนี้" (ปกติทำวันที่ 1 ของเดือนถัดไป หรือให้ cron ทำอัตโนมัติ)</p><% } else { %>
+  <div class="scroll"><table class="dense">
+    <thead><tr><th>เลขที่</th><th>ลูกค้า</th><th class="r">รายการ</th><th class="r">ค่าใช้งาน</th><th class="r">ยกมา</th><th class="r">ปรับ</th><th class="r">ยอดบิล</th><th>ครบกำหนด</th><th>สถานะ</th><th>ลิงก์ชำระ</th><th>จัดการ</th></tr></thead>
+    <tbody>
+    <% for (const r of rows) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; %>
+      <tr class="<%= overdue ? 'hl' : '' %>">
+        <td class="nowrap"><%= r.invoice_no %><% if (r.checkout_test) { %> <small class="muted">test</small><% } %></td>
+        <td><a href="/admin/operator/<%= encodeURIComponent(r.operator) %>?ym=<%= r.ym %>"><%= r.operator %></a><% if (r.company_name) { %><br><small class="muted"><%= r.company_name %></small><% } %></td>
+        <td class="r"><%= fmtNum(r.records) %></td>
+        <td class="r"><%= fmtMoney(r.usage_thb) %></td>
+        <td class="r muted"><%= Number(r.carried_thb) ? fmtMoney(r.carried_thb) : '—' %></td>
+        <td class="r muted"><%= Number(r.adjust_thb) ? fmtMoney(r.adjust_thb) : '—' %></td>
+        <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
+        <td class="nowrap muted"><%= r.due_at || '' %><% if (overdue) { %> <span class="st st-error">เกินกำหนด</span><% } %></td>
+        <td><span class="st st-<%= r.status === 'open' ? 'cancelled' : r.status === 'paid' ? 'ok' : 'error' %>"><%= STATUS_INV[r.status] || r.status %></span>
+          <% if (r.status === 'paid') { %><br><small class="muted"><%= r.paid_via %> <%= r.paid_at || '' %></small><% } %></td>
+        <td><% if (r.checkout_url) { %><a href="<%= r.checkout_url %>" target="_blank" rel="noopener">เปิด ↗</a> · <button type="button" class="link" onclick="navigator.clipboard.writeText('<%= r.checkout_url %>');this.textContent='คัดลอกแล้ว'">คัดลอก</button><% } else if (r.status === 'open') { %><form method="post" action="/admin/invoices/<%= r.id %>/link" class="inline"><button>สร้างลิงก์</button></form><% } else { %><span class="muted">—</span><% } %></td>
+        <td class="nowrap">
+          <% if (r.status !== 'paid') { %>
+            <details class="inlinedetails"><summary class="btn small">แก้ยอด</summary>
+              <form method="post" action="/admin/invoices/<%= r.id %>/adjust" class="stack" style="margin-top:6px;min-width:220px">
+                <input name="adjust_thb" type="number" step="0.01" value="<%= r.adjust_thb %>" placeholder="ปรับยอด (+/-) บาท">
+                <input name="note" value="<%= r.note %>" placeholder="หมายเหตุ (ลูกค้าเห็น)" maxlength="500">
+                <button class="primary">บันทึก + สร้างลิงก์ใหม่</button>
+              </form>
+            </details>
+            <form method="post" action="/admin/invoices/<%= r.id %>/paid" class="inline" onsubmit="return confirm('มาร์คว่ารับชำระแล้ว (ทางอื่น เช่น โอนเงิน)?')"><button>รับชำระเอง</button></form>
+            <form method="post" action="/admin/invoices/<%= r.id %>/void" class="inline" onsubmit="return confirm('ยกเลิกใบแจ้งหนี้นี้?')"><button class="link">ยกเลิก</button></form>
+          <% } %>
+        </td>
+      </tr>
+      <% if (r.note) { %><tr><td></td><td colspan="10" class="muted small">หมายเหตุ: <%= r.note %></td></tr><% } %>
+    <% } %>
+    </tbody>
+  </table></div>
+  <% } %>
+</section>
+<p class="muted small">ขั้นต่ำต่อบิล ฿<%= MIN_THB %> (ข้อกำหนดของ Lemon Squeezy) — ยอดต่ำกว่านี้จะยกไปรวมเดือนถัดไปอัตโนมัติ · ครบกำหนดชำระ <%= DUE_DAYS %> วันหลังออกบิล · cron: <code>node invoices.js</code> ทุกวันที่ 1</p>
+<%- include('partials/footer') %>
