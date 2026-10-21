@@ -109,3 +109,5 @@ body.center { display: grid; place-items: center; min-height: 100vh; }
 .inlinedetails { display: inline-block; vertical-align: top; }
 .inlinedetails summary { list-style: none; cursor: pointer; display: inline-block; }
 .inlinedetails[open] { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px; }
+
+.notice { background: var(--warn-bg); color: var(--warn); padding: 8px 12px; border-radius: 8px; }

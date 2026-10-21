@@ -13,7 +13,7 @@
 </div>
 
 <% if (!lsReady) { %><p class="alert"><code>LS_API_KEY</code> is not set — invoices can be generated but will have no Lemon Squeezy payment link</p><% } %>
-<% if (testMode) { %><p class="alert">Test mode (LS_TEST_MODE=true): payment links are Lemon Squeezy test checkouts — pay with card 4242 4242 4242 4242, no real money is charged</p><% } %>
+<% if (testMode) { %><p class="notice">🧪 Test mode (LS_TEST_MODE=true): payment links are Lemon Squeezy test checkouts — pay with card 4242 4242 4242 4242, no real money is charged. Set LS_TEST_MODE=false to go live.</p><% } %>
 <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
 <% if (error) { %><p class="alert"><%= error %></p><% } %>
 
