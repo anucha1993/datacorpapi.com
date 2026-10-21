@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เข้าสู่ระบบลูกค้า · <%= co.PRODUCT_NAME %></title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="center">
+<form method="post" action="/portal/login" class="card login">
+  <h1><%= co.PRODUCT_NAME %></h1>
+  <p class="muted">เข้าสู่ระบบลูกค้า เพื่อดูยอดการใช้งานและค่าบริการของคุณ</p>
+  <% if (error) { %><p class="alert"><%= error %></p><% } %>
+  <input type="text" name="operator" placeholder="ชื่อผู้ใช้งาน (ตามที่ใช้ในโปรแกรม)" value="<%= operator || '' %>" autofocus required autocomplete="username">
+  <input type="password" name="password" placeholder="รหัสผ่าน" required autocomplete="current-password">
+  <button class="primary">เข้าสู่ระบบ</button>
+  <p class="muted small">ยังไม่มีบัญชี หรือลืมรหัสผ่าน ติดต่อ <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>ผู้ให้บริการ<% } %></p>
+  <p class="muted small"><a href="/">← กลับหน้าเว็บ</a></p>
+</form>
+</body>
+</html>

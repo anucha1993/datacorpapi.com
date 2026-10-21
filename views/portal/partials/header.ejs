@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> · <%= co.PRODUCT_NAME %></title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><a href="/portal"><%= co.PRODUCT_NAME %></a><span class="sub">ยอดการใช้งานของคุณ</span></div>
+  <nav>
+    <span class="muted" style="padding:6px 10px">👤 <%= user.display_name || user.operator %></span>
+    <a href="/portal" class="<%= title === 'ยอดการใช้งาน' ? 'on' : '' %>">ยอดการใช้งาน</a>
+    <a href="/portal/password" class="<%= title === 'เปลี่ยนรหัสผ่าน' ? 'on' : '' %>">เปลี่ยนรหัสผ่าน</a>
+    <a href="/pricing" target="_blank" rel="noopener">ราคา ↗</a>
+    <form method="post" action="/portal/logout" class="inline"><button class="link">ออกจากระบบ</button></form>
+  </nav>
+</header>
+<main>

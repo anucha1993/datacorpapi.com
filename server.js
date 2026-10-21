@@ -17,6 +17,7 @@ const mysql = require("mysql2/promise");
 const ls = require("./lib/lemonsqueezy");
 const billing = require("./lib/billing");
 const { company } = require("./lib/company");
+const portal = require("./lib/portal");
 
 const PORT = Number(process.env.PORT || 3000);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
@@ -205,10 +206,79 @@ app.get("/checkout/:plan", (req, res) => {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !operator) return res.redirect("/pricing#plan-" + plan.key);
   res.redirect(ls.buildCheckoutUrl(plan.checkout_url, { email, operator, company: co }));
 });
-app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nAllow: /\n"));
+app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nDisallow: /portal\nAllow: /\n"));
 app.get("/api/health", async (req, res) => {
   const cfg = { admin_password: !ADMIN_DISABLED, company_complete: company().isComplete, lemonsqueezy_api: !!LS_API_KEY, webhook_secret: !!LS_WEBHOOK_SECRET, node: process.version };
   try { await q("SELECT 1"); res.json({ ok: true, ...cfg }); } catch (e) { res.status(500).json({ ok: false, error: e.code || "db", ...cfg }); }
+});
+
+// =========================== Customer Portal (/portal) ===========================
+const requirePortal = async (req, res, next) => {
+  const op = req.session && req.session.portal;
+  if (!op) return res.redirect("/portal/login");
+  try {
+    const rows = await q("SELECT * FROM portal_users WHERE operator = ? AND is_active = 1 LIMIT 1", [op]);
+    if (!rows[0]) { req.session.portal = null; return res.redirect("/portal/login"); }
+    req.portalUser = rows[0];
+    next();
+  } catch (e) { next(e); }
+};
+app.get("/portal/login", (req, res) => {
+  if (req.session && req.session.portal) return res.redirect("/portal");
+  res.render("portal/login", { co: company(), error: null, operator: "" });
+});
+app.post("/portal/login", async (req, res, next) => {
+  const operator = String(req.body.operator || "").trim();
+  try {
+    if (!hit("plogin:" + req.ip, 8, 10 * 60 * 1000)) return res.status(429).render("portal/login", { co: company(), error: "ลองผิดหลายครั้ง รอ 10 นาทีแล้วลองใหม่", operator });
+    const u = await portal.authenticate(q, operator, req.body.password || "");
+    if (!u) return res.status(401).render("portal/login", { co: company(), error: "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง", operator });
+    req.session.portal = u.operator;
+    res.redirect(u.must_change ? "/portal/password" : "/portal");
+  } catch (e) { next(e); }
+});
+app.post("/portal/logout", (req, res) => { if (req.session) req.session.portal = null; res.redirect("/portal/login"); });
+
+app.get("/portal", requirePortal, async (req, res, next) => {
+  try {
+    const u = req.portalUser, op = u.operator, ym = validYm(req.query.ym);
+    const [byMode, runs, trend, subs, reps, monthsRows] = await Promise.all([
+      q("SELECT v.*, p.price_per_record FROM v_usage_monthly v LEFT JOIN usage_prices p ON p.mode = v.mode WHERE v.ym = ? AND v.operator = ? ORDER BY v.amount_thb DESC", [ym, op]),
+      q("SELECT * FROM usage_runs WHERE DATE_FORMAT(started_at,'%Y-%m') = ? AND operator = ? ORDER BY started_at DESC LIMIT 200", [ym, op]),
+      q("SELECT ym, runs, billable_records, amount_thb FROM v_usage_monthly_by_operator WHERE operator = ? ORDER BY ym DESC LIMIT 12", [op]),
+      q("SELECT s.product_name, s.status, s.status_formatted, s.renews_at, s.customer_portal_url FROM billing_subscriptions s JOIN billing_customers c ON c.customer_id = s.customer_id WHERE c.operator = ? ORDER BY s.updated_at DESC LIMIT 5", [op]),
+      q("SELECT ym, quantity, amount_thb, ok, sent_at FROM billing_usage_reports WHERE operator = ? ORDER BY sent_at DESC", [op]),
+      q("SELECT DISTINCT DATE_FORMAT(started_at,'%Y-%m') ym FROM usage_runs WHERE operator = ? ORDER BY ym DESC LIMIT 24", [op]),
+    ]);
+    const months = [...new Set([thisMonth(), ...monthsRows.map(r => r.ym)])].sort().reverse();
+    const reports = {}; for (const r of reps) if (!reports[r.ym]) reports[r.ym] = r;
+    const sum = (k) => byMode.reduce((a, r) => a + Number(r[k] || 0), 0);
+    const totals = { amount: sum("amount_thb"), records: sum("billable_records"), runs: sum("runs"), ok: sum("runs_ok"), cancelled: sum("runs_cancelled"), error: sum("runs_error"), total_sec: sum("total_sec") };
+    res.render("portal/dashboard", { co: company(), title: "ยอดการใช้งาน", user: u, ym, months, byMode, runs, trend, subs, reports, totals });
+  } catch (e) { next(e); }
+});
+app.get("/portal/export.csv", requirePortal, async (req, res, next) => {
+  try {
+    const ym = validYm(req.query.ym);
+    const rows = await q("SELECT * FROM v_usage_monthly WHERE ym = ? AND operator = ? ORDER BY amount_thb DESC", [ym, req.portalUser.operator]);
+    const head = ["เดือน", "ผู้ใช้งาน", "ประเภทงาน", "จำนวนครั้ง", "สำเร็จ", "ยกเลิก", "ผิดพลาด", "รายการที่คิดเงิน", "วินาทีรวม", "ค่าบริการ (บาท)"];
+    const lines = [head.join(",")].concat(rows.map(r => [r.ym, r.operator, r.mode_label, r.runs, r.runs_ok, r.runs_cancelled, r.runs_error, r.billable_records, r.total_sec, r.amount_thb].map(csvCell).join(",")));
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="usage_${req.portalUser.operator}_${ym}.csv"`);
+    res.send("\uFEFF" + lines.join("\r\n"));
+  } catch (e) { next(e); }
+});
+app.get("/portal/password", requirePortal, (req, res) => res.render("portal/password", { co: company(), title: "เปลี่ยนรหัสผ่าน", user: req.portalUser, error: null, saved: req.query.saved === "1" }));
+app.post("/portal/password", requirePortal, async (req, res, next) => {
+  try {
+    const u = req.portalUser, { current = "", next: nx = "", confirm = "" } = req.body;
+    const render = (error) => res.status(400).render("portal/password", { co: company(), title: "เปลี่ยนรหัสผ่าน", user: u, error, saved: false });
+    if (!portal.verifyPassword(current, u.password_hash)) return render("รหัสผ่านปัจจุบันไม่ถูกต้อง");
+    const err = portal.validatePassword(nx); if (err) return render(err);
+    if (nx !== confirm) return render("รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน");
+    await q("UPDATE portal_users SET password_hash = ?, must_change = 0 WHERE id = ?", [portal.hashPassword(nx), u.id]);
+    res.redirect("/portal/password?saved=1");
+  } catch (e) { next(e); }
 });
 
 // =========================== auth ===========================
@@ -359,6 +429,33 @@ admin.post("/billing/report-usage", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// ---- บัญชีลูกค้า Customer Portal ----
+async function renderPortalUsers(req, res, next, extra = {}) {
+  try {
+    const [rows, ops1, ops2] = await Promise.all([
+      q("SELECT id, operator, display_name, email, is_active, must_change, last_login_at FROM portal_users ORDER BY operator"),
+      q("SELECT DISTINCT operator FROM usage_runs WHERE operator <> ''"),
+      q("SELECT DISTINCT operator FROM billing_customers WHERE operator <> ''"),
+    ]);
+    const operators = [...new Set([...ops1, ...ops2].map(r => r.operator))].sort();
+    res.render("portal_users", { title: "บัญชีลูกค้า", rows, operators, siteUrl: company().SITE_URL || "", msg: req.query.msg || null, error: null, ...extra });
+  } catch (e) { next(e); }
+}
+admin.get("/portal-users", (req, res, next) => renderPortalUsers(req, res, next));
+admin.post("/portal-users", async (req, res, next) => {
+  try {
+    const op = await portal.createUser(q, { operator: req.body.operator, password: req.body.password, display_name: req.body.display_name, email: req.body.email, must_change: req.body.must_change ? 1 : 0 });
+    res.redirect("/admin/portal-users?msg=" + encodeURIComponent("บันทึกบัญชี '" + op + "' แล้ว"));
+  } catch (e) {
+    if (e.code && String(e.code).startsWith("ER_")) return next(e);
+    renderPortalUsers(req, res, next, { error: e.message });
+  }
+});
+admin.post("/portal-users/:id/toggle", async (req, res, next) => {
+  try { await q("UPDATE portal_users SET is_active = 1 - is_active WHERE id = ?", [Number(req.params.id)]); res.redirect("/admin/portal-users"); }
+  catch (e) { next(e); }
+});
+
 // ---- ข้อความติดต่อ ----
 admin.get("/messages", async (req, res, next) => {
   try { res.render("messages", { title: "ข้อความ", rows: await q("SELECT * FROM contact_messages ORDER BY is_read, created_at DESC LIMIT 300") }); }
@@ -379,13 +476,13 @@ app.get("/api/summary", requireAuth, async (req, res, next) => {
 
 // ---- errors ----
 app.use((req, res) => {
-  const pub = !req.path.startsWith("/admin") && !req.path.startsWith("/api");
+  const pub = !req.path.startsWith("/admin") && !req.path.startsWith("/api") && !req.path.startsWith("/portal");
   res.status(404).render(pub ? "site/error" : "error", { co: company(), path: req.path, title: "ไม่พบหน้า", message: "ไม่พบหน้าที่ต้องการ", detail: req.path });
 });
 app.use((err, req, res, _next) => {
   console.error(err);
   const dbDown = ["ECONNREFUSED", "ETIMEDOUT", "ER_ACCESS_DENIED_ERROR", "ENOTFOUND", "PROTOCOL_CONNECTION_LOST", "ER_NO_SUCH_TABLE"].includes(err.code);
-  const pub = !req.path.startsWith("/admin") && !req.path.startsWith("/api");
+  const pub = !req.path.startsWith("/admin") && !req.path.startsWith("/api") && !req.path.startsWith("/portal");
   res.status(500).render(pub ? "site/error" : "error", {
     co: company(), path: req.path, title: "เกิดข้อผิดพลาด",
     message: dbDown ? "เชื่อมต่อฐานข้อมูลไม่ได้ — ตรวจค่า DB_* ใน .env, สิทธิ์ของ user ewp_web และว่ารัน sql/billing_schema.sql แล้ว" : "เกิดข้อผิดพลาดในระบบ",
