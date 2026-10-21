@@ -15,12 +15,12 @@
   <h2>Invoices</h2>
   <% if (!invoices.length) { %><p class="muted">No invoices yet — your first invoice is issued after the end of the month in which you start using the software.</p><% } else { %>
   <div class="scroll"><table class="dense">
-    <thead><tr><th>Invoice</th><th>Usage month</th><th class="r">Records</th><th class="r">Amount (THB)</th><th>Due</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Invoice</th><th>Period</th><th class="r">Records</th><th class="r">Amount (THB)</th><th>Due</th><th>Status</th><th></th></tr></thead>
     <tbody>
     <% for (const r of invoices) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; %>
       <tr class="<%= overdue ? 'hl' : '' %>">
-        <td class="nowrap"><%= r.invoice_no %></td>
-        <td><a href="/portal?ym=<%= r.ym %>"><%= r.ym %></a></td>
+        <td class="nowrap"><%= r.invoice_no %><% if (r.title) { %><br><small class="muted"><%= r.title %></small><% } %></td>
+        <td><% if (r.kind === 'manual') { %><span class="muted">—</span><% } else { %><a href="/portal?ym=<%= r.ym %>"><%= r.ym %></a><% } %></td>
         <td class="r"><%= fmtNum(r.records) %></td>
         <td class="r strong"><%= fmtMoney(r.amount_thb) %><% if (Number(r.carried_thb) || Number(r.adjust_thb)) { %><br><small class="muted">usage <%= fmtMoney(r.usage_thb) %><% if (Number(r.carried_thb)) { %> + carried <%= fmtMoney(r.carried_thb) %><% } %><% if (Number(r.adjust_thb)) { %> adj. <%= fmtMoney(r.adjust_thb) %><% } %></small><% } %></td>
         <td class="nowrap muted"><%= r.due_at || '' %><% if (overdue) { %> <span class="st st-error">Overdue</span><% } %></td>

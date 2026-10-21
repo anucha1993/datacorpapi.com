@@ -29,6 +29,22 @@
 </section>
 <% } %>
 
+<section class="card">
+  <details <%= error ? 'open' : '' %>>
+    <summary class="btn">+ Create invoice with a custom amount</summary>
+    <form method="post" action="/admin/invoices/manual" class="filters" style="margin-top:10px">
+      <label>Customer (operator) <input name="operator" list="ops" required maxlength="100" placeholder="thefirst"></label>
+      <datalist id="ops"><% for (const o of operators) { %><option value="<%= o %>"><% } %></datalist>
+      <label>Amount (THB) <input name="amount" type="number" step="0.01" min="<%= MIN_THB %>" required class="num" placeholder="500"></label>
+      <label>Title (shown to customer) <input name="title" maxlength="190" placeholder="Setup & training" required></label>
+      <label>Note (optional) <input name="note" maxlength="500" placeholder="Details…" style="min-width:260px"></label>
+      <label>Due in (days) <input name="due_days" type="number" min="1" max="90" value="<%= DUE_DAYS %>" class="num"></label>
+      <button class="primary">Create invoice + payment link</button>
+    </form>
+    <p class="muted small">Use this for one-off charges (setup, training, agreed amounts). Monthly usage invoices are generated automatically with the button above.</p>
+  </details>
+</section>
+
 <section class="tiles">
   <div class="tile"><div class="k">Unpaid</div><div class="v"><%= fmtMoney(sum.open) %> <small>THB · <%= sum.open_n %></small></div></div>
   <div class="tile"><div class="k">Paid</div><div class="v"><%= fmtMoney(sum.paid) %> <small>THB · <%= sum.paid_n %></small></div></div>
@@ -43,7 +59,7 @@
     <tbody>
     <% for (const r of rows) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; %>
       <tr class="<%= overdue ? 'hl' : '' %>">
-        <td class="nowrap"><%= r.invoice_no %><% if (r.checkout_test) { %> <small class="muted">test</small><% } %></td>
+        <td class="nowrap"><%= r.invoice_no %><% if (r.kind === 'manual') { %> <span class="tag">manual</span><% } %><% if (r.checkout_test) { %> <small class="muted">test</small><% } %><% if (r.title) { %><br><small class="muted"><%= r.title %></small><% } %></td>
         <td><a href="/admin/operator/<%= encodeURIComponent(r.operator) %>?ym=<%= r.ym %>"><%= r.operator %></a><% if (r.company_name) { %><br><small class="muted"><%= r.company_name %></small><% } %></td>
         <td class="r"><%= fmtNum(r.records) %></td>
         <td class="r"><%= fmtMoney(r.usage_thb) %></td>

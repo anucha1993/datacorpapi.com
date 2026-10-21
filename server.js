@@ -465,12 +465,14 @@ async function renderInvoices(req, res, next, extra = {}) {
       q("SELECT COALESCE(SUM(amount_thb),0) s FROM billing_invoices WHERE status = 'carried'"),
     ]);
     const today = new Date().toISOString().slice(0, 10);
+    const opsRows = await q("SELECT operator FROM portal_users WHERE is_active = 1 UNION SELECT DISTINCT operator FROM usage_runs WHERE operator <> '' ORDER BY operator");
+    const operators = [...new Set(opsRows.map(r => r.operator))];
     const sum = { open: 0, open_n: 0, paid: 0, paid_n: 0, overdue_n: 0, carried: Number(carried[0].s || 0) };
     for (const r of rows) {
       if (r.status === "open") { sum.open += Number(r.amount_thb); sum.open_n++; if (r.due_at && r.due_at < today) sum.overdue_n++; }
       if (r.status === "paid") { sum.paid += Number(r.amount_thb); sum.paid_n++; }
     }
-    res.render("invoices", { title: "Invoices", ym, months, rows, sum, today, lsReady: !!LS_API_KEY, testMode: LS_TEST_MODE, msg: req.query.msg || null, error: null, report: null, ...extra });
+    res.render("invoices", { title: "Invoices", ym, months, rows, sum, today, operators, lsReady: !!LS_API_KEY, testMode: LS_TEST_MODE, msg: req.query.msg || null, error: null, report: null, ...extra });
   } catch (e) { next(e); }
 }
 admin.get("/invoices", (req, res, next) => renderInvoices(req, res, next));
@@ -481,6 +483,18 @@ admin.post("/invoices/generate", async (req, res, next) => {
     req.query.ym = ym;
     renderInvoices(req, res, next, { report });
   } catch (e) { next(e); }
+});
+admin.post("/invoices/manual", async (req, res, next) => {
+  try {
+    const inv = await invoices.createManualInvoice(q, { operator: req.body.operator, amount: req.body.amount, title: req.body.title, note: req.body.note, dueDays: req.body.due_days },
+      { apiReady: !!LS_API_KEY, testMode: LS_TEST_MODE });
+    const msg = `Created ${inv.invoice_no} for ${inv.operator}: ฿${inv.amount_thb}` + (inv.linkError ? ` (payment link failed: ${inv.linkError})` : inv.checkout_url ? " with payment link" : "");
+    res.redirect("/admin/invoices?ym=" + inv.ym + "&msg=" + encodeURIComponent(msg));
+  } catch (e) {
+    if (e.code && String(e.code).startsWith("ER_")) return next(e);
+    req.query.ym = validYm(req.query.ym);
+    renderInvoices(req, res, next, { error: e.message });
+  }
 });
 const invRedirect = (req, res, id, msg) => q("SELECT ym FROM billing_invoices WHERE id = ?", [id]).then(r => res.redirect("/admin/invoices?ym=" + (r[0] ? r[0].ym : thisMonth()) + (msg ? "&msg=" + encodeURIComponent(msg) : "")));
 admin.post("/invoices/:id/adjust", async (req, res, next) => {

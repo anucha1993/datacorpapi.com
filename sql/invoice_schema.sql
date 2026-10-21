@@ -16,12 +16,14 @@ CREATE TABLE IF NOT EXISTS billing_invoices (
   invoice_no      VARCHAR(32)  NOT NULL,                 -- INV-202610-0001
   operator        VARCHAR(100) NOT NULL,
   ym              CHAR(7)      NOT NULL,                 -- เดือนที่ใช้งาน
+  kind            ENUM('usage','manual') NOT NULL DEFAULT 'usage', -- usage = บิลรายเดือนจากการใช้งาน, manual = ระบุยอดเอง
   records         INT UNSIGNED NOT NULL DEFAULT 0,       -- รายการที่คิดเงินในเดือนนั้น
   usage_thb       DECIMAL(12,2) NOT NULL DEFAULT 0,      -- ค่าใช้งานตามราคาต่อรายการ
   carried_thb     DECIMAL(12,2) NOT NULL DEFAULT 0,      -- ยอดยกมาจากเดือนก่อนที่ต่ำกว่าขั้นต่ำ
   adjust_thb      DECIMAL(12,2) NOT NULL DEFAULT 0,      -- ปรับยอดโดยแอดมิน (+/-)
   amount_thb      DECIMAL(12,2) NOT NULL DEFAULT 0,      -- ยอดที่เรียกเก็บ = usage + carried + adjust
   note            VARCHAR(500) NOT NULL DEFAULT '',
+  title           VARCHAR(190) NOT NULL DEFAULT '',       -- หัวข้อบิล (manual)
   status          ENUM('open','paid','void','carried') NOT NULL DEFAULT 'open',
                   -- open = รอชำระ, paid = ชำระแล้ว, void = ยกเลิก, carried = ต่ำกว่าขั้นต่ำ ยกไปเดือนถัดไป
   checkout_id     VARCHAR(64)  NOT NULL DEFAULT '',       -- Lemon Squeezy checkout UUID
@@ -34,7 +36,7 @@ CREATE TABLE IF NOT EXISTS billing_invoices (
   issued_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_invoice_no (invoice_no),
-  UNIQUE KEY uq_operator_ym (operator, ym),
+  KEY ix_operator_ym_kind (operator, ym, kind),
   KEY ix_status (status, due_at),
   KEY ix_operator (operator, ym)
 ) ENGINE=InnoDB;
