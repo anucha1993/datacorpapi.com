@@ -64,11 +64,12 @@
 
     <h2 style="margin-top:18px">การสมัครใช้งาน</h2>
     <% if (!subs.length) { %>
-      <p class="muted">ยังไม่พบ subscription ที่ผูกกับชื่อผู้ใช้งานนี้ — <a href="/pricing" target="_blank" rel="noopener">สมัครที่หน้าราคา</a> โดยใช้ชื่อผู้ใช้งาน <b><%= user.operator %></b></p>
+      <p class="muted">ยังไม่มีการสมัครใช้งานที่ผูกกับบัญชีนี้</p>
+      <a class="btn primary" href="/portal/billing">สมัครและชำระเงินผ่าน Lemon Squeezy</a>
     <% } else { for (const s of subs) { %>
       <p><b><%= s.product_name %></b> <span class="st st-<%= ['active','on_trial'].includes(s.status) ? 'ok' : 'cancelled' %>"><%= s.status_formatted || s.status %></span>
         <% if (s.renews_at) { %><span class="muted"> · รอบถัดไป <%= String(s.renews_at).slice(0, 10) %></span><% } %>
-        <% if (s.customer_portal_url) { %> · <a href="<%= s.customer_portal_url %>" target="_blank" rel="noopener">จัดการบัตร/ใบเสร็จ/ยกเลิก ↗</a><% } %></p>
+        · <a href="/portal/billing">รายละเอียดการชำระเงิน</a></p>
     <% } } %>
   </section>
 </div>

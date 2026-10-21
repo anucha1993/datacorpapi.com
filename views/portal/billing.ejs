@@ -1,0 +1,77 @@
+<%- include('partials/header') %>
+<script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
+<div class="pagehead"><h1>การชำระเงิน</h1></div>
+
+<% if (linked) { %><p class="ok">ผูกการสมัครใช้งานกับบัญชีของคุณแล้ว (จับคู่จากอีเมล <%= user.email %>)</p><% } %>
+
+<div class="grid2">
+  <section class="card">
+    <h2>สถานะการสมัครใช้งาน</h2>
+    <% if (!subs.length) { %>
+      <p>ยังไม่มีการสมัครใช้งานที่ผูกกับชื่อผู้ใช้งาน <b><%= user.operator %></b></p>
+      <% for (const p of plans) { %>
+        <div class="plan featured" style="margin-top:10px">
+          <div class="pname"><%= p.name_th %> <small>(<%= p.name %>)</small></div>
+          <div class="pprice"><%= p.price_label %></div>
+          <div class="punit muted"><%= p.unit_label %></div>
+          <ul><% for (const f of p.features) { %><li><%= f %></li><% } %></ul>
+          <% if (p.checkout) { %>
+            <a href="<%= p.checkout %>" class="btn primary lemonsqueezy-button">สมัครและชำระเงินผ่าน Lemon Squeezy</a>
+            <p class="muted small">หน้าชำระเงินจะเติมอีเมล <b><%= user.email || '(ยังไม่ระบุอีเมลในบัญชี — กรุณากรอกในหน้าชำระเงิน)' %></b> และผูกกับชื่อผู้ใช้งาน <b><%= user.operator %></b> ให้อัตโนมัติ · รับบัตรเครดิต/เดบิต, PayPal · ใบเสร็จออกโดย Lemon Squeezy</p>
+          <% } else { %>
+            <p class="alert">ยังไม่เปิดรับชำระเงินออนไลน์ กรุณาติดต่อ <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>ผู้ให้บริการ<% } %></p>
+          <% } %>
+        </div>
+      <% } %>
+    <% } else { for (const s of subs) { %>
+      <div class="subbox">
+        <div><b><%= s.product_name %></b> <small class="muted"><%= s.variant_name %></small>
+          <span class="st st-<%= ['active','on_trial'].includes(s.status) ? 'ok' : (['cancelled','paused','past_due'].includes(s.status) ? 'cancelled' : 'error') %>"><%= s.status_formatted || s.status %></span></div>
+        <div class="muted small">
+          <% if (s.renews_at) { %>รอบบิลถัดไป <%= String(s.renews_at).slice(0, 10) %> · <% } %>
+          <% if (s.ends_at) { %>สิ้นสุด <%= String(s.ends_at).slice(0, 10) %> · <% } %>
+          บัญชีผู้ชำระ <%= s.user_email %>
+        </div>
+        <div class="actions" style="margin-top:8px">
+          <% if (s.customer_portal_url) { %><a class="btn" href="<%= s.customer_portal_url %>" target="_blank" rel="noopener">ใบเสร็จ / เปลี่ยนบัตร / ยกเลิก ↗</a><% } %>
+          <% if (s.update_payment_url) { %><a class="btn" href="<%= s.update_payment_url %>" target="_blank" rel="noopener">อัปเดตวิธีชำระเงิน ↗</a><% } %>
+        </div>
+      </div>
+    <% } } %>
+    <p class="muted small" style="margin-top:12px">การชำระเงินดำเนินการโดย Lemon Squeezy ในฐานะ Merchant of Record รายการในบัตรจะแสดงชื่อ Lemon Squeezy · <a href="/refund" target="_blank">นโยบายคืนเงิน/ยกเลิก</a></p>
+  </section>
+
+  <section class="card">
+    <h2>ยอดที่เรียกเก็บ</h2>
+    <p class="muted small">ค่าบริการคิดตามการใช้งานจริง สรุปทุกสิ้นเดือนและส่งไปเรียกเก็บผ่าน Lemon Squeezy ตารางนี้คือยอดที่ส่งแล้ว (ยอดเดือนปัจจุบันดูที่หน้า<a href="/portal">ยอดการใช้งาน</a>)</p>
+    <% if (!reports.length) { %><p class="muted">ยังไม่มีการเรียกเก็บ</p><% } else { %>
+    <table class="dense">
+      <thead><tr><th>เดือน</th><th class="r">รายการ</th><th class="r">ยอด (บาท)</th><th>ส่งเมื่อ</th><th>สถานะ</th></tr></thead>
+      <tbody>
+      <% for (const r of reports) { %>
+        <tr><td><%= r.ym %></td><td class="r"><%= fmtNum(r.records || 0) %></td><td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
+          <td class="muted nowrap"><%= r.sent_at %></td><td><span class="st st-<%= r.ok ? 'ok' : 'error' %>"><%= r.ok ? 'ส่งเรียกเก็บแล้ว' : 'รอส่งใหม่' %></span></td></tr>
+      <% } %>
+      </tbody>
+    </table>
+    <% } %>
+  </section>
+</div>
+
+<section class="card">
+  <h2>ประวัติคำสั่งซื้อ / ใบเสร็จ</h2>
+  <% if (!orders.length) { %><p class="muted">ยังไม่มีคำสั่งซื้อ</p><% } else { %>
+  <div class="scroll"><table class="dense">
+    <thead><tr><th>วันที่</th><th>เลขที่</th><th>สินค้า</th><th class="r">ยอด</th><th>สถานะ</th><th></th></tr></thead>
+    <tbody>
+    <% for (const o of orders) { %>
+      <tr><td class="nowrap muted"><%= o.ordered_at || '' %></td><td>#<%= o.order_number || o.order_id %></td><td><%= o.product_name %> <small class="muted"><%= o.variant_name %></small></td>
+        <td class="r"><%= fmtMoney(o.total) %> <%= o.currency %><% if (Number(o.refunded_total)) { %><br><small class="muted">คืนเงิน <%= fmtMoney(o.refunded_total) %></small><% } %></td>
+        <td><span class="st st-<%= o.status === 'paid' ? 'ok' : (o.status === 'pending' ? 'cancelled' : 'error') %>"><%= o.status === 'paid' ? 'ชำระแล้ว' : o.status %></span></td>
+        <td><% if (o.receipt_url) { %><a href="<%= o.receipt_url %>" target="_blank" rel="noopener">ใบเสร็จ ↗</a><% } %></td></tr>
+    <% } %>
+    </tbody>
+  </table></div>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

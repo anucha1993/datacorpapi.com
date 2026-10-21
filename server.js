@@ -268,6 +268,27 @@ app.get("/portal/export.csv", requirePortal, async (req, res, next) => {
     res.send("\uFEFF" + lines.join("\r\n"));
   } catch (e) { next(e); }
 });
+/** หน้าการชำระเงินของลูกค้า: สมัคร/จ่ายผ่าน Lemon Squeezy, สถานะ subscription, คำสั่งซื้อ, ยอดที่เรียกเก็บ */
+app.get("/portal/billing", requirePortal, async (req, res, next) => {
+  try {
+    const u = req.portalUser, op = u.operator;
+    // ผูกอัตโนมัติ: ลูกค้าที่จ่ายผ่าน LS ด้วยอีเมลเดียวกันแต่ยังไม่ได้ระบุชื่อผู้ใช้งาน
+    let linked = false;
+    if (u.email) {
+      const r = await q("UPDATE billing_customers SET operator = ? WHERE operator = '' AND email = ?", [op, u.email]);
+      linked = r.affectedRows > 0;
+    }
+    const custIds = (await q("SELECT customer_id FROM billing_customers WHERE operator = ?", [op])).map(r => r.customer_id);
+    const [subs, orders, reports] = await Promise.all([
+      custIds.length ? q(`SELECT * FROM billing_subscriptions WHERE customer_id IN (${custIds.map(() => "?").join(",")}) ORDER BY FIELD(status,'active','on_trial','past_due','paused','cancelled','unpaid','expired'), updated_at DESC`, custIds) : [],
+      custIds.length ? q(`SELECT * FROM billing_orders WHERE customer_id IN (${custIds.map(() => "?").join(",")}) ORDER BY ordered_at DESC LIMIT 50`, custIds) : [],
+      q("SELECT r.*, (SELECT SUM(billable_records) FROM v_usage_monthly v WHERE v.ym = r.ym AND v.operator = r.operator) records FROM billing_usage_reports r WHERE r.operator = ? ORDER BY r.ym DESC, r.sent_at DESC", [op]),
+    ]);
+    // แผนที่สมัครได้ + ลิงก์ checkout ที่เติมอีเมล/ชื่อผู้ใช้งานให้แล้ว
+    const plans = loadPlans().map(p => ({ ...p, checkout: p.checkout_url ? ls.buildCheckoutUrl(p.checkout_url, { email: u.email, name: u.display_name, operator: op, company: u.display_name }) : "" }));
+    res.render("portal/billing", { co: company(), title: "การชำระเงิน", user: u, subs, orders, reports, plans, linked });
+  } catch (e) { next(e); }
+});
 app.get("/portal/password", requirePortal, (req, res) => res.render("portal/password", { co: company(), title: "เปลี่ยนรหัสผ่าน", user: req.portalUser, error: null, saved: req.query.saved === "1" }));
 app.post("/portal/password", requirePortal, async (req, res, next) => {
   try {

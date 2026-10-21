@@ -9,6 +9,7 @@
     <li>เริ่มใช้งานได้ทันที ยอดการใช้งานจะสรุปและเรียกเก็บปลายเดือน</li>
   </ol>
   <p>มีคำถาม ติดต่อ <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %><a href="/contact">ส่งข้อความหาเรา</a><% } %></p>
+  <a href="/portal/login" class="btn primary">เข้าสู่ระบบลูกค้า</a>
   <a href="/" class="btn">กลับหน้าแรก</a>
 </section>
 <%- include('partials/foot') %>
