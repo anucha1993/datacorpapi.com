@@ -44,22 +44,22 @@ CREATE TABLE IF NOT EXISTS usage_prices (
 ) ENGINE=InnoDB;
 
 INSERT IGNORE INTO usage_prices (mode, mode_label, price_per_record, price_per_run) VALUES
-  ('etracking',            'e-Tracking — ดึงรายการคำขอ',              1.00, 0),
-  ('permit_report',        'รายงานข้อมูลการขออนุญาต',                  1.00, 0),
-  ('aliens',               'ข้อมูลคนต่างด้าว (จัดการบัญชี)',           0.50, 0),
-  ('namelist_alien',       'รายชื่อยื่นต่ออายุแล้ว (NameList)',        0.50, 0),
-  ('ticket',               'ตรวจสอบ Ticket ID',                        0.50, 0),
-  ('receipts',             'ใบเสร็จ / บต.44 / บต.22 ฯลฯ',              2.00, 0),
-  ('results',              'ใบแจ้งผล / ใบรับคำขอ',                     2.00, 0),
-  ('bill_payment',         'ใบแจ้งชำระเงิน',                           2.00, 0),
-  ('payment_receipts',     'ใบเสร็จรับเงินทั้งชุด',                     2.00, 0),
-  ('bt30_ctn',             'ใบตอบรับ / ใบนัดหมาย',                     2.00, 0),
-  ('appointment',          'นัดหมายถ่ายบัตร (ที่อยู่จากใบเสร็จ)',       2.00, 0),
-  ('register',             'ลงทะเบียนคนต่างด้าว',                       10.00, 0),
-  ('inform',               'แจ้งเข้านายจ้าง (บต.52)',                   10.00, 0),
-  ('bt30',                 'ต่อใบอนุญาต MoU (บต.30)',                  10.00, 0),
-  ('bt44',                 'เปลี่ยนย้ายนายจ้าง (บต.44)',                10.00, 0),
-  ('booking_availability', 'ตรวจวันว่างจอง (Real-Time)',               0.00, 5.00);
+  ('etracking', 'e-Tracking — application list',              1.00, 0),
+  ('permit_report', 'Permit application report',                  1.00, 0),
+  ('aliens', 'Foreign worker list (account)',           0.50, 0),
+  ('namelist_alien', 'Renewal name list (NameList)',        0.50, 0),
+  ('ticket', 'Ticket ID check',                        0.50, 0),
+  ('receipts', 'Receipts / BT.44 / BT.22 forms',              2.00, 0),
+  ('results', 'Result notice / application receipt',                     2.00, 0),
+  ('bill_payment', 'Payment slips',                           2.00, 0),
+  ('payment_receipts', 'Full receipt set',                     2.00, 0),
+  ('bt30_ctn', 'Acknowledgement / appointment slips',                     2.00, 0),
+  ('appointment', 'Card appointment (address from receipt)',       2.00, 0),
+  ('register', 'Worker registration',                       10.00, 0),
+  ('inform', 'Employer notification (BT.52)',                   10.00, 0),
+  ('bt30', 'MoU permit renewal (BT.30)',                  10.00, 0),
+  ('bt44', 'Employer change (BT.44)',                10.00, 0),
+  ('booking_availability', 'Appointment slot checker (real-time)',               0.00, 5.00);
 
 -- สรุปรายเดือน ต่อผู้ใช้ ต่อโหมด (ใช้กับเว็บแอป / Excel)
 -- จำนวนที่คิดเงิน = record_count ถ้าสำเร็จ, ถ้ายกเลิก/error ใช้ progress_done (งานที่ทำไปแล้วบางส่วน)

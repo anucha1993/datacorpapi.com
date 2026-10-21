@@ -1,9 +1,9 @@
 <%- include('partials/header') %>
-<div class="pagehead"><h1>เครื่องที่ใช้งาน <span class="muted">· <%= rows.length %> เครื่อง</span></h1></div>
+<div class="pagehead"><h1>Installs <span class="muted">· <%= rows.length %> machines</span></h1></div>
 <section class="card">
-  <% if (!rows.length) { %><p class="muted">ยังไม่มีเครื่องใดส่งข้อมูลเข้ามา — ตรวจค่า USAGE_DB_* ใน .env ของโปรแกรม</p><% } else { %>
+  <% if (!rows.length) { %><p class="muted">No machine has reported usage yet — check USAGE_DB_* in the desktop app's .env.</p><% } else { %>
   <table>
-    <thead><tr><th>เครื่อง</th><th>Windows user</th><th>ผู้ใช้งานที่เคยใส่</th><th class="r">ครั้ง</th><th>ครั้งแรก</th><th>ล่าสุด</th><th>รหัสเครื่อง</th></tr></thead>
+    <thead><tr><th>Machine</th><th>Windows user</th><th>Operators used</th><th class="r">Runs</th><th>First seen</th><th>Last seen</th><th>Install ID</th></tr></thead>
     <tbody>
     <% for (const r of rows) { %>
       <tr>

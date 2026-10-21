@@ -1,30 +1,28 @@
 <%- include('partials/head') %>
 <section class="page">
-  <h1>ราคาและการเรียกเก็บเงิน</h1>
-  <p class="lead">ทุกราคาเป็นเงินบาท (THB) ยังไม่รวมภาษีมูลค่าเพิ่ม/ภาษีการขายซึ่ง Lemon Squeezy จะคำนวณและแสดงตอนชำระเงินตามประเทศของผู้ซื้อ
-    ชำระด้วยบัตรเครดิต/เดบิต หรือ PayPal</p>
-  <p class="lead en">All prices in Thai Baht (THB), excluding VAT/sales tax which Lemon Squeezy calculates at checkout. Pay by card or PayPal.</p>
+  <h1>Pricing &amp; Billing</h1>
+  <p class="lead">All prices are in Thai Baht (THB) and exclude VAT/sales tax, which Lemon Squeezy calculates at checkout based on the buyer's country. Pay by credit/debit card or PayPal.</p>
 
   <div class="plans single">
     <div class="plan featured">
-      <div class="pname">จ่ายตามการใช้งานจริง <small>(Pay as you go)</small></div>
-      <div class="pprice">฿0 / เดือน + ค่าใช้งานตามจริง</div>
-      <div class="punit muted">ไม่มีค่าแรกเข้า ไม่มีขั้นต่ำ ไม่มีสัญญา — สิ้นเดือนรับใบแจ้งหนี้ตามจำนวนรายการที่ประมวลผลจริง ชำระผ่าน Lemon Squeezy</div>
+      <div class="pname">Pay as you go</div>
+      <div class="pprice">฿0 / month + usage</div>
+      <div class="punit muted">No setup fee, no minimum, no contract. At the start of each month you receive an invoice for the records actually processed in the previous month, payable via Lemon Squeezy.</div>
       <ul>
-        <li>ใช้ได้ทุกโหมดของโปรแกรม (รายงาน / ดาวน์โหลดเอกสาร / ยื่นคำขอ)</li>
-        <li>ติดตั้งได้ไม่จำกัดเครื่องภายใต้ชื่อผู้ใช้งานเดียวกัน</li>
-        <li>ดูยอดการใช้งานแบบเรียลไทม์และใบแจ้งหนี้ย้อนหลังในระบบลูกค้า</li>
-        <li>อัปเดตโปรแกรมฟรี ซัพพอร์ตทางอีเมลภายใน 1 วันทำการ</li>
+        <li>All modes of the software (reports / document downloads / submissions)</li>
+        <li>Unlimited installs under one operator name</li>
+        <li>Real-time usage and invoice history in the customer portal</li>
+        <li>Free updates and email support within 1 business day</li>
       </ul>
-      <a href="/contact" class="btn primary">ขอเปิดบัญชีใช้งาน</a>
-      <p class="muted small">เปิดบัญชีฟรี ยังไม่มีค่าใช้จ่ายจนกว่าจะเริ่มใช้งานจริง · มีบัญชีแล้ว <a href="/portal/login">เข้าสู่ระบบลูกค้า</a></p>
+      <a href="/contact" class="btn primary">Open an account</a>
+      <p class="muted small">Opening an account is free — nothing is charged until you actually use the software. Already have an account? <a href="/portal/login">Customer login</a></p>
     </div>
   </div>
 
-  <h2>ราคาต่อรายการของแต่ละโหมด</h2>
-  <p class="muted">ใช้คำนวณใบแจ้งหนี้รายเดือน · 1 รายการ = 1 คำขอ / 1 เอกสาร / 1 คน ที่ประมวลผลสำเร็จ</p>
+  <h2>Unit price per task type</h2>
+  <p class="muted">Used to calculate your monthly invoice · 1 record = 1 application / 1 document / 1 worker processed successfully</p>
   <table class="prices">
-    <thead><tr><th>โหมด</th><th>กลุ่ม</th><th class="r">ราคา / รายการ</th><th class="r">ราคา / ครั้งที่รัน</th></tr></thead>
+    <thead><tr><th>Task type</th><th>Group</th><th class="r">Price / record</th><th class="r">Price / run</th></tr></thead>
     <tbody>
     <% for (const p of prices) { %>
       <tr><td><%= p.mode_label || p.mode %></td><td><span class="tag g-<%= p.mode_group || '' %>"><%= GROUP_LABELS[p.mode_group] || '' %></span></td>
@@ -33,16 +31,16 @@
     </tbody>
   </table>
 
-  <h2>การเรียกเก็บเงินทำงานอย่างไร</h2>
+  <h2>How billing works</h2>
   <ul class="bullets">
-    <li><b>เปิดบัญชีฟรี</b> ไม่มีค่าใช้จ่ายจนกว่าจะเริ่มใช้งาน ไม่ต้องผูกบัตรล่วงหน้า</li>
-    <li><b>ออกใบแจ้งหนี้วันที่ 1 ของทุกเดือน</b> รวมจำนวนรายการที่ประมวลผลจริงในเดือนก่อน × ราคาต่อรายการ ดูได้ในระบบลูกค้า</li>
-    <li><b>ชำระภายใน 15 วัน</b> ผ่านลิงก์ Lemon Squeezy ในระบบลูกค้า (บัตรเครดิต/เดบิต, PayPal) ใบเสร็จส่งทางอีเมลทันที ระบุชื่อบริษัท/ที่อยู่/เลขผู้เสียภาษีของคุณได้</li>
-    <li>ยอดต่ำกว่า ฿17 ในเดือนใด จะยกไปรวมกับเดือนถัดไป (ขั้นต่ำต่อการชำระของผู้ให้บริการรับชำระเงิน)</li>
-    <li>ยอดการใช้งานตรวจสอบได้ก่อนเรียกเก็บ: ขอรายงานรายเดือนได้ที่ <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>อีเมลซัพพอร์ต<% } %> หรือดูจาก log ในโปรแกรม</li>
-    <li>งานที่ยกเลิกหรือเกิดข้อผิดพลาดกลางทาง คิดเฉพาะจำนวนรายการที่ประมวลผลสำเร็จแล้วก่อนหยุด</li>
-    <li>ไม่มีสัญญาผูกมัด หยุดใช้งานเมื่อไรก็ไม่มีบิลเดือนถัดไป — ดู<a href="/refund">นโยบายการคืนเงินและยกเลิก</a></li>
-    <li>เปลี่ยนแปลงราคา: แจ้งล่วงหน้าทางอีเมลอย่างน้อย 30 วันก่อนมีผล</li>
+    <li><b>Free account</b> — no charge until you start using the software; no card on file.</li>
+    <li><b>Invoice on the 1st of every month</b> — records processed in the previous month × unit price, visible in the customer portal.</li>
+    <li><b>Pay within 15 days</b> via the Lemon Squeezy payment link in the portal (card or PayPal). The receipt is emailed immediately and can carry your company name, address and tax ID.</li>
+    <li>Months with usage below ฿17 are carried forward to the next invoice (payment-provider minimum).</li>
+    <li>You can verify usage before paying: the portal lists every job, and you can request a monthly report at <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>our support email<% } %>.</li>
+    <li>Jobs cancelled or interrupted midway are billed only for the records completed before stopping.</li>
+    <li>No contract — stop using the software and there is no further invoice. See the <a href="/refund">Refund &amp; Cancellation Policy</a>.</li>
+    <li>Price changes are announced by email at least 30 days in advance.</li>
   </ul>
 </section>
 <%- include('partials/foot') %>

@@ -1,33 +1,33 @@
 <%- include('partials/head') %>
 <section class="page">
-  <h1>ติดต่อเรา</h1>
+  <h1>Contact us</h1>
   <div class="grid2 contact">
     <div class="card">
       <h2><%= co.COMPANY_NAME %></h2>
       <% if (co.COMPANY_NAME_EN) { %><p class="muted"><%= co.COMPANY_NAME_EN %></p><% } %>
       <% if (co.COMPANY_ADDRESS) { %><p><%= co.COMPANY_ADDRESS %></p><% } %>
-      <% if (co.COMPANY_TAX_ID) { %><p class="muted">เลขประจำตัวผู้เสียภาษี <%= co.COMPANY_TAX_ID %></p><% } %>
+      <% if (co.COMPANY_TAX_ID) { %><p class="muted">Tax ID <%= co.COMPANY_TAX_ID %></p><% } %>
       <p>
-        <% if (co.COMPANY_EMAIL) { %>อีเมล: <a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><br><% } %>
-        <% if (co.COMPANY_PHONE) { %>โทร: <a href="tel:<%= co.COMPANY_PHONE.replace(/[^0-9+]/g, '') %>"><%= co.COMPANY_PHONE %></a><br><% } %>
+        <% if (co.COMPANY_EMAIL) { %>Email: <a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><br><% } %>
+        <% if (co.COMPANY_PHONE) { %>Phone: <a href="tel:<%= co.COMPANY_PHONE.replace(/[^0-9+]/g, '') %>"><%= co.COMPANY_PHONE %></a><br><% } %>
         <% if (co.COMPANY_LINE) { %>LINE: <%= co.COMPANY_LINE %><br><% } %>
-        เวลาทำการ: <%= co.SUPPORT_HOURS %>
+        Support hours: <%= co.SUPPORT_HOURS %>
       </p>
-      <p class="muted">เรื่องการชำระเงิน ใบเสร็จ หรือการยกเลิก ติดต่อเราได้โดยตรง หรือใช้ลิงก์ Customer Portal ในอีเมลจาก Lemon Squeezy ซึ่งเป็น Merchant of Record</p>
+      <p class="muted">To open an account, send us your preferred operator name and billing email. For payments, receipts or refunds contact us directly or use the links in your Lemon Squeezy receipt email (Lemon Squeezy is the Merchant of Record).</p>
     </div>
     <div class="card">
-      <h2>ส่งข้อความ</h2>
+      <h2>Send a message</h2>
       <% if (sent) { %>
-        <p class="ok">ได้รับข้อความแล้ว เราจะติดต่อกลับทางอีเมลภายใน 1 วันทำการ</p>
+        <p class="ok">Message received. We will reply by email within 1 business day.</p>
       <% } else { %>
       <% if (error) { %><p class="alert"><%= error %></p><% } %>
       <form method="post" action="/contact" class="stack">
-        <input type="text" name="name" placeholder="ชื่อ" required maxlength="190" value="<%= form.name || '' %>">
-        <input type="email" name="email" placeholder="อีเมล" required maxlength="190" value="<%= form.email || '' %>">
-        <input type="text" name="company" placeholder="บริษัท (ถ้ามี)" maxlength="190" value="<%= form.company || '' %>">
-        <textarea name="message" rows="5" placeholder="รายละเอียด เช่น จำนวนคนต่างด้าวที่ดูแล โหมดที่สนใจ หรือเลขที่คำสั่งซื้อ" required maxlength="4000"><%= form.message || '' %></textarea>
+        <input type="text" name="name" placeholder="Your name" required maxlength="190" value="<%= form.name || '' %>">
+        <input type="email" name="email" placeholder="Email" required maxlength="190" value="<%= form.email || '' %>">
+        <input type="text" name="company" placeholder="Company (optional)" maxlength="190" value="<%= form.company || '' %>">
+        <textarea name="message" rows="5" placeholder="Tell us about your needs — e.g. number of workers you manage, modes you are interested in, or your invoice number" required maxlength="4000"><%= form.message || '' %></textarea>
         <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
-        <button class="btn primary">ส่งข้อความ</button>
+        <button class="btn primary">Send</button>
       </form>
       <% } %>
     </div>

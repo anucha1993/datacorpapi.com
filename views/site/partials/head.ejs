@@ -1,26 +1,25 @@
 <!doctype html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><%= title %> · <%= co.PRODUCT_NAME %></title>
-<meta name="description" content="<%= typeof metaDesc !== 'undefined' ? metaDesc : (co.PRODUCT_NAME + ' — ซอฟต์แวร์ช่วยดึงรายงาน ดาวน์โหลดเอกสาร และกรอกคำขอในระบบ e-WorkPermit อัตโนมัติ คิดค่าบริการตามการใช้งานจริง') %>">
+<meta name="description" content="<%= typeof metaDesc !== 'undefined' ? metaDesc : (co.PRODUCT_NAME + ' — Windows software that automates reports, bulk document downloads and form filling in Thailand\'s e-WorkPermit system. Pay only for the records actually processed.') %>">
 <% if (co.SITE_URL) { %><link rel="canonical" href="<%= co.SITE_URL %><%= path %>"><% } %>
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/site.css">
-<script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
 </head>
 <body class="site">
 <header class="sitehead">
   <div class="wrap">
     <a href="/" class="logo"><%= co.PRODUCT_NAME %></a>
     <nav>
-      <a href="/#features">ความสามารถ</a>
-      <a href="/pricing">ราคา</a>
-      <a href="/#faq">คำถามที่พบบ่อย</a>
-      <a href="/contact">ติดต่อเรา</a>
-      <a href="/portal/login">เข้าสู่ระบบลูกค้า</a>
-      <a href="/pricing" class="cta">เริ่มใช้งาน</a>
+      <a href="/#features">Features</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/contact">Contact</a>
+      <a href="/portal/login">Customer login</a>
+      <a href="/contact" class="cta">Get started</a>
     </nav>
   </div>
 </header>

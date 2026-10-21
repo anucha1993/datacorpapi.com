@@ -1,37 +1,24 @@
 <%- include('partials/header') %>
 <div class="pagehead">
-  <h1>Lemon Squeezy <span class="muted">· ลูกค้า / คำสั่งซื้อ / webhook</span></h1>
+  <h1>Lemon Squeezy <span class="muted">· customers / orders / webhooks</span></h1>
   <div class="tools">
-    <a class="btn" href="/admin/invoices">ไปหน้าใบแจ้งหนี้ →</a>
+    <a class="btn" href="/admin/invoices">Go to invoices →</a>
   </div>
 </div>
 
 <% if (!lsReady || !webhookReady) { %>
 <p class="alert">
-  <% if (!lsReady) { %>ยังไม่ได้ตั้ง <code>LS_API_KEY</code> — ส่งยอดการใช้งานไม่ได้<br><% } %>
-  <% if (!webhookReady) { %>ยังไม่ได้ตั้ง <code>LS_WEBHOOK_SECRET</code> — webhook จะถูกปฏิเสธ (503)<% } %>
+  <% if (!lsReady) { %><code>LS_API_KEY</code> is not set — payment links cannot be created<br><% } %>
+  <% if (!webhookReady) { %><code>LS_WEBHOOK_SECRET</code> is not set — webhooks will be rejected (503)<% } %>
 </p>
-<% } %>
-<% if (report) { %>
-<section class="card">
-  <h2>ผลการส่งยอดเดือน <%= report.ym %></h2>
-  <% if (!report.results.length) { %><p class="muted">ไม่มี subscription แบบ usage-based ที่ส่งได้</p><% } else { %>
-  <table class="dense"><thead><tr><th>Subscription</th><th>ลูกค้า</th><th>ผู้ใช้งาน</th><th class="r">รายการ</th><th class="r">ยอดเงิน (บาท)</th><th class="r">หน่วยที่ส่ง</th><th>ผล</th></tr></thead><tbody>
-  <% for (const r of report.results) { %>
-    <tr><td>#<%= r.subscription_id %></td><td><%= r.email %></td><td><%= r.operator || '—' %></td><td class="r"><%= fmtNum(r.records) %></td><td class="r"><%= fmtMoney(r.amount) %></td><td class="r"><%= fmtNum(r.quantity) %></td>
-      <td><span class="st st-<%= r.ok ? 'ok' : 'error' %>"><%= r.ok ? 'สำเร็จ' : 'ไม่สำเร็จ' %></span> <small class="muted"><%= r.message %></small></td></tr>
-  <% } %>
-  </tbody></table>
-  <% } %>
-</section>
 <% } %>
 
 <section class="card">
   <h2>Subscriptions <span class="muted">(<%= subs.length %>)</span></h2>
-  <p class="muted">ผูก "ผู้ใช้งาน" ให้ตรงกับช่องผู้ใช้งานในโปรแกรม เพื่อให้ยอดการใช้งานถูกส่งไปเรียกเก็บกับ subscription นี้ — ค่าเริ่มต้นมาจากที่ลูกค้ากรอกตอนสมัคร</p>
-  <% if (!subs.length) { %><p class="muted">ยังไม่มี subscription — ตรวจว่าตั้ง Webhook ใน Lemon Squeezy ชี้มาที่ <code><%= siteUrl %>/webhooks/lemonsqueezy</code> แล้ว</p><% } else { %>
+  <p class="muted">Only used if a subscription product is ever sold. The current model is invoice-based (see Invoices).</p>
+  <% if (!subs.length) { %><p class="muted">No subscriptions — webhook URL: <code><%= siteUrl %>/webhooks/lemonsqueezy</code></p><% } else { %>
   <div class="scroll"><table class="dense">
-    <thead><tr><th>ID</th><th>ลูกค้า</th><th>แพ็กเกจ</th><th>สถานะ</th><th>Usage</th><th>ผู้ใช้งาน (operator)</th><th>ต่ออายุ</th><th>ส่งยอดล่าสุด</th><th></th></tr></thead>
+    <thead><tr><th>ID</th><th>Customer</th><th>Product</th><th>Status</th><th>Operator</th><th>Renews</th><th></th></tr></thead>
     <tbody>
     <% for (const s of subs) { %>
       <tr>
@@ -39,16 +26,14 @@
         <td><%= s.user_name %><br><small class="muted"><%= s.user_email %></small><% if (s.company) { %><br><small class="muted"><%= s.company %></small><% } %></td>
         <td><%= s.product_name %><br><small class="muted"><%= s.variant_name %></small></td>
         <td><span class="st st-<%= ['active','on_trial'].includes(s.status) ? 'ok' : (['cancelled','paused','past_due'].includes(s.status) ? 'cancelled' : 'error') %>"><%= s.status_formatted || s.status %></span></td>
-        <td><%= s.is_usage_based ? 'ตามการใช้งาน' : 'เหมา' %><% if (s.subscription_item_id) { %><br><small class="muted">item <%= s.subscription_item_id %></small><% } %></td>
         <td>
           <form method="post" action="/admin/billing/operator" class="inlineform">
             <input type="hidden" name="customer_id" value="<%= s.customer_id %>">
-            <input name="operator" list="ops" value="<%= s.operator %>" placeholder="ชื่อผู้ใช้งาน" maxlength="100">
-            <button>บันทึก</button>
+            <input name="operator" list="ops" value="<%= s.operator %>" placeholder="Operator" maxlength="100">
+            <button>Save</button>
           </form>
         </td>
-        <td class="nowrap muted"><%= s.renews_at || '' %><% if (s.ends_at) { %><br>สิ้นสุด <%= s.ends_at %><% } %></td>
-        <td class="muted"><% if (s.last_report_ym) { %><%= s.last_report_ym %>: <%= fmtNum(s.last_report_qty) %> รายการ <%= s.last_report_ok ? '✓' : '✗' %><% } else { %>—<% } %></td>
+        <td class="nowrap muted"><%= s.renews_at || '' %><% if (s.ends_at) { %><br>ends <%= s.ends_at %><% } %></td>
         <td class="nowrap"><% if (s.customer_portal_url) { %><a href="<%= s.customer_portal_url %>" target="_blank" rel="noopener">Portal</a><% } %></td>
       </tr>
     <% } %>
@@ -59,18 +44,18 @@
 </section>
 
 <section class="card">
-  <h2>คำสั่งซื้อล่าสุด <span class="muted">(<%= orders.length %>)</span></h2>
-  <% if (!orders.length) { %><p class="muted">ยังไม่มีคำสั่งซื้อ</p><% } else { %>
+  <h2>Recent orders <span class="muted">(<%= orders.length %>)</span></h2>
+  <% if (!orders.length) { %><p class="muted">No orders yet</p><% } else { %>
   <div class="scroll"><table class="dense">
-    <thead><tr><th>Order</th><th>วันที่</th><th>ลูกค้า</th><th>สินค้า</th><th class="r">ยอด</th><th>สถานะ</th><th></th></tr></thead>
+    <thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>Product</th><th class="r">Total</th><th>Status</th><th></th></tr></thead>
     <tbody>
     <% for (const o of orders) { %>
       <tr><td>#<%= o.order_number || o.order_id %></td><td class="nowrap muted"><%= o.ordered_at || '' %></td>
         <td><%= o.user_name %> <small class="muted"><%= o.user_email %></small></td>
         <td><%= o.product_name %> <small class="muted"><%= o.variant_name %></small></td>
-        <td class="r"><%= fmtMoney(o.total) %> <%= o.currency %><% if (Number(o.refunded_total)) { %><br><small class="muted">คืน <%= fmtMoney(o.refunded_total) %></small><% } %></td>
+        <td class="r"><%= fmtMoney(o.total) %> <%= o.currency %><% if (Number(o.refunded_total)) { %><br><small class="muted">refunded <%= fmtMoney(o.refunded_total) %></small><% } %></td>
         <td><span class="st st-<%= o.status === 'paid' ? 'ok' : (o.status === 'pending' ? 'cancelled' : 'error') %>"><%= o.status %></span></td>
-        <td><% if (o.receipt_url) { %><a href="<%= o.receipt_url %>" target="_blank" rel="noopener">ใบเสร็จ</a><% } %></td></tr>
+        <td><% if (o.receipt_url) { %><a href="<%= o.receipt_url %>" target="_blank" rel="noopener">Receipt</a><% } %></td></tr>
     <% } %>
     </tbody>
   </table></div>
@@ -78,9 +63,9 @@
 </section>
 
 <section class="card">
-  <h2>Webhook ล่าสุด</h2>
-  <% if (!events.length) { %><p class="muted">ยังไม่เคยรับ webhook</p><% } else { %>
-  <table class="dense"><thead><tr><th>เวลา</th><th>เหตุการณ์</th><th>ประเภท</th><th>ID</th></tr></thead><tbody>
+  <h2>Recent webhooks</h2>
+  <% if (!events.length) { %><p class="muted">No webhooks received yet</p><% } else { %>
+  <table class="dense"><thead><tr><th>Received</th><th>Event</th><th>Type</th><th>ID</th></tr></thead><tbody>
   <% for (const e of events) { %><tr><td class="nowrap muted"><%= e.received_at %></td><td><code><%= e.event_name %></code></td><td><%= e.object_type %></td><td><%= e.object_id %></td></tr><% } %>
   </tbody></table>
   <% } %>

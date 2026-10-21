@@ -1,25 +1,26 @@
 <!doctype html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><%= title %> · e-WorkPermit Usage</title>
+<title><%= title %> · Admin</title>
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <header class="top">
-  <div class="brand"><a href="/admin">e-WorkPermit Usage</a><span class="sub">ยอดการใช้งานโปรแกรม</span></div>
+  <div class="brand"><a href="/admin">Admin</a><span class="sub">usage · invoices · customers</span></div>
   <nav>
-    <a href="/admin" class="<%= title === 'ภาพรวม' ? 'on' : '' %>">ภาพรวม</a>
-    <a href="/admin/runs" class="<%= title === 'รายการงาน' ? 'on' : '' %>">รายการงาน</a>
-    <a href="/admin/prices" class="<%= title === 'ตั้งราคา' ? 'on' : '' %>">ตั้งราคา</a>
-    <a href="/admin/installs" class="<%= title === 'เครื่องที่ใช้งาน' ? 'on' : '' %>">เครื่องที่ใช้งาน</a>
-    <a href="/admin/invoices" class="<%= title === 'ใบแจ้งหนี้' ? 'on' : '' %>">ใบแจ้งหนี้</a>
-    <a href="/admin/billing" class="<%= title === 'ลูกค้าและการชำระเงิน' ? 'on' : '' %>">ลูกค้า/ชำระเงิน</a>
-    <a href="/admin/messages" class="<%= title === 'ข้อความ' ? 'on' : '' %>">ข้อความ</a>
-    <a href="/admin/portal-users" class="<%= title === 'บัญชีลูกค้า' ? 'on' : '' %>">บัญชีลูกค้า</a>
-    <a href="/" target="_blank" rel="noopener" title="เปิดหน้าเว็บสาธารณะ">หน้าเว็บ ↗</a>
-    <form method="post" action="/logout" class="inline"><button class="link">ออกจากระบบ</button></form>
+    <a href="/admin" class="<%= title === 'Overview' ? 'on' : '' %>">Overview</a>
+    <a href="/admin/runs" class="<%= title === 'Runs' ? 'on' : '' %>">Runs</a>
+    <a href="/admin/invoices" class="<%= title === 'Invoices' ? 'on' : '' %>">Invoices</a>
+    <a href="/admin/portal-users" class="<%= title === 'Customer accounts' ? 'on' : '' %>">Customers</a>
+    <a href="/admin/prices" class="<%= title === 'Prices' ? 'on' : '' %>">Prices</a>
+    <a href="/admin/billing" class="<%= title === 'Lemon Squeezy' ? 'on' : '' %>">Lemon Squeezy</a>
+    <a href="/admin/installs" class="<%= title === 'Installs' ? 'on' : '' %>">Installs</a>
+    <a href="/admin/messages" class="<%= title === 'Messages' ? 'on' : '' %>">Messages</a>
+    <a href="/" target="_blank" rel="noopener" title="Open public website">Website ↗</a>
+    <form method="post" action="/logout" class="inline"><button class="link">Sign out</button></form>
   </nav>
 </header>
 <main>

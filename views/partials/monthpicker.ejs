@@ -2,12 +2,12 @@
   <% if (typeof extra !== 'undefined') { for (const [k, v] of Object.entries(extra)) { if (v) { %>
     <input type="hidden" name="<%= k %>" value="<%= v %>">
   <% } } } %>
-  <label>เดือน
+  <label>Month
     <select name="ym" onchange="this.form.submit()">
       <% for (const m of months) { %>
         <option value="<%= m %>" <%= m === ym ? 'selected' : '' %>><%= m %></option>
       <% } %>
     </select>
   </label>
-  <noscript><button>ดู</button></noscript>
+  <noscript><button>Go</button></noscript>
 </form>

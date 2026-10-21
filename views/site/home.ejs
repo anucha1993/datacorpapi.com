@@ -1,73 +1,71 @@
 <%- include('partials/head') %>
 <section class="hero">
   <div>
-    <span class="pill">ซอฟต์แวร์สำหรับงาน HR แรงงานต่างด้าว</span>
-    <h1><%= co.PRODUCT_NAME %><br><small>ดึงรายงาน · ดาวน์โหลดเอกสาร · กรอกคำขอ ในระบบ e-WorkPermit ให้อัตโนมัติ</small></h1>
-    <p class="lead">โปรแกรมบน Windows ที่ทำงานซ้ำ ๆ ในเว็บ e-WorkPermit ของกรมการจัดหางานแทนคุณ ตั้งแต่ดึงสถานะคำขอหลายร้อยรายการเป็น Excel
-      ดาวน์โหลดใบเสร็จ/ใบนัดหมายเป็นชุด ไปจนถึงกรอกแบบฟอร์ม บต.30 / บต.44 จากไฟล์ Excel
-      คิดค่าบริการตามจำนวนรายการที่ประมวลผลจริง</p>
-    <p class="lead en">Windows software that automates repetitive work in Thailand's e-WorkPermit system (Department of Employment):
-      bulk status reports to Excel, batch document downloads and form filling from spreadsheets. Priced per record actually processed.</p>
+    <span class="pill">Software for HR teams managing migrant-worker permits</span>
+    <h1><%= co.PRODUCT_NAME %><br><small>Automate reports, document downloads and form filling in Thailand's e-WorkPermit system</small></h1>
+    <p class="lead">A Windows application that does the repetitive clicking in the Department of Employment's e-WorkPermit portal for you:
+      pull hundreds of application statuses into Excel, download receipts and appointment slips in bulk, and fill BT.30 / BT.44 forms straight from a spreadsheet.
+      You pay only for the records actually processed.</p>
     <div class="actions">
-      <a href="/contact" class="btn primary big">ขอเปิดบัญชีใช้งาน</a>
-      <a href="/pricing" class="btn big">ดูราคา</a>
-      <a href="/portal/login" class="btn big">เข้าสู่ระบบลูกค้า</a>
+      <a href="/contact" class="btn primary big">Open an account</a>
+      <a href="/pricing" class="btn big">See pricing</a>
+      <a href="/portal/login" class="btn big">Customer login</a>
     </div>
   </div>
-  <div class="shot"><img src="/screenshot-app.png" alt="หน้าจอโปรแกรม <%= co.PRODUCT_NAME %>" loading="lazy" onerror="this.parentNode.style.display='none'"></div>
+  <div class="shot"><img src="/hero.jpg" alt="<%= co.PRODUCT_NAME %> application screenshot" loading="lazy" onerror="this.parentNode.style.display='none'"></div>
 </section>
 
 <section id="features" class="features">
-  <h2>โปรแกรมทำอะไรได้บ้าง</h2>
+  <h2>What the software does</h2>
   <div class="grid3">
-    <div class="feat"><div class="ic">📊</div><h3>รายงาน / ดึงข้อมูล</h3>
-      <p>ดึงรายการคำขอจาก e-Tracking ตามรายการคำขอ สถานะ และช่วงวันที่ พร้อมข้อมูลคนต่างด้าวและหมายเหตุของเจ้าหน้าที่ ออกเป็น Excel
-      รองรับหลายบัญชีในครั้งเดียว รายงานข้อมูลการขออนุญาต รายชื่อคนต่างด้าว และตรวจสอบ Ticket ID</p></div>
-    <div class="feat"><div class="ic">📥</div><h3>ดาวน์โหลดเอกสารเป็นชุด</h3>
-      <p>ใบเสร็จรับเงิน แบบ บต.44 / บต.22 / บต.53 / บต.55 / บต.52 / บต.56 ใบแจ้งผล ใบรับคำขอ ใบแจ้งชำระเงิน ใบตอบรับ และใบนัดหมาย
-      ตั้งชื่อไฟล์ตามเลขพาสปอร์ตและจัดโฟลเดอร์ให้อัตโนมัติ รันซ้ำได้โดยข้ามไฟล์ที่มีแล้ว</p></div>
-    <div class="feat"><div class="ic">✍️</div><h3>กรอกคำขอจาก Excel</h3>
-      <p>ลงทะเบียนคนต่างด้าว แจ้งเข้านายจ้าง (บต.52) ต่อใบอนุญาตตาม MoU (บต.30) และเปลี่ยนย้ายนายจ้าง (บต.44) จากไฟล์ Excel
-      มีโหมดทดลอง (Dry-Run) หยุดก่อนส่งจริง และต้องยืนยันก่อนทุกขั้นตอนที่มีค่าธรรมเนียม</p></div>
-    <div class="feat"><div class="ic">📅</div><h3>ตรวจคิวถ่ายบัตรแบบ Real-Time</h3>
-      <p>สแกนวันและช่วงเวลาที่ว่างของทุกสาขา พร้อมหน้าจอ Monitor ที่รีเฟรชอัตโนมัติ</p></div>
-    <div class="feat"><div class="ic">🔒</div><h3>ข้อมูลอยู่ที่เครื่องคุณ</h3>
-      <p>โปรแกรมทำงานบนเครื่องของคุณด้วยบัญชี e-WorkPermit ของคุณเอง ไฟล์รายงานและ PDF บันทึกในเครื่อง
-      เราได้รับเฉพาะสถิติการใช้งาน (ผู้ใช้ โหมด จำนวนรายการ เวลา) เพื่อคิดค่าบริการ ไม่ได้รับรหัสผ่านหรือข้อมูลคนต่างด้าว</p></div>
-    <div class="feat"><div class="ic">📈</div><h3>เห็นยอดการใช้งานชัดเจน</h3>
-      <p>ทุกงานที่รันถูกบันทึกเป็นรายการ ตรวจสอบย้อนหลังได้ต่อผู้ใช้ ต่อโหมด ต่อเดือน ก่อนเรียกเก็บเงิน</p></div>
+    <div class="feat"><div class="ic">📊</div><h3>Reports and data extraction</h3>
+      <p>Pull application lists from e-Tracking by application type, status and date range, including worker details and officer remarks, into Excel.
+      Works across many accounts in one run. Also permit application reports, worker name lists and Ticket ID checks.</p></div>
+    <div class="feat"><div class="ic">📥</div><h3>Bulk document downloads</h3>
+      <p>Receipts, BT.44 / BT.22 / BT.53 / BT.55 / BT.52 / BT.56 forms, result notices, application receipts, payment slips, acknowledgements and appointment slips,
+      named by passport number and sorted into folders automatically. Re-runs skip files that already exist.</p></div>
+    <div class="feat"><div class="ic">✍️</div><h3>Form filling from Excel</h3>
+      <p>Worker registration, employer notification (BT.52), MoU renewal (BT.30) and employer change (BT.44) filled from a spreadsheet,
+      with a dry-run mode that stops before submission and a confirmation prompt before any step that carries a government fee.</p></div>
+    <div class="feat"><div class="ic">📅</div><h3>Real-time appointment slot checker</h3>
+      <p>Scans available dates and time slots for card-photo appointments at every branch, with an auto-refreshing monitor window.</p></div>
+    <div class="feat"><div class="ic">🔒</div><h3>Your data stays on your computer</h3>
+      <p>The software runs on your own PC with your own e-WorkPermit login. Reports and PDFs are saved locally.
+      We only receive usage statistics (operator, mode, record count, time) for billing — never your password or worker data.</p></div>
+    <div class="feat"><div class="ic">📈</div><h3>Transparent usage</h3>
+      <p>Every job is logged. Review usage per operator, per mode and per month in the customer portal before you are invoiced.</p></div>
   </div>
 </section>
 
 <section class="how">
-  <h2>ขั้นตอนการใช้งาน</h2>
+  <h2>How it works</h2>
   <ol class="steps">
-    <li><b>เปิดบัญชี</b> แจ้งชื่อผู้ใช้งานและอีเมลผ่านหน้าติดต่อ เราเปิดบัญชีให้ฟรีภายใน 1 วันทำการ</li>
-    <li><b>ติดตั้งโปรแกรม</b> เราส่งลิงก์ดาวน์โหลดและคู่มือให้ทางอีเมลภายใน 1 วันทำการ ติดตั้งบน Windows 10/11 ได้ไม่จำกัดเครื่อง</li>
-    <li><b>ใช้งาน</b> ใส่ชื่อผู้ใช้งานที่สมัครไว้ในโปรแกรม เลือกโหมด กดเริ่ม โปรแกรมบันทึกจำนวนรายการที่ประมวลผล</li>
-    <li><b>รับใบแจ้งหนี้ต้นเดือน</b> ยอดตามจำนวนรายการจริง × ราคาต่อรายการ ชำระผ่าน Lemon Squeezy ในระบบลูกค้า ใบเสร็จส่งทางอีเมลทันที</li>
+    <li><b>Open an account</b> — send us your operator name and email via the contact page; we set up your free account within 1 business day.</li>
+    <li><b>Install</b> — download the installer and setup guide from your email. Windows 10/11, unlimited machines.</li>
+    <li><b>Use it</b> — enter your operator name in the app, pick a mode and press Start. The software records how many items it processed.</li>
+    <li><b>Get invoiced monthly</b> — on the 1st we issue an invoice for the previous month's usage × unit prices. Pay via Lemon Squeezy in the portal; the receipt arrives by email instantly.</li>
   </ol>
 </section>
 
 <section id="pricing" class="pricing">
-  <h2>ราคา</h2>
-  <p class="lead">ไม่มีค่าแรกเข้า ไม่มีขั้นต่ำ จ่ายตามจำนวนรายการที่ประมวลผลจริง ออกใบแจ้งหนี้ทุกวันที่ 1 ชำระผ่าน Lemon Squeezy</p>
-  <p class="center"><a href="/pricing" class="btn primary">ดูราคาต่อรายการของแต่ละโหมด →</a></p>
+  <h2>Pricing</h2>
+  <p class="lead">No setup fee, no minimum, no contract. You pay for the records actually processed. Invoices are issued on the 1st of each month and paid via Lemon Squeezy.</p>
+  <p class="center"><a href="/pricing" class="btn primary">See unit prices per task →</a></p>
 </section>
 
 <section id="faq" class="faq">
-  <h2>คำถามที่พบบ่อย</h2>
-  <details><summary>โปรแกรมนี้เป็นบริการรับทำเอกสารหรือไม่</summary><p>ไม่ใช่ นี่คือ<b>ซอฟต์แวร์</b>ที่คุณติดตั้งและสั่งงานเองด้วยบัญชี e-WorkPermit ของคุณ เราไม่ได้เข้าถึงบัญชีหรือยื่นเอกสารแทนคุณ</p></details>
-  <details><summary>คิดเงินอย่างไร "รายการ" คืออะไร</summary><p>1 รายการ = 1 คำขอ/1 เอกสาร/1 คน ที่โปรแกรมประมวลผลสำเร็จในแต่ละโหมด ราคาต่อรายการต่างกันตามโหมด (ดูหน้า<a href="/pricing">ราคา</a>) งานที่ยกเลิกกลางทางคิดเฉพาะส่วนที่ทำไปแล้ว วันที่ 1 ของทุกเดือนระบบออกใบแจ้งหนี้ของเดือนก่อน ชำระผ่าน Lemon Squeezy ในระบบลูกค้า</p></details>
-  <details><summary>ต้องใช้อะไรบ้าง</summary><p>Windows 10/11, Python 3.12 ขึ้นไป (ตัวติดตั้งมีให้), บัญชีผู้ใช้ e-WorkPermit ที่ใช้งานได้ และอินเทอร์เน็ต</p></details>
-  <details><summary>มีสัญญาผูกมัดไหม</summary><p>ไม่มี ไม่ต้องผูกบัตรล่วงหน้า หยุดใช้งานเดือนไหนก็ไม่มีบิลเดือนนั้น ค้างเพียงบิลของเดือนที่ใช้งานไปแล้ว ดูรายละเอียดที่<a href="/refund">นโยบายการคืนเงินและยกเลิก</a></p></details>
-  <details><summary>ใบเสร็จออกในชื่อใคร</summary><p>Lemon Squeezy เป็น Merchant of Record จึงเป็นผู้ออกใบเสร็จและจัดการภาษีการขาย รายการในบัตรของคุณจะแสดงชื่อ Lemon Squeezy</p></details>
-  <details><summary>ข้อมูลของเราปลอดภัยไหม</summary><p>รหัสผ่านและข้อมูลคนต่างด้าวอยู่ในเครื่องของคุณเท่านั้น โปรแกรมส่งให้เราเฉพาะสถิติการใช้งานเพื่อคิดค่าบริการ อ่านเพิ่มที่<a href="/privacy">นโยบายความเป็นส่วนตัว</a></p></details>
+  <h2>Frequently asked questions</h2>
+  <details><summary>Is this a document-processing service?</summary><p>No. It is <b>software</b> that you install and operate yourself with your own e-WorkPermit account. We never access your account or file anything on your behalf.</p></details>
+  <details><summary>How is usage billed? What counts as a "record"?</summary><p>1 record = 1 application / 1 document / 1 worker processed successfully in a given mode. Unit prices differ per mode (see <a href="/pricing">Pricing</a>). Jobs cancelled midway are billed only for what was completed. On the 1st of each month we issue an invoice for the previous month, payable via Lemon Squeezy in the customer portal.</p></details>
+  <details><summary>What do I need?</summary><p>Windows 10/11, Python 3.12 or newer (installer provided), a working e-WorkPermit account and an internet connection.</p></details>
+  <details><summary>Is there a contract?</summary><p>No. No card on file, no automatic charges. If you stop using the software, there is no invoice for that month — only invoices for months already used remain payable. See the <a href="/refund">Refund &amp; Cancellation Policy</a>.</p></details>
+  <details><summary>Who issues the receipt?</summary><p>Lemon Squeezy is the Merchant of Record, so it issues the receipt and handles sales tax. Your card statement will show Lemon Squeezy. You can add your company name, address and tax ID to the receipt.</p></details>
+  <details><summary>Is our data safe?</summary><p>Your password and worker data never leave your computer. The software sends us only usage statistics for billing. Read the <a href="/privacy">Privacy Policy</a>.</p></details>
 </section>
 
 <section class="contactcta">
-  <h2>มีคำถาม หรืออยากทดลองก่อน</h2>
-  <p>ติดต่อ <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } %>
-     <% if (co.COMPANY_PHONE) { %> · โทร <%= co.COMPANY_PHONE %><% } %> หรือ <a href="/contact">ส่งข้อความหาเรา</a> (<%= co.SUPPORT_HOURS %>)</p>
+  <h2>Questions, or want a trial first?</h2>
+  <p>Email <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } %>
+     <% if (co.COMPANY_PHONE) { %> · call <%= co.COMPANY_PHONE %><% } %> or <a href="/contact">send us a message</a> (<%= co.SUPPORT_HOURS %>)</p>
 </section>
 <%- include('partials/foot') %>

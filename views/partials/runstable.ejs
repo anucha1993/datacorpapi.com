@@ -1,9 +1,9 @@
-<% if (!rows.length) { %><p class="muted">ไม่มีรายการ</p><% } else { %>
+<% if (!rows.length) { %><p class="muted">No runs</p><% } else { %>
 <div class="scroll">
 <table class="dense">
   <thead><tr>
-    <th>เริ่ม</th><% if (showOperator) { %><th>ผู้ใช้งาน</th><% } %><th>โหมด</th><th>บัญชี e-WP</th>
-    <th class="r">รายการ</th><th class="r">คืบหน้า</th><th class="r">เวลา</th><th>สถานะ</th><th>เครื่อง</th>
+    <th>Started</th><% if (showOperator) { %><th>Operator</th><% } %><th>Mode</th><th>e-WP account</th>
+    <th class="r">Records</th><th class="r">Progress</th><th class="r">Duration</th><th>Status</th><th>Machine</th>
   </tr></thead>
   <tbody>
   <% for (const r of rows) { let accts = []; try { accts = typeof r.accounts === 'string' ? JSON.parse(r.accounts) : (r.accounts || []); } catch (e) {} %>

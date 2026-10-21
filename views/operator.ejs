@@ -1,38 +1,38 @@
 <%- include('partials/header') %>
 <div class="pagehead">
-  <h1><a href="/admin?ym=<%= ym %>" class="back">‹</a> <%= name || '(ไม่ระบุ)' %> <span class="muted">· <%= ym %></span></h1>
+  <h1><a href="/admin?ym=<%= ym %>" class="back">‹</a> <%= name || '(none)' %> <span class="muted">· <%= ym %></span></h1>
   <div class="tools">
     <%- include('partials/monthpicker', { action: '/admin/operator/' + encodeURIComponent(name) }) %>
-    <a class="btn" href="/admin/runs?ym=<%= ym %>&operator=<%= encodeURIComponent(name) %>">ดูรายการงานทั้งหมด</a>
+    <a class="btn" href="/admin/runs?ym=<%= ym %>&operator=<%= encodeURIComponent(name) %>">All runs</a>
   </div>
 </div>
 
 <div class="grid2">
   <section class="card">
-    <h2>ยอดต่อโหมด</h2>
-    <% if (!byMode.length) { %><p class="muted">ไม่มีการใช้งานในเดือนนี้</p><% } else { %>
+    <h2>By mode</h2>
+    <% if (!byMode.length) { %><p class="muted">No usage this month</p><% } else { %>
     <table>
-      <thead><tr><th>โหมด</th><th class="r">ครั้ง</th><th class="r">รายการ</th><th class="r">เวลา</th><th class="r">ยอดเงิน (บาท)</th></tr></thead>
+      <thead><tr><th>Mode</th><th class="r">Runs</th><th class="r">Records</th><th class="r">Time</th><th class="r">Amount (THB)</th></tr></thead>
       <tbody>
       <% let sum = 0; for (const r of byMode) { sum += Number(r.amount_thb || 0); %>
         <tr>
           <td><%= r.mode_label %> <span class="tag g-<%= r.mode_group %>"><%= GROUP_LABELS[r.mode_group] || '' %></span></td>
-          <td class="r"><%= fmtNum(r.runs) %><% if (Number(r.runs_error) || Number(r.runs_cancelled)) { %> <small class="muted">(ยกเลิก <%= r.runs_cancelled %>, ผิดพลาด <%= r.runs_error %>)</small><% } %></td>
+          <td class="r"><%= fmtNum(r.runs) %><% if (Number(r.runs_error) || Number(r.runs_cancelled)) { %> <small class="muted">(cancelled <%= r.runs_cancelled %>, error <%= r.runs_error %>)</small><% } %></td>
           <td class="r"><%= fmtNum(r.billable_records) %></td>
           <td class="r muted"><%= fmtDur(r.total_sec) %></td>
           <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
         </tr>
       <% } %>
       </tbody>
-      <tfoot><tr><th colspan="4">รวม</th><th class="r"><%= fmtMoney(sum) %></th></tr></tfoot>
+      <tfoot><tr><th colspan="4">Total</th><th class="r"><%= fmtMoney(sum) %></th></tr></tfoot>
     </table>
     <% } %>
   </section>
 
   <section class="card">
-    <h2>ย้อนหลัง 12 เดือน</h2>
+    <h2>Last 12 months</h2>
     <table>
-      <thead><tr><th>เดือน</th><th class="r">ครั้ง</th><th class="r">รายการ</th><th class="r">ยอดเงิน (บาท)</th></tr></thead>
+      <thead><tr><th>Month</th><th class="r">Runs</th><th class="r">Records</th><th class="r">Amount (THB)</th></tr></thead>
       <tbody>
       <% for (const t of trend) { %>
         <tr class="<%= t.ym === ym ? 'hl' : '' %>">
@@ -48,7 +48,7 @@
 </div>
 
 <section class="card">
-  <h2>งานล่าสุดในเดือนนี้ <span class="muted">(<%= runs.length %> รายการ<%= runs.length >= 200 ? ' แรก' : '' %>)</span></h2>
+  <h2>Recent runs this month <span class="muted">(<%= runs.length %><%= runs.length >= 200 ? ' shown' : '' %>)</span></h2>
   <%- include('partials/runstable', { rows: runs, showOperator: false }) %>
 </section>
 <%- include('partials/footer') %>

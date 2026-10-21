@@ -1,18 +1,20 @@
 <!doctype html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>เข้าสู่ระบบ · e-WorkPermit Usage</title>
+<title>Admin sign in</title>
+<meta name="robots" content="noindex">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body class="center">
 <form method="post" action="/login" class="card login">
-  <h1>e-WorkPermit Usage</h1>
-  <p class="muted">ยอดการใช้งานโปรแกรม — กรอกรหัสผ่านเพื่อเข้าดู</p>
+  <h1>Admin</h1>
+  <p class="muted">Usage, invoices and customer management — enter the admin password</p>
   <% if (error) { %><p class="alert"><%= error %></p><% } %>
-  <input type="password" name="password" placeholder="รหัสผ่าน" autofocus required>
-  <button class="primary">เข้าสู่ระบบ</button>
+  <input type="password" name="password" placeholder="Password" autofocus required>
+  <button class="primary">Sign in</button>
+  <p class="muted small"><a href="/portal/login">Customer login</a> · <a href="/">Website</a></p>
 </form>
 </body>
 </html>

@@ -4,27 +4,26 @@
     <div>
       <div class="fh"><%= co.PRODUCT_NAME %></div>
       <div class="muted"><%= co.COMPANY_NAME %><% if (co.COMPANY_NAME_EN) { %><br><%= co.COMPANY_NAME_EN %><% } %></div>
-      <% if (co.COMPANY_TAX_ID) { %><div class="muted">เลขประจำตัวผู้เสียภาษี <%= co.COMPANY_TAX_ID %></div><% } %>
+      <% if (co.COMPANY_TAX_ID) { %><div class="muted">Tax ID <%= co.COMPANY_TAX_ID %></div><% } %>
       <% if (co.COMPANY_ADDRESS) { %><div class="muted"><%= co.COMPANY_ADDRESS %></div><% } %>
     </div>
     <div>
-      <div class="fh">ติดต่อ</div>
+      <div class="fh">Contact</div>
       <% if (co.COMPANY_EMAIL) { %><div><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a></div><% } %>
       <% if (co.COMPANY_PHONE) { %><div><a href="tel:<%= co.COMPANY_PHONE.replace(/[^0-9+]/g, '') %>"><%= co.COMPANY_PHONE %></a></div><% } %>
       <% if (co.COMPANY_LINE) { %><div>LINE: <%= co.COMPANY_LINE %></div><% } %>
       <div class="muted"><%= co.SUPPORT_HOURS %></div>
     </div>
     <div>
-      <div class="fh">นโยบาย</div>
-      <div><a href="/terms">ข้อกำหนดการใช้บริการ (Terms of Service)</a></div>
-      <div><a href="/refund">นโยบายการคืนเงินและยกเลิก (Refund &amp; Cancellation)</a></div>
-      <div><a href="/privacy">นโยบายความเป็นส่วนตัว (Privacy Policy)</a></div>
-      <div><a href="/pricing">ราคาและการเรียกเก็บเงิน (Pricing)</a></div>
+      <div class="fh">Legal</div>
+      <div><a href="/terms">Terms of Service</a></div>
+      <div><a href="/refund">Refund &amp; Cancellation Policy</a></div>
+      <div><a href="/privacy">Privacy Policy</a></div>
+      <div><a href="/pricing">Pricing &amp; Billing</a></div>
     </div>
   </div>
   <div class="wrap legal muted">
-    © <%= new Date().getFullYear() %> <%= co.COMPANY_NAME || co.PRODUCT_NAME %>. การชำระเงินดำเนินการโดย Lemon Squeezy ในฐานะ Merchant of Record — ใบเสร็จและการเรียกเก็บเงินจะแสดงชื่อ Lemon Squeezy.
-    Orders are processed by our online reseller &amp; Merchant of Record, Lemon Squeezy, who also handles order-related inquiries and returns.
+    © <%= new Date().getFullYear() %> <%= co.COMPANY_NAME || co.PRODUCT_NAME %>. Orders are processed by our online reseller &amp; Merchant of Record, Lemon Squeezy, who also handles order-related inquiries and returns. Card statements will show Lemon Squeezy.
   </div>
 </footer>
 </body>

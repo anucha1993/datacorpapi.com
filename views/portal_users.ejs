@@ -1,38 +1,38 @@
 <%- include('partials/header') %>
-<div class="pagehead"><h1>บัญชีลูกค้า (Customer Portal) <span class="muted">· <%= rows.length %> บัญชี</span></h1></div>
+<div class="pagehead"><h1>Customer accounts <span class="muted">· <%= rows.length %></span></h1></div>
 <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
 <% if (error) { %><p class="alert"><%= error %></p><% } %>
 
 <div class="grid2">
   <section class="card">
-    <h2>สร้างบัญชี / รีเซ็ตรหัสผ่าน</h2>
-    <p class="muted">ชื่อผู้ใช้งานต้องตรงกับช่อง "ผู้ใช้งาน" ในโปรแกรมของลูกค้า ลูกค้าจะเห็นเฉพาะยอดของชื่อนี้ · ถ้าชื่อนี้มีบัญชีอยู่แล้ว = รีเซ็ตรหัสผ่าน</p>
+    <h2>Create account / reset password</h2>
+    <p class="muted">The operator name must match the "Operator" field in the customer's desktop app — the customer only sees usage recorded under that name. Submitting an existing name resets its password.</p>
     <form method="post" action="/admin/portal-users" class="stack">
-      <input name="operator" list="ops" placeholder="ชื่อผู้ใช้งาน (operator)" required maxlength="100">
+      <input name="operator" list="ops" placeholder="Operator name" required maxlength="100">
       <datalist id="ops"><% for (const o of operators) { %><option value="<%= o %>"><% } %></datalist>
-      <input name="password" placeholder="รหัสผ่าน (อย่างน้อย 6 ตัว)" required minlength="6">
-      <input name="display_name" placeholder="ชื่อลูกค้า/บริษัท (แสดงในพอร์ทัล)" maxlength="190">
-      <input name="email" type="email" placeholder="อีเมลลูกค้า (ไม่บังคับ)" maxlength="190">
-      <label><input type="checkbox" name="must_change" value="1" checked> ให้ลูกค้าเปลี่ยนรหัสผ่านตอน login ครั้งแรก</label>
-      <button class="primary">บันทึก</button>
+      <input name="password" placeholder="Password (at least 6 characters)" required minlength="6">
+      <input name="display_name" placeholder="Customer / company name (shown in the portal)" maxlength="190">
+      <input name="email" type="email" placeholder="Customer email (optional)" maxlength="190">
+      <label><input type="checkbox" name="must_change" value="1" checked> Require password change at first login</label>
+      <button class="primary">Save</button>
     </form>
-    <p class="muted small">ลิงก์สำหรับลูกค้า: <code><%= siteUrl %>/portal/login</code></p>
+    <p class="muted small">Customer login URL: <code><%= siteUrl %>/portal/login</code></p>
   </section>
 
   <section class="card">
-    <h2>บัญชีทั้งหมด</h2>
-    <% if (!rows.length) { %><p class="muted">ยังไม่มีบัญชี</p><% } else { %>
+    <h2>All accounts</h2>
+    <% if (!rows.length) { %><p class="muted">No accounts yet</p><% } else { %>
     <table class="dense">
-      <thead><tr><th>ชื่อผู้ใช้งาน</th><th>ชื่อแสดง / อีเมล</th><th>login ล่าสุด</th><th>สถานะ</th><th></th></tr></thead>
+      <thead><tr><th>Operator</th><th>Name / email</th><th>Last login</th><th>Status</th><th></th></tr></thead>
       <tbody>
       <% for (const u of rows) { %>
         <tr class="<%= u.is_active ? '' : 'hl' %>">
           <td><a href="/admin/operator/<%= encodeURIComponent(u.operator) %>"><%= u.operator %></a></td>
           <td><%= u.display_name %><% if (u.email) { %><br><small class="muted"><%= u.email %></small><% } %></td>
           <td class="muted nowrap"><%= u.last_login_at || '—' %></td>
-          <td><span class="st st-<%= u.is_active ? 'ok' : 'error' %>"><%= u.is_active ? 'ใช้งาน' : 'ปิด' %></span><% if (u.must_change) { %> <small class="muted">รอเปลี่ยนรหัส</small><% } %></td>
+          <td><span class="st st-<%= u.is_active ? 'ok' : 'error' %>"><%= u.is_active ? 'Active' : 'Disabled' %></span><% if (u.must_change) { %> <small class="muted">password change pending</small><% } %></td>
           <td class="nowrap">
-            <form method="post" action="/admin/portal-users/<%= u.id %>/toggle" class="inline"><button><%= u.is_active ? 'ปิดบัญชี' : 'เปิดบัญชี' %></button></form>
+            <form method="post" action="/admin/portal-users/<%= u.id %>/toggle" class="inline"><button><%= u.is_active ? 'Disable' : 'Enable' %></button></form>
           </td>
         </tr>
       <% } %>

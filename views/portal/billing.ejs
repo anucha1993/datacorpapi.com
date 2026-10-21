@@ -1,42 +1,42 @@
 <%- include('partials/header') %>
 <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
-<div class="pagehead"><h1>การชำระเงิน</h1></div>
+<div class="pagehead"><h1>Billing</h1></div>
 
-<% if (paidNo) { %><p class="ok">ได้รับการชำระเงินใบแจ้งหนี้ <%= paidNo %> แล้ว ขอบคุณครับ (สถานะจะอัปเดตภายในไม่กี่นาที)</p><% } %>
-<% if (!profileComplete) { %><p class="alert">ยังไม่ได้กรอก<a href="/portal/profile">ข้อมูลสำหรับออกใบเสร็จ</a> (ชื่อบริษัท/ที่อยู่/เลขผู้เสียภาษี) — กรอกก่อนชำระเงิน เพื่อให้ใบเสร็จออกถูกต้อง</p><% } %>
+<% if (paidNo) { %><p class="ok">Payment for invoice <%= paidNo %> received — thank you. The status will update within a few minutes.</p><% } %>
+<% if (!profileComplete) { %><p class="alert">Your <a href="/portal/profile">billing details</a> (company name, address, tax ID) are incomplete. Please fill them in before paying so your receipt is issued correctly.</p><% } %>
 
 <section class="tiles">
-  <div class="tile"><div class="k">ยอดค้างชำระ</div><div class="v"><%= fmtMoney(sum.open) %> <small>บาท · <%= sum.open_n %> ใบ</small></div></div>
-  <div class="tile"><div class="k">ค่าบริการเดือนนี้ (ประมาณการ)</div><div class="v"><%= fmtMoney(currentEstimate) %> <small>บาท</small></div><div class="muted small">ออกบิลวันที่ 1 ของเดือนถัดไป</div></div>
-  <div class="tile"><div class="k">ชำระแล้วทั้งหมด</div><div class="v"><%= fmtMoney(sum.paid) %> <small>บาท</small></div></div>
+  <div class="tile"><div class="k">Outstanding</div><div class="v"><%= fmtMoney(sum.open) %> <small>THB · <%= sum.open_n %> invoice<%= sum.open_n === 1 ? '' : 's' %></small></div></div>
+  <div class="tile"><div class="k">This month so far (estimate)</div><div class="v"><%= fmtMoney(currentEstimate) %> <small>THB</small></div><div class="muted small">Invoiced on the 1st of next month</div></div>
+  <div class="tile"><div class="k">Total paid</div><div class="v"><%= fmtMoney(sum.paid) %> <small>THB</small></div></div>
 </section>
 
 <section class="card">
-  <h2>ใบแจ้งหนี้</h2>
-  <% if (!invoices.length) { %><p class="muted">ยังไม่มีใบแจ้งหนี้ — บิลแรกจะออกหลังสิ้นเดือนที่เริ่มใช้งาน</p><% } else { %>
+  <h2>Invoices</h2>
+  <% if (!invoices.length) { %><p class="muted">No invoices yet — your first invoice is issued after the end of the month in which you start using the software.</p><% } else { %>
   <div class="scroll"><table class="dense">
-    <thead><tr><th>เลขที่</th><th>เดือนที่ใช้งาน</th><th class="r">รายการ</th><th class="r">ยอด (บาท)</th><th>ครบกำหนด</th><th>สถานะ</th><th></th></tr></thead>
+    <thead><tr><th>Invoice</th><th>Usage month</th><th class="r">Records</th><th class="r">Amount (THB)</th><th>Due</th><th>Status</th><th></th></tr></thead>
     <tbody>
     <% for (const r of invoices) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; %>
       <tr class="<%= overdue ? 'hl' : '' %>">
         <td class="nowrap"><%= r.invoice_no %></td>
         <td><a href="/portal?ym=<%= r.ym %>"><%= r.ym %></a></td>
         <td class="r"><%= fmtNum(r.records) %></td>
-        <td class="r strong"><%= fmtMoney(r.amount_thb) %><% if (Number(r.carried_thb) || Number(r.adjust_thb)) { %><br><small class="muted">ใช้งาน <%= fmtMoney(r.usage_thb) %><% if (Number(r.carried_thb)) { %> + ยกมา <%= fmtMoney(r.carried_thb) %><% } %><% if (Number(r.adjust_thb)) { %> ปรับ <%= fmtMoney(r.adjust_thb) %><% } %></small><% } %></td>
-        <td class="nowrap muted"><%= r.due_at || '' %><% if (overdue) { %> <span class="st st-error">เกินกำหนด</span><% } %></td>
+        <td class="r strong"><%= fmtMoney(r.amount_thb) %><% if (Number(r.carried_thb) || Number(r.adjust_thb)) { %><br><small class="muted">usage <%= fmtMoney(r.usage_thb) %><% if (Number(r.carried_thb)) { %> + carried <%= fmtMoney(r.carried_thb) %><% } %><% if (Number(r.adjust_thb)) { %> adj. <%= fmtMoney(r.adjust_thb) %><% } %></small><% } %></td>
+        <td class="nowrap muted"><%= r.due_at || '' %><% if (overdue) { %> <span class="st st-error">Overdue</span><% } %></td>
         <td><span class="st st-<%= r.status === 'open' ? 'cancelled' : r.status === 'paid' ? 'ok' : 'error' %>"><%= STATUS_INV[r.status] || r.status %></span><% if (r.status === 'paid' && r.paid_at) { %><br><small class="muted"><%= String(r.paid_at).slice(0, 10) %></small><% } %></td>
         <td class="nowrap">
-          <% if (r.status === 'open' && r.checkout_url) { %><a href="<%= r.checkout_url %>" class="btn primary lemonsqueezy-button">ชำระเงิน</a>
-          <% } else if (r.status === 'open') { %><span class="muted">รอลิงก์ชำระเงิน</span>
-          <% } else if (r.status === 'paid' && r.receipt_url) { %><a href="<%= r.receipt_url %>" target="_blank" rel="noopener">ใบเสร็จ ↗</a>
-          <% } else if (r.status === 'carried') { %><span class="muted small">ยอดต่ำกว่า ฿<%= MIN_THB %> รวมในบิลเดือนถัดไป</span><% } %>
+          <% if (r.status === 'open' && r.checkout_url) { %><a href="<%= r.checkout_url %>" class="btn primary lemonsqueezy-button">Pay now</a>
+          <% } else if (r.status === 'open') { %><span class="muted">Payment link pending</span>
+          <% } else if (r.status === 'paid' && r.receipt_url) { %><a href="<%= r.receipt_url %>" target="_blank" rel="noopener">Receipt ↗</a>
+          <% } else if (r.status === 'carried') { %><span class="muted small">Below ฿<%= MIN_THB %> — added to next month's invoice</span><% } %>
         </td>
       </tr>
-      <% if (r.note) { %><tr><td></td><td colspan="6" class="muted small">หมายเหตุ: <%= r.note %></td></tr><% } %>
+      <% if (r.note) { %><tr><td></td><td colspan="6" class="muted small">Note: <%= r.note %></td></tr><% } %>
     <% } %>
     </tbody>
   </table></div>
   <% } %>
-  <p class="muted small" style="margin-top:10px">ชำระด้วยบัตรเครดิต/เดบิต หรือ PayPal ผ่าน Lemon Squeezy (Merchant of Record) ใบเสร็จส่งทางอีเมลทันทีหลังชำระ และกด "Generate invoice" ในอีเมลเพื่อออกเอกสารที่มีชื่อบริษัท/ที่อยู่/เลขผู้เสียภาษีของคุณ · <a href="/refund" target="_blank">นโยบายคืนเงิน</a></p>
+  <p class="muted small" style="margin-top:10px">Pay by credit/debit card or PayPal via Lemon Squeezy (Merchant of Record). The receipt is emailed immediately after payment; click "Generate invoice" in that email for a document showing your company name, address and tax ID. · <a href="/refund" target="_blank">Refund policy</a></p>
 </section>
 <%- include('partials/footer') %>
