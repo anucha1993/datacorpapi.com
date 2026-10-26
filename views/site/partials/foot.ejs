@@ -25,7 +25,7 @@
     </div>
   </div>
   <div class="wrap legal muted">
-    © <%= new Date().getFullYear() %> <%= co.COMPANY_NAME || co.PRODUCT_NAME %>. Online payments are processed by our reseller &amp; Merchant of Record, Lemon Squeezy, who also handles order-related inquiries and returns. Card statements will show Lemon Squeezy.
+    © <%= new Date().getFullYear() %> <%= co.COMPANY_NAME || co.PRODUCT_NAME %>. Online payments are processed by our reseller &amp; Merchant of Record, <%= co.PAY.name %>, who also handles order-related inquiries and returns. Card statements will show <%= co.PAY.name %>.
   </div>
 </footer>
 </body>

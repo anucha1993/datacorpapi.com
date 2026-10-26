@@ -1,7 +1,7 @@
 <%- include('partials/head') %>
 <section class="page">
   <h1>Services &amp; Pricing</h1>
-  <p class="lead">All prices are in Thai Baht (THB) and exclude VAT/sales tax, which Lemon Squeezy calculates at checkout based on the buyer's country. Pay by credit/debit card or PayPal.
+  <p class="lead">All prices are in Thai Baht (THB) and exclude VAT/sales tax, which <%= co.PAY.name %> calculates at checkout based on the buyer's country. Pay by <%= co.PAY.paymentMethods %>.
     Every project starts with a free discovery call and a written proposal; nothing is charged until you accept it.</p>
 
   <div class="plans">
@@ -21,8 +21,8 @@
   <h3>Projects (consulting, development, websites, integrations)</h3>
   <ul class="bullets">
     <li><b>Written proposal</b> with scope, deliverables, timeline and price. Fixed price for defined scope; hourly for open-ended consulting.</li>
-    <li><b>Deposit of 50%</b> on acceptance, invoiced through a Lemon Squeezy payment link; the balance on delivery. Larger projects are split into milestones, each invoiced on acceptance of that milestone.</li>
-    <li>Invoices are due within 15 days. The receipt is emailed immediately by Lemon Squeezy and can carry your company name, address and tax ID.</li>
+    <li><b>Deposit of 50%</b> on acceptance, invoiced through a <%= co.PAY.name %> payment link; the balance on delivery. Larger projects are split into milestones, each invoiced on acceptance of that milestone.</li>
+    <li>Invoices are due within 15 days. The receipt is emailed immediately by <%= co.PAY.name %> and can carry your company name, address and tax ID.</li>
     <li>Change requests outside the agreed scope are quoted separately before any work starts.</li>
     <li>Source code and deliverables are handed over on full payment. 30-day defect-fix warranty after delivery.</li>
   </ul>

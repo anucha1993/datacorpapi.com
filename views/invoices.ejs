@@ -12,8 +12,8 @@
   </div>
 </div>
 
-<% if (!lsReady) { %><p class="alert"><code>LS_API_KEY</code> is not set — invoices can be generated but will have no Lemon Squeezy payment link</p><% } %>
-<% if (testMode) { %><p class="notice">🧪 Test mode (LS_TEST_MODE=true): payment links are Lemon Squeezy test checkouts — pay with card 4242 4242 4242 4242, no real money is charged. Set LS_TEST_MODE=false to go live.</p><% } %>
+<% if (!lsReady) { %><p class="alert"><code><%= pay.envApi %></code> is not set — invoices can be generated but will have no <%= pay.name %> payment link</p><% } %>
+<% if (testMode) { %><p class="notice">🧪 Test mode (<%= pay.envTest %>): payment links are <%= pay.name %> test checkouts — pay with card 4242 4242 4242 4242, no real money is charged.<% if (pay.key === 'polar') { %> Set POLAR_SERVER=production (with a production token) to go live.<% } else { %> Set LS_TEST_MODE=false to go live.<% } %></p><% } %>
 <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
 <% if (error) { %><p class="alert"><%= error %></p><% } %>
 
@@ -90,5 +90,5 @@
   </table></div>
   <% } %>
 </section>
-<p class="muted small">Minimum per invoice ฿<%= MIN_THB %> (Lemon Squeezy requirement) — smaller amounts are carried forward automatically · due <%= DUE_DAYS %> days after issue · cron: <code>node invoices.js</code> on the 1st of each month</p>
+<p class="muted small">Minimum per invoice ฿<%= MIN_THB %> (payment-provider minimum) — smaller amounts are carried forward automatically · due <%= DUE_DAYS %> days after issue · cron: <code>node invoices.js</code> on the 1st of each month</p>
 <%- include('partials/footer') %>

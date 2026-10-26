@@ -4,10 +4,10 @@ Node.js (Express + EJS) + MySQL/MariaDB ทำ 3 หน้าที่ในแ�
 
 | ส่วน | URL | ใครเข้า |
 |---|---|---|
-| **หน้าเว็บสาธารณะ** สินค้า · ราคา · ข้อกำหนด · คืนเงิน · ความเป็นส่วนตัว · ติดต่อ | `/` `/pricing` `/terms` `/refund` `/privacy` `/contact` | ทุกคน (ผู้ตรวจของ Lemon Squeezy ด้วย) |
-| **Customer Portal** ลูกค้าดูยอดใช้งานของตัวเอง · ใบแจ้งหนี้ · ชำระเงินผ่าน Lemon Squeezy · ข้อมูลออกใบเสร็จ | `/portal` (บัญชีลูกค้า) | ลูกค้า |
+| **หน้าเว็บสาธารณะ** สินค้า · ราคา · ข้อกำหนด · คืนเงิน · ความเป็นส่วนตัว · ติดต่อ | `/` `/pricing` `/terms` `/refund` `/privacy` `/contact` | ทุกคน (ผู้ตรวจของผู้ให้บริการรับชำระเงินด้วย) |
+| **Customer Portal** ลูกค้าดูยอดใช้งานของตัวเอง · ใบแจ้งหนี้ · ชำระเงินผ่าน Polar · ข้อมูลออกใบเสร็จ | `/portal` (บัญชีลูกค้า) | ลูกค้า |
 | **หลังบ้าน** ยอดการใช้งาน · ใบแจ้งหนี้รายเดือน · บัญชีลูกค้า · ตั้งราคา · ข้อความติดต่อ | `/admin` (รหัสผ่าน) | คุณ |
-| **Webhook** รับผลการชำระเงินจาก Lemon Squeezy → มาร์คบิลชำระแล้ว | `/webhooks/lemonsqueezy` | Lemon Squeezy |
+| **Webhook** รับผลการชำระเงินจาก Polar → มาร์คบิลชำระแล้ว + ลิงก์ใบเสร็จ | `/webhooks/polar` (Lemon Squeezy เดิม: `/webhooks/lemonsqueezy`) | Polar |
 
 ## 1. ฐานข้อมูล (ครั้งเดียว)
 สร้าง database + user ผ่านหน้าควบคุมของโฮสต์ แล้วรัน 4 ไฟล์นี้ตามลำดับใน database นั้น (phpMyAdmin → SQL หรือ):
@@ -27,7 +27,7 @@ copy .env.example .env      # Linux/Mac: cp .env.example .env
 - `ADMIN_PASSWORD`, `SESSION_SECRET`
 - `DB_*` ของ database ข้อ 1
 - **ข้อมูลธุรกิจ** `COMPANY_NAME` `COMPANY_NAME_EN` `COMPANY_TAX_ID` `COMPANY_ADDRESS` `COMPANY_EMAIL` `COMPANY_PHONE` `SITE_URL` — แสดงบนทุกหน้า ผู้ตรวจของผู้ให้บริการรับชำระเงินต้องเห็น ถ้ายังเป็น `CHANGE_ME` จะเตือนตอนเริ่มและที่หน้า admin
-- Lemon Squeezy: `LS_API_KEY` `LS_WEBHOOK_SECRET` และลิงก์ checkout (ข้อ 4)
+- Polar: `PAYMENT_PROVIDER=polar` `POLAR_ACCESS_TOKEN` `POLAR_WEBHOOK_SECRET` `POLAR_PRODUCT_ID` `POLAR_SERVER` (ข้อ 4) — Lemon Squeezy ยังเลือกได้ด้วย `PAYMENT_PROVIDER=lemonsqueezy` + `LS_*`
 
 ```bash
 npm start        # http://localhost:3000  (หลังบ้าน /admin)
@@ -41,20 +41,21 @@ node seed.js     # (ทางเลือก) ใส่ข้อมูลตั�
 - **โฮสต์ Node.js (cPanel "Setup Node.js App", Render, Railway):** ชี้ที่ `server.js` ตั้ง env ตาม `.env` และใช้ MySQL ของโฮสต์ (โปรแกรมบนเครื่องผู้ใช้ต้องต่อ MySQL ตัวเดียวกันได้ — เปิด Remote MySQL ให้ IP ของออฟฟิศ)
 - ตั้ง cron ออกใบแจ้งหนี้ทุกวันที่ 1: `0 6 1 * * cd /path/webapp && node invoices.js >> invoices.log 2>&1`
 
-## 4. ตั้งค่า Lemon Squeezy (โมเดล: จ่ายตามบิลรายเดือน)
-ลูกค้า**ไม่ได้สมัคร subscription** — ทุกวันที่ 1 ระบบออกใบแจ้งหนี้ของเดือนก่อนให้แต่ละลูกค้า แล้วสร้างลิงก์ชำระเงิน Lemon Squeezy ที่ใส่ยอดจริงของบิลนั้น (`custom_price`) ลูกค้ากดจ่ายในพอร์ทัล → webhook มาร์คชำระแล้ว
+## 4. ตั้งค่า Polar (polar.sh) — โมเดล: จ่ายตามบิลรายเดือน
+ลูกค้า**ไม่ได้สมัคร subscription** — ทุกวันที่ 1 ระบบออกใบแจ้งหนี้ของเดือนก่อนให้แต่ละลูกค้า แล้วสร้าง checkout ของ Polar ผ่าน API ที่ใส่ยอดจริงของบิลนั้นเป็นราคาคงที่ (ad-hoc fixed price, THB) ลูกค้ากดจ่ายในพอร์ทัล → webhook `order.paid` มาร์คชำระแล้ว → ระบบขอใบเสร็จ (order invoice) จาก Polar มาแสดงในพอร์ทัล
 
-1. **เปิดร้าน** ตอบแบบสอบถามว่าเป็นซอฟต์แวร์/SaaS (ไม่ใช่บริการ) ระบุ URL เว็บนี้ ใช้ชื่อ/ที่อยู่/อีเมลเดียวกับที่แสดงบนเว็บ
-2. **สร้าง Product 1 ตัว แบบ Single payment** ราคาเท่าไรก็ได้ที่ ≥ ฿17 (เช่น 20 — ระบบส่งยอดจริงไปแทนทุกครั้ง) Tax category = Software as a Service · Confirmation modal: Title "ชำระค่าบริการเรียบร้อย", Button link `datacorpapi.com/portal/billing`
-3. **API key** Settings → API → สร้าง → `LS_API_KEY` (ระบบหา Store ID / Variant ID ให้เองจาก API หรือระบุ `LS_STORE_ID` / `LS_VARIANT_ID`)
-4. **Webhook** Settings → Webhooks → URL `SITE_URL/webhooks/lemonsqueezy` · signing secret = `LS_WEBHOOK_SECRET` · ติ๊ก `order_created`, `order_refunded`
-5. **ทดสอบ** ตั้ง `LS_TEST_MODE=true` → ลิงก์ชำระเงินเป็น test mode (บัตร 4242 4242 4242 4242) เมื่อพร้อมเก็บเงินจริงเปลี่ยนเป็น `false` และสลับ Lemon Squeezy ออกจาก Test mode
+**ไม่ต้องสร้าง Checkout Link ในหน้า Polar** (ลิงก์คงที่ใช้ไม่ได้กับยอดที่ต่างกันทุกบิล) สิ่งที่ต้องทำใน Polar มี 4 อย่าง:
+1. **Organization** ชื่อ/อีเมล/ที่อยู่ตรงกับที่แสดงบนเว็บ · Settings → General: เปิดรับ THB (ถ้ามีตัวเลือกสกุลเงิน)
+2. **Product 1 ตัว แบบ One-time** ชื่อเช่น `DataCorp API services` ราคาตั้ง Pay what you want (ขั้นต่ำ ฿17, หรือ Fixed ก็ได้ — ระบบส่งยอดจริงทับทุกครั้ง) → คัดลอก Product ID ใส่ `POLAR_PRODUCT_ID` (เว้นว่างได้ ระบบหยิบสินค้า one-time ตัวแรก)
+3. **Access token** Settings → API → New token (Organization) scopes: `checkouts:write` `products:read` `orders:read` `orders:write` `customers:write` → `POLAR_ACCESS_TOKEN`
+4. **Webhook** Settings → Webhooks → Add endpoint: URL `SITE_URL/webhooks/polar` · Format **Raw** · events `order.paid` `order.updated` `order.refunded` → คัดลอก secret ใส่ `POLAR_WEBHOOK_SECRET`
+5. **ทดสอบ** ทำข้อ 2–4 ซ้ำที่ **sandbox.polar.sh** (token/webhook คนละชุด) แล้วตั้ง `POLAR_SERVER=sandbox` → ลิงก์ชำระเงินเป็น sandbox (บัตร 4242 4242 4242 4242) เมื่อพร้อมเก็บเงินจริงใส่ token/secret ของ production และตั้ง `POLAR_SERVER=production`
 
 ### รอบการเรียกเก็บ
-โปรแกรมบนเครื่องลูกค้าส่งยอดเข้า `usage_runs` → วันที่ 1: `node invoices.js` (cron) หรือปุ่ม "ออกใบแจ้งหนี้" ใน `/admin/invoices` → บิล `open` + ลิงก์ชำระ (ยอด < ฿17 → `carried` ยกไปเดือนถัดไป) → ลูกค้าเห็นบิลใน `/portal/billing` กด "ชำระเงิน" (หน้าชำระเงินเติมชื่อบริษัท/เลขภาษี/ที่อยู่จาก `/portal/profile`) → webhook `order_created` → บิล `paid` + ลิงก์ใบเสร็จ · แอดมินแก้ยอด/ให้ส่วนลด/รับชำระเอง/ยกเลิกได้ · ครบกำหนด `INVOICE_DUE_DAYS` วัน
+โปรแกรมบนเครื่องลูกค้าส่งยอดเข้า `usage_runs` → วันที่ 1: `node invoices.js` (cron) หรือปุ่ม "ออกใบแจ้งหนี้" ใน `/admin/invoices` → บิล `open` + ลิงก์ชำระ (ยอด < ฿17 → `carried` ยกไปเดือนถัดไป) → ลูกค้าเห็นบิลใน `/portal/billing` กด "ชำระเงิน" (หน้าชำระเงินเติมชื่อบริษัท/เลขภาษี/ที่อยู่จาก `/portal/profile`) → webhook `order.paid` → บิล `paid` + ลิงก์ใบเสร็จ (Polar order invoice) · แอดมินแก้ยอด/ให้ส่วนลด/รับชำระเอง/ยกเลิกได้ · ครบกำหนด `INVOICE_DUE_DAYS` วัน
 
 ## 5. สิ่งที่หน้าเว็บมีตามข้อกำหนดของผู้ให้บริการรับชำระเงิน
-ชื่อธุรกิจ · คำอธิบายสินค้าที่ตรงกับที่แจ้ง (ซอฟต์แวร์ ไม่ใช่บริการ) · ราคาและวิธีคิดเงินทุกแพ็กเกจ · นโยบายคืนเงิน/ยกเลิก · ข้อกำหนดการใช้บริการ · นโยบายความเป็นส่วนตัว (PDPA) · ช่องทางติดต่อ (อีเมล โทร ที่อยู่ ฟอร์ม) · ระบุว่า Lemon Squeezy เป็น Merchant of Record · ทุกหน้าเปิดได้โดยไม่ต้อง login และมีสรุปภาษาอังกฤษ
+ชื่อธุรกิจ · คำอธิบายสินค้าที่ตรงกับที่แจ้ง (ซอฟต์แวร์ ไม่ใช่บริการ) · ราคาและวิธีคิดเงินทุกแพ็กเกจ · นโยบายคืนเงิน/ยกเลิก · ข้อกำหนดการใช้บริการ · นโยบายความเป็นส่วนตัว (PDPA) · ช่องทางติดต่อ (อีเมล โทร ที่อยู่ ฟอร์ม) · ระบุว่าผู้ให้บริการรับชำระเงิน (Polar) เป็น Merchant of Record · ทุกหน้าเปิดได้โดยไม่ต้อง login และมีสรุปภาษาอังกฤษ
 
 > ก่อนยื่นขอเปิดร้าน: กรอก `.env` ให้ครบ, ใส่ภาพหน้าจอโปรแกรมที่ `public/screenshot-app.png` (ไม่บังคับ), อ่านข้อความในหน้า `/terms` `/refund` `/privacy` แล้วแก้ให้ตรงกับที่คุณจะทำจริง (เช่น จำนวนวันคืนเงิน)
 
@@ -62,7 +63,9 @@ node seed.js     # (ทางเลือก) ใส่ข้อมูลตั�
 ```
 webapp/
   server.js            เส้นทางทั้งหมด (public / admin / webhook / api)
-  lib/lemonsqueezy.js  ตรวจลายเซ็น webhook, สร้าง checkout ด้วยยอดบิล (custom_price)
+  lib/payments.js      เลือกผู้ให้บริการรับชำระเงิน (polar / lemonsqueezy) จาก env
+  lib/polar.js         Polar: สร้าง checkout ยอดคงที่ (THB), ตรวจลายเซ็น webhook (Standard Webhooks), ขอใบเสร็จของ order
+  lib/lemonsqueezy.js  Lemon Squeezy (ตัวเลือกสำรอง): ตรวจลายเซ็น webhook, สร้าง checkout ด้วยยอดบิล (custom_price)
   lib/billing.js       บันทึก webhook → billing_*
   lib/invoices.js      คำนวณ/ออกใบแจ้งหนี้, ปรับยอด, มาร์คชำระจาก webhook
   lib/portal.js        บัญชีลูกค้า (scrypt)

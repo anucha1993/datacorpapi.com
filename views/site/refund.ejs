@@ -33,9 +33,9 @@
 
   <h2>How to request a refund</h2>
   <ol>
-    <li>Email <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>our support address<% } %> with the email used at checkout, the invoice number (INV-…) or Lemon Squeezy order number, and the reason.</li>
-    <li>We reply within 2 business days. Approved refunds are issued through Lemon Squeezy to the original payment method within 5–10 business days, depending on your card issuer.</li>
-    <li>You may also contact Lemon Squeezy directly via the links in your receipt email; as Merchant of Record it may process refunds under its <a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Buyer Terms</a>.</li>
+    <li>Email <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>our support address<% } %> with the email used at checkout, the invoice number (INV-…) or <%= co.PAY.name %> order number, and the reason.</li>
+    <li>We reply within 2 business days. Approved refunds are issued through <%= co.PAY.name %> to the original payment method within 5–10 business days, depending on your card issuer.</li>
+    <li>You may also contact <%= co.PAY.name %> directly via the links in your receipt email; as Merchant of Record it may process refunds under its <a href="<%= co.PAY.buyerTermsUrl %>" rel="noopener" target="_blank">Buyer Terms</a>.</li>
   </ol>
 
   <h2>Chargebacks</h2>

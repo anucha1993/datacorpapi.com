@@ -46,9 +46,11 @@ SITE_URL=https://datacorpapi.com
 COMPANY_NAME=datacorpapi.com
 COMPANY_ADDRESS=45/107 ซอย 26 โครงการเวอร์โซ่ วงแหวน-ลำลูกกา ตำบลบึงคำพร้อย อำเภอลำลูกกา จังหวัดปทุมธานี 12150
 COMPANY_EMAIL=info@datacorpapi.com
-LS_API_KEY=...
-LS_WEBHOOK_SECRET=...
-LS_CHECKOUT_URL_PAYG=https://<store>.lemonsqueezy.com/checkout/buy/<variant>
+PAYMENT_PROVIDER=polar
+POLAR_ACCESS_TOKEN=polar_oat_...
+POLAR_WEBHOOK_SECRET=whsec_...
+POLAR_PRODUCT_ID=
+POLAR_SERVER=sandbox
 ```
 หรือใส่เป็น **Custom environment variables** ในหน้า Node.js ของ Plesk แทนไฟล์ก็ได้ (แอปอ่านทั้งสองทาง) จากนั้นกด **Restart App**
 
@@ -60,10 +62,10 @@ Websites & Domains → **SSL/TLS Certificates** → Install Let's Encrypt (ต�
 - `https://datacorpapi.com/` หน้าแรก และ `/admin` login ได้
 - ถ้าขึ้นหน้า error ของ Passenger ให้ดู log: Node.js → **Show logs** หรือ Websites & Domains → Logs
 
-## 6. Lemon Squeezy ชี้มาที่เซิร์ฟเวอร์
-- Webhook URL: `https://datacorpapi.com/webhooks/lemonsqueezy` (signing secret = `LS_WEBHOOK_SECRET`) events: `order_created`, `order_refunded`
-- ใส่ `LS_API_KEY` ใน `.env` และตั้ง `LS_TEST_MODE=true` ระหว่างทดสอบ → Restart App
-- ทดสอบ: ออกบิลที่ `/admin/invoices` → ลูกค้า login `/portal/billing` กด "ชำระเงิน" ด้วยบัตร 4242 4242 4242 4242 → ดูที่ `/admin/invoices` ว่าเป็น "ชำระแล้ว" และ `/admin/billing` ส่วน "Webhook ล่าสุด"
+## 6. Polar ชี้มาที่เซิร์ฟเวอร์
+- Settings → Webhooks → Add endpoint: URL `https://datacorpapi.com/webhooks/polar` · Format Raw · events `order.paid`, `order.updated`, `order.refunded` → secret ใส่ `POLAR_WEBHOOK_SECRET`
+- Settings → API → Organization Access Token (scopes checkouts:write, products:read, orders:read, orders:write, customers:write) ใส่ `POLAR_ACCESS_TOKEN` · ระหว่างทดสอบใช้ token/webhook ของ sandbox.polar.sh และตั้ง `POLAR_SERVER=sandbox` → Restart App
+- ทดสอบ: ออกบิลที่ `/admin/invoices` → ลูกค้า login `/portal/billing` กด "Pay now" ด้วยบัตร 4242 4242 4242 4242 → ดูที่ `/admin/invoices` ว่าเป็น "Paid" และ `/admin/billing` ส่วน "Recent webhooks"
 
 ## 7. ออกใบแจ้งหนี้อัตโนมัติทุกวันที่ 1 (Scheduled Task)
 Tools & Settings → **Scheduled Tasks** → Add task → Run a command
@@ -86,5 +88,5 @@ Git → **Pull now** (หรืออัตโนมัติเมื่อ pus
 | หน้า "We're sorry, but something went wrong" ของ Passenger | ดู log; มักเป็น `.env` ไม่มี `ADMIN_PASSWORD` หรือ npm install ยังไม่รัน |
 | CSS ไม่โหลด | Document root ไม่ได้ชี้ `webapp/public` |
 | `/api/health` → `ER_ACCESS_DENIED_ERROR` | DB_USER/DB_PASSWORD ผิด หรือ user ไม่มีสิทธิ์บน `thaidata_ewp` |
-| webhook ได้ 401 | `LS_WEBHOOK_SECRET` ไม่ตรงกับที่ตั้งใน Lemon Squeezy |
+| webhook ได้ 401 | `POLAR_WEBHOOK_SECRET` ไม่ตรงกับ secret ของ endpoint ใน Polar (sandbox กับ production คนละค่า) |
 | login admin แล้วเด้งกลับ | เปิดเว็บผ่าน http ปนกับ https — ใช้ https เสมอ |

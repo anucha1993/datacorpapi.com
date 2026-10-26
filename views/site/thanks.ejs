@@ -1,8 +1,8 @@
 <%- include('partials/head') %>
 <section class="page center">
   <h1>Payment received. Thank you</h1>
-  <p class="lead">Lemon Squeezy has emailed your receipt (check your spam folder if you cannot find it). The invoice status in your customer portal will change to "Paid" within a few minutes.
-    Need a receipt showing your company name, address and tax ID? Click "Generate invoice" in the receipt email.</p>
+  <p class="lead"><%= co.PAY.name %> has emailed a payment confirmation (check your spam folder if you cannot find it). The invoice status in your customer portal will change to "Paid" within a few minutes,
+    and a downloadable receipt showing your company name, address and tax ID will appear next to the invoice.</p>
   <p>Questions? Contact <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %><a href="/contact">us</a><% } %></p>
   <a href="/portal/billing" class="btn primary">Back to customer portal</a>
   <a href="/" class="btn">Home</a>

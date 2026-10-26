@@ -21,7 +21,7 @@ const bad = (m) => console.log("✗ " + m);
     const v = process.env[k];
     if (!v) bad(`${k} ว่าง`); else if (/CHANGE_ME/i.test(v)) bad(`${k} ยังเป็น CHANGE_ME`); else ok(`${k} ตั้งแล้ว`);
   }
-  for (const k of ["LS_API_KEY", "LS_WEBHOOK_SECRET", "LS_CHECKOUT_URL_PAYG"]) console.log((process.env[k] ? "✓ " : "· ") + k + (process.env[k] ? " ตั้งแล้ว" : " ยังไม่ตั้ง (ไม่บังคับตอนนี้)"));
+  for (const k of ["PAYMENT_PROVIDER", "POLAR_ACCESS_TOKEN", "POLAR_WEBHOOK_SECRET", "POLAR_PRODUCT_ID", "POLAR_SERVER", "LS_API_KEY", "LS_WEBHOOK_SECRET"]) console.log((process.env[k] ? "✓ " : "· ") + k + (process.env[k] ? " ตั้งแล้ว" : " ยังไม่ตั้ง (ไม่บังคับตอนนี้)"));
 
   for (const m of ["express", "ejs", "mysql2/promise", "cookie-session", "dotenv"]) {
     try { require(m); ok("module " + m); } catch (e) { bad("module " + m + " โหลดไม่ได้ → กด NPM install (" + e.message.split("\n")[0] + ")"); }

@@ -1,5 +1,4 @@
 <%- include('partials/header') %>
-<script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
 <div class="pagehead"><h1>Billing</h1></div>
 
 <% if (paidNo) { %><p class="ok">Payment for invoice <%= paidNo %> received — thank you. The status will update within a few minutes.</p><% } %>
@@ -26,7 +25,7 @@
         <td class="nowrap muted"><%= r.due_at || '' %><% if (overdue) { %> <span class="st st-error">Overdue</span><% } %></td>
         <td><span class="st st-<%= r.status === 'open' ? 'cancelled' : r.status === 'paid' ? 'ok' : 'error' %>"><%= STATUS_INV[r.status] || r.status %></span><% if (r.status === 'paid' && r.paid_at) { %><br><small class="muted"><%= String(r.paid_at).slice(0, 10) %></small><% } %></td>
         <td class="nowrap">
-          <% if (r.status === 'open' && r.checkout_url) { %><a href="<%= r.checkout_url %>" class="btn primary lemonsqueezy-button">Pay now</a>
+          <% if (r.status === 'open' && r.checkout_url) { %><a href="<%= r.checkout_url %>" class="btn primary">Pay now</a>
           <% } else if (r.status === 'open') { %><span class="muted">Payment link pending</span>
           <% } else if (r.status === 'paid' && r.receipt_url) { %><a href="<%= r.receipt_url %>" target="_blank" rel="noopener">Receipt ↗</a>
           <% } else if (r.status === 'carried') { %><span class="muted small">Below ฿<%= MIN_THB %> — added to next month's invoice</span><% } %>
@@ -37,6 +36,6 @@
     </tbody>
   </table></div>
   <% } %>
-  <p class="muted small" style="margin-top:10px">Pay by credit/debit card or PayPal via Lemon Squeezy (Merchant of Record). The receipt is emailed immediately after payment; click "Generate invoice" in that email for a document showing your company name, address and tax ID. · <a href="/refund" target="_blank">Refund policy</a></p>
+  <p class="muted small" style="margin-top:10px">Pay by <%= co.PAY.paymentMethods %> via <%= co.PAY.name %> (Merchant of Record). A confirmation is emailed after payment; a downloadable receipt showing your company name, address and tax ID appears here as "Receipt" within a few minutes. · <a href="/refund" target="_blank">Refund policy</a></p>
 </section>
 <%- include('partials/footer') %>

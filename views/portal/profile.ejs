@@ -3,7 +3,7 @@
 <form method="post" action="/portal/profile" class="card" style="max-width:640px">
   <% if (saved) { %><p class="ok">Saved. These details will be pre-filled at checkout and shown on your receipts.</p><% } %>
   <% if (error) { %><p class="alert"><%= error %></p><% } %>
-  <p class="muted">Enter these once. Every time you pay an invoice, the Lemon Squeezy checkout is pre-filled with this information so the receipt is issued to your company name and address.</p>
+  <p class="muted">Enter these once. Every time you pay an invoice, the <%= co.PAY.name %> checkout is pre-filled with this information so the receipt is issued to your company name and address.</p>
   <div class="stack">
     <label>Operator name (cannot be changed) <input value="<%= user.operator %>" disabled></label>
     <label>Serial number — enter this in the desktop app (Settings → Serial number)

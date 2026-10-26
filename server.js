@@ -1,8 +1,10 @@
 /**
- * เว็บไซต์ + ระบบหลังบ้านของ e-WorkPermit Tools
- *   /            หน้าเว็บสาธารณะ: สินค้า ราคา นโยบาย ติดต่อ สมัคร/ชำระเงินผ่าน Lemon Squeezy
- *   /admin       หน้าหลังบ้าน (รหัสผ่าน): ยอดการใช้งาน ลูกค้า ส่งยอดไป Lemon Squeezy
- *   /webhooks/lemonsqueezy   รับเหตุการณ์คำสั่งซื้อ/subscription จาก Lemon Squeezy
+ * เว็บไซต์ + ระบบหลังบ้านของ DataCorp API
+ *   /            หน้าเว็บสาธารณะ: บริการ ราคา นโยบาย ติดต่อ
+ *   /portal      พอร์ทัลลูกค้า: ยอดการใช้งาน ใบแจ้งหนี้ ชำระเงินผ่าน Polar (หรือ Lemon Squeezy)
+ *   /admin       หน้าหลังบ้าน (รหัสผ่าน): ยอดการใช้งาน ลูกค้า ใบแจ้งหนี้
+ *   /webhooks/polar          รับเหตุการณ์คำสั่งซื้อจาก Polar (order.paid ...)
+ *   /webhooks/lemonsqueezy   รับเหตุการณ์คำสั่งซื้อ/subscription จาก Lemon Squeezy (ถ้ายังใช้)
  *
  * รัน:  npm install && cp .env.example .env (แก้ค่า) && npm start
  */
@@ -19,6 +21,8 @@ const billing = require("./lib/billing");
 const { company } = require("./lib/company");
 const portal = require("./lib/portal");
 const invoices = require("./lib/invoices");
+const payments = require("./lib/payments");
+const polar = require("./lib/polar");
 
 const PORT = Number(process.env.PORT || 3000);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
@@ -27,6 +31,8 @@ const LS_API_KEY = (process.env.LS_API_KEY || "").trim();
 const LS_WEBHOOK_SECRET = (process.env.LS_WEBHOOK_SECRET || "").trim();
 const LS_USAGE_ACTION = (process.env.LS_USAGE_ACTION || "set").trim() === "increment" ? "increment" : "set";
 const LS_TEST_MODE = /^(1|true|yes)$/i.test(process.env.LS_TEST_MODE || "");
+const POLAR_WEBHOOK_SECRET = (process.env.POLAR_WEBHOOK_SECRET || "").trim();
+const payOpts = () => ({ apiReady: payments.info().ready, testMode: payments.info().testMode });
 const STATUS_INV = { open: "Unpaid", paid: "Paid", void: "Void", carried: "Carried forward" };
 const LS_USAGE_QUANTITY = (process.env.LS_USAGE_QUANTITY || "amount").trim() === "records" ? "records" : "amount";
 
@@ -36,7 +42,9 @@ if (ADMIN_DISABLED) console.error("⚠ ADMIN_PASSWORD is not set in .env — /ad
 {
   const co = company();
   if (!co.isComplete) console.warn("⚠ Business details missing in .env (payment provider reviewers must see them on the site):", co.missing.join(", "));
-  if (!LS_WEBHOOK_SECRET) console.warn("⚠ LS_WEBHOOK_SECRET is not set — webhooks will be rejected");
+  const pay = payments.info();
+  console.log(`• payment provider: ${pay.name}${pay.testMode ? " (test/sandbox)" : ""}${pay.ready ? "" : " — " + pay.envApi + " not set"}`);
+  if (!pay.webhookReady) console.warn(`⚠ ${pay.envSecret} is not set — ${pay.name} webhooks will be rejected`);
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +178,21 @@ app.post("/webhooks/lemonsqueezy", express.raw({ type: () => true, limit: "2mb" 
   }
 });
 
+app.post("/webhooks/polar", express.raw({ type: () => true, limit: "2mb" }), async (req, res) => {
+  if (!POLAR_WEBHOOK_SECRET) return res.status(503).json({ error: "webhook secret not configured" });
+  const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
+  if (!polar.verifyWebhook(raw, req.headers, POLAR_WEBHOOK_SECRET)) return res.status(401).json({ error: "invalid signature" });
+  let payload;
+  try { payload = JSON.parse(raw.toString("utf8")); } catch { return res.status(400).json({ error: "invalid json" }); }
+  try {
+    const r = await billing.handlePolarWebhook(q, raw, payload);
+    res.json({ ok: true, ...r });
+  } catch (e) {
+    console.error("[polar webhook]", e);
+    res.status(500).json({ error: "processing failed" }); // Polar จะส่งซ้ำให้
+  }
+});
+
 app.use(express.urlencoded({ extended: false, limit: "64kb" }));
 app.use(express.static(path.join(__dirname, "public"), { maxAge: "1h" }));
 app.use(cookieSession({ name: "ewpusage", secret: SESSION_SECRET, httpOnly: true, sameSite: "lax", maxAge: 12 * 60 * 60 * 1000 }));
@@ -223,7 +246,8 @@ app.post("/api/license/verify", express.json({ limit: "8kb" }), async (req, res)
 });
 app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nDisallow: /portal\nAllow: /\n"));
 app.get("/api/health", async (req, res) => {
-  const cfg = { admin_password: !ADMIN_DISABLED, company_complete: company().isComplete, lemonsqueezy_api: !!LS_API_KEY, lemonsqueezy_test_mode: LS_TEST_MODE, webhook_secret: !!LS_WEBHOOK_SECRET, node: process.version };
+  const pay = payments.info();
+  const cfg = { admin_password: !ADMIN_DISABLED, company_complete: company().isComplete, payment_provider: pay.key, payment_api: pay.ready, payment_test_mode: pay.testMode, webhook_secret: pay.webhookReady, node: process.version };
   try { await q("SELECT 1"); res.json({ ok: true, ...cfg }); } catch (e) { res.status(500).json({ ok: false, error: e.code || "db", ...cfg }); }
 });
 
@@ -284,12 +308,12 @@ app.get("/portal/export.csv", requirePortal, async (req, res, next) => {
     res.send("\uFEFF" + lines.join("\r\n"));
   } catch (e) { next(e); }
 });
-/** หน้าการชำระเงินของลูกค้า: ใบแจ้งหนี้รายเดือน + ปุ่มจ่ายผ่าน Lemon Squeezy */
+/** หน้าการชำระเงินของลูกค้า: ใบแจ้งหนี้รายเดือน + ปุ่มจ่ายผ่านผู้ให้บริการรับชำระเงิน */
 app.get("/portal/billing", requirePortal, async (req, res, next) => {
   try {
     const u = req.portalUser, op = u.operator;
     const [inv, cur] = await Promise.all([
-      q(`SELECT i.*, o.receipt_url FROM billing_invoices i LEFT JOIN billing_orders o ON o.order_id = i.ls_order_id WHERE i.operator = ? ORDER BY i.ym DESC, i.id DESC LIMIT 36`, [op]),
+      q(`SELECT i.*, COALESCE(NULLIF(i.receipt_url, ''), o.receipt_url, '') AS receipt_url FROM billing_invoices i LEFT JOIN billing_orders o ON o.order_id = i.ls_order_id WHERE i.operator = ? ORDER BY i.ym DESC, i.id DESC LIMIT 36`, [op]),
       q("SELECT COALESCE(SUM(amount_thb),0) amt FROM v_usage_monthly WHERE ym = ? AND operator = ?", [thisMonth(), op]),
     ]);
     const sum = { open: 0, open_n: 0, paid: 0 };
@@ -456,8 +480,9 @@ async function renderBilling(req, res, next, extra = {}) {
       q("SELECT DISTINCT operator FROM usage_runs WHERE operator <> '' ORDER BY operator"),
       monthsAvailable(),
     ]);
-    res.render("billing", { title: "Lemon Squeezy", subs, orders, events, operators, months, ym: validYm(req.query.ym || req.body?.ym),
-      lsReady: !!LS_API_KEY, webhookReady: !!LS_WEBHOOK_SECRET, siteUrl: company().SITE_URL || "", report: null, ...extra });
+    const pay = payments.info();
+    res.render("billing", { title: "Payments", subs, orders, events, operators, months, ym: validYm(req.query.ym || req.body?.ym),
+      pay, lsReady: pay.ready, webhookReady: pay.webhookReady, siteUrl: company().SITE_URL || "", report: null, ...extra });
   } catch (e) { next(e); }
 }
 admin.get("/billing", (req, res, next) => renderBilling(req, res, next));
@@ -486,14 +511,15 @@ async function renderInvoices(req, res, next, extra = {}) {
       if (r.status === "open") { sum.open += Number(r.amount_thb); sum.open_n++; if (r.due_at && r.due_at < today) sum.overdue_n++; }
       if (r.status === "paid") { sum.paid += Number(r.amount_thb); sum.paid_n++; }
     }
-    res.render("invoices", { title: "Invoices", ym, months, rows, sum, today, operators, lsReady: !!LS_API_KEY, testMode: LS_TEST_MODE, msg: req.query.msg || null, error: null, report: null, ...extra });
+    const pay = payments.info();
+    res.render("invoices", { title: "Invoices", ym, months, rows, sum, today, operators, pay, lsReady: pay.ready, testMode: pay.testMode, msg: req.query.msg || null, error: null, report: null, ...extra });
   } catch (e) { next(e); }
 }
 admin.get("/invoices", (req, res, next) => renderInvoices(req, res, next));
 admin.post("/invoices/generate", async (req, res, next) => {
   try {
     const ym = validYm(req.body.ym);
-    const report = await invoices.generateInvoices(q, ym, { apiReady: !!LS_API_KEY, testMode: LS_TEST_MODE, log: console.log });
+    const report = await invoices.generateInvoices(q, ym, { ...payOpts(), log: console.log });
     req.query.ym = ym;
     renderInvoices(req, res, next, { report });
   } catch (e) { next(e); }
@@ -501,7 +527,7 @@ admin.post("/invoices/generate", async (req, res, next) => {
 admin.post("/invoices/manual", async (req, res, next) => {
   try {
     const inv = await invoices.createManualInvoice(q, { operator: req.body.operator, amount: req.body.amount, title: req.body.title, note: req.body.note, dueDays: req.body.due_days },
-      { apiReady: !!LS_API_KEY, testMode: LS_TEST_MODE });
+      payOpts());
     const msg = `Created ${inv.invoice_no} for ${inv.operator}: ฿${inv.amount_thb}` + (inv.linkError ? ` (payment link failed: ${inv.linkError})` : inv.checkout_url ? " with payment link" : "");
     res.redirect("/admin/invoices?ym=" + inv.ym + "&msg=" + encodeURIComponent(msg));
   } catch (e) {
@@ -512,11 +538,11 @@ admin.post("/invoices/manual", async (req, res, next) => {
 });
 const invRedirect = (req, res, id, msg) => q("SELECT ym FROM billing_invoices WHERE id = ?", [id]).then(r => res.redirect("/admin/invoices?ym=" + (r[0] ? r[0].ym : thisMonth()) + (msg ? "&msg=" + encodeURIComponent(msg) : "")));
 admin.post("/invoices/:id/adjust", async (req, res, next) => {
-  try { const inv = await invoices.adjustInvoice(q, Number(req.params.id), { adjust_thb: req.body.adjust_thb, note: req.body.note }, { apiReady: !!LS_API_KEY, testMode: LS_TEST_MODE }); invRedirect(req, res, inv.id, `${inv.invoice_no} adjusted to ฿${inv.amount_thb}`); }
+  try { const inv = await invoices.adjustInvoice(q, Number(req.params.id), { adjust_thb: req.body.adjust_thb, note: req.body.note }, payOpts()); invRedirect(req, res, inv.id, `${inv.invoice_no} adjusted to ฿${inv.amount_thb}`); }
   catch (e) { renderInvoices(req, res, next, { error: e.message }); }
 });
 admin.post("/invoices/:id/link", async (req, res, next) => {
-  try { await invoices.regenerateLink(q, Number(req.params.id), { testMode: LS_TEST_MODE }); invRedirect(req, res, Number(req.params.id), "Payment link created"); }
+  try { await invoices.regenerateLink(q, Number(req.params.id), { testMode: payOpts().testMode }); invRedirect(req, res, Number(req.params.id), "Payment link created"); }
   catch (e) { renderInvoices(req, res, next, { error: e.message }); }
 });
 admin.post("/invoices/:id/paid", async (req, res, next) => {

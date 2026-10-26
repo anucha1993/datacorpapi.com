@@ -1,6 +1,6 @@
 <%- include('partials/header') %>
 <div class="pagehead">
-  <h1>Lemon Squeezy <span class="muted">· customers / orders / webhooks</span></h1>
+  <h1><%= pay.name %> <span class="muted">· payment provider · orders / webhooks<%= pay.testMode ? ' · TEST MODE' : '' %></span></h1>
   <div class="tools">
     <a class="btn" href="/admin/invoices">Go to invoices →</a>
   </div>
@@ -8,15 +8,22 @@
 
 <% if (!lsReady || !webhookReady) { %>
 <p class="alert">
-  <% if (!lsReady) { %><code>LS_API_KEY</code> is not set — payment links cannot be created<br><% } %>
-  <% if (!webhookReady) { %><code>LS_WEBHOOK_SECRET</code> is not set — webhooks will be rejected (503)<% } %>
+  <% if (!lsReady) { %><code><%= pay.envApi %></code> is not set — payment links cannot be created<br><% } %>
+  <% if (!webhookReady) { %><code><%= pay.envSecret %></code> is not set — webhooks will be rejected (503)<% } %>
 </p>
 <% } %>
 
 <section class="card">
+  <h2>Setup</h2>
+  <p>Provider: <b><%= pay.name %></b> (<code>PAYMENT_PROVIDER=<%= pay.key %></code>) · Webhook URL: <code><%= siteUrl %><%= pay.webhookPath %></code>
+  <% if (pay.key === 'polar') { %>· events: <code>order.paid</code>, <code>order.updated</code>, <code>order.refunded</code> · format: Raw<% } else { %>· events: <code>order_created</code>, <code>order_refunded</code><% } %></p>
+  <% if (pay.key === 'polar') { %><p class="muted small">Polar checkout: one-time product (any price type), invoice amount is passed as a fixed ad-hoc THB price, so the customer cannot change it. Receipt PDF with the customer's company details is generated through the Polar order invoice API and shown in the portal.</p><% } %>
+</section>
+
+<section class="card">
   <h2>Subscriptions <span class="muted">(<%= subs.length %>)</span></h2>
   <p class="muted">Only used if a subscription product is ever sold. The current model is invoice-based (see Invoices).</p>
-  <% if (!subs.length) { %><p class="muted">No subscriptions — webhook URL: <code><%= siteUrl %>/webhooks/lemonsqueezy</code></p><% } else { %>
+  <% if (!subs.length) { %><p class="muted">No subscriptions</p><% } else { %>
   <div class="scroll"><table class="dense">
     <thead><tr><th>ID</th><th>Customer</th><th>Product</th><th>Status</th><th>Operator</th><th>Renews</th><th></th></tr></thead>
     <tbody>
@@ -44,7 +51,8 @@
 </section>
 
 <section class="card">
-  <h2>Recent orders <span class="muted">(<%= orders.length %>)</span></h2>
+  <h2>Recent orders <span class="muted">(<%= orders.length %> · legacy Lemon Squeezy orders)</span></h2>
+  <% if (pay.key === 'polar') { %><p class="muted small">Polar orders are linked directly to invoices (see Invoices → Paid via / receipt).</p><% } %>
   <% if (!orders.length) { %><p class="muted">No orders yet</p><% } else { %>
   <div class="scroll"><table class="dense">
     <thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>Product</th><th class="r">Total</th><th>Status</th><th></th></tr></thead>

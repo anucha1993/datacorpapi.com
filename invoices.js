@@ -22,8 +22,8 @@ const ym = /^\d{4}-\d{2}$/.test(argYm || "") ? argYm : invoices.prevMonth(new Da
   const q = async (sql, p = []) => (await pool.query(sql, p))[0];
   try {
     const results = await invoices.generateInvoices(q, ym, {
-      apiReady: !!(process.env.LS_API_KEY || "").trim(),
-      testMode: /^(1|true|yes)$/i.test(process.env.LS_TEST_MODE || ""),
+      apiReady: require("./lib/payments").info().ready,
+      testMode: require("./lib/payments").info().testMode,
       log: console.log,
     });
     const bad = results.filter(r => r.message.startsWith("ERROR")).length;
