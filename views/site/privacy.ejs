@@ -1,42 +1,44 @@
 <%- include('partials/head') %>
 <section class="page legaldoc">
   <h1>Privacy Policy</h1>
-  <p class="muted">Effective <%= co.EFFECTIVE_DATE %> · Data controller: <%= co.COMPANY_NAME %><% if (co.COMPANY_ADDRESS) { %> · <%= co.COMPANY_ADDRESS %><% } %> · Prepared in accordance with Thailand's Personal Data Protection Act B.E. 2562 (2019) (PDPA)</p>
+  <p class="muted">Effective <%= co.EFFECTIVE_DATE %> · Data controller: <%= co.COMPANY_NAME %> (<%= co.PRODUCT_NAME %>)<% if (co.COMPANY_ADDRESS) { %> · <%= co.COMPANY_ADDRESS %><% } %> · Prepared in accordance with Thailand's Personal Data Protection Act B.E. 2562 (2019) (PDPA)</p>
 
   <h2>1. Data we collect</h2>
   <table class="prices">
     <thead><tr><th>Data</th><th>Source</th><th>Purpose</th><th>Retention</th></tr></thead>
     <tbody>
-      <tr><td>Name, email, company name, address, tax ID, operator name</td><td>Account opening, customer portal profile, contact form</td><td>Providing the service, issuing invoices and receipts, support</td><td>Account lifetime + 5 years (accounting/tax law)</td></tr>
-      <tr><td>Software usage statistics: operator name, Windows user name, machine name, installation ID, mode used, e-WorkPermit account email used for the job, start/end time, record count, job status, output file name, error text</td><td>Sent automatically by the software when a job finishes</td><td>Calculating usage-based fees, verifying invoices, troubleshooting</td><td>5 years</td></tr>
-      <tr><td>Payment status (order status, amount — card numbers are never sent to us)</td><td>Lemon Squeezy (webhook)</td><td>Matching payments to invoices</td><td>5 years</td></tr>
+      <tr><td>Name, email, company name, address, tax ID, phone</td><td>Contact form, proposals, customer portal profile</td><td>Replying to enquiries, preparing proposals, issuing invoices and receipts, support</td><td>Enquiries: 2 years. Customers: account lifetime + 5 years (accounting/tax law)</td></tr>
+      <tr><td>Project materials you share with us (documents, data samples, system access, content)</td><td>You, during a project</td><td>Performing the agreed work</td><td>Until project completion + 1 year, or earlier on request</td></tr>
+      <tr><td>Usage statistics of tools we operate for you: customer account, serial number, Windows user name, machine name, installation ID, task type, start/end time, record count, job status, output file name, error text</td><td>Sent automatically by the tool when a job finishes</td><td>Calculating usage-based fees, verifying invoices, troubleshooting</td><td>5 years</td></tr>
+      <tr><td>Payment status (order status, amount; card numbers are never sent to us)</td><td>Lemon Squeezy (webhook)</td><td>Matching payments to invoices</td><td>5 years</td></tr>
       <tr><td>IP address and web server logs</td><td>Web server</td><td>Security, abuse prevention</td><td>90 days</td></tr>
     </tbody>
   </table>
 
   <h2>2. Data we do <u>not</u> collect</h2>
   <ul>
-    <li><b>Your e-WorkPermit password</b> — the software keeps it in memory on your computer only while running; it is never written to disk or sent to us.</li>
-    <li><b>Worker, employer and document data, PDFs and Excel files</b> — these remain on your computer. We do not receive and cannot access them.</li>
-    <li>Card numbers — payments are processed by Lemon Squeezy under PCI DSS.</li>
+    <li><b>Passwords for your own systems.</b> Tools we operate for you keep your credentials in memory on your computer only while running; they are never written to disk or sent to us. Access you grant us for a project is used only for that project and revoked afterwards.</li>
+    <li><b>Your business records processed by our tools</b> (documents, files, customer or employee data) remain on your computer. We do not receive and cannot access them.</li>
+    <li>Card numbers: payments are processed by Lemon Squeezy under PCI DSS.</li>
   </ul>
 
   <h2>3. Legal basis</h2>
-  <p>Performance of a contract (providing the service and invoicing), legal obligation (accounting and tax records), and legitimate interest (system security and product improvement).</p>
+  <p>Performance of a contract (delivering the Services and invoicing), legal obligation (accounting and tax records), and legitimate interest (replying to enquiries, system security, product improvement).</p>
 
   <h2>4. Sharing with third parties</h2>
   <ul>
-    <li><b>Lemon Squeezy, LLC (USA)</b> — payment processor and Merchant of Record. Receives your name, email, billing address, tax ID and the invoice amount in order to process payment and issue receipts. See the <a href="https://lemonsqueezy.com/privacy" rel="noopener" target="_blank">Lemon Squeezy Privacy Policy</a>.</li>
-    <li>Our website and database hosting providers, who process data on our instructions under contract.</li>
+    <li><b>Lemon Squeezy, LLC (USA)</b>: payment processor and Merchant of Record. Receives your name, email, billing address, tax ID and the invoice amount in order to process payment and issue receipts. See the <a href="https://lemonsqueezy.com/privacy" rel="noopener" target="_blank">Lemon Squeezy Privacy Policy</a>.</li>
+    <li>Hosting and database providers, who process data on our instructions under contract.</li>
+    <li>AI service providers, only where a project uses them and only with the data needed for that project, as described in the proposal.</li>
     <li>Government authorities where required by law.</li>
   </ul>
   <p>We do not sell or rent personal data and do not use it for third-party advertising.</p>
 
   <h2>5. International transfers</h2>
-  <p>Payment data is processed by Lemon Squeezy in the United States under contractual safeguards and industry-standard security measures.</p>
+  <p>Payment data is processed by Lemon Squeezy in the United States, and some AI or hosting providers may be located outside Thailand, under contractual safeguards and industry-standard security measures.</p>
 
   <h2>6. Security</h2>
-  <p>Data is transmitted over HTTPS. Database access is restricted by role (the desktop software can only insert usage records and cannot read or modify data), and administrative pages require authentication. Customer portal passwords are stored as salted scrypt hashes.</p>
+  <p>Data is transmitted over HTTPS. Database access is restricted by role, administrative pages require authentication, and customer portal passwords are stored as salted scrypt hashes. Project materials are stored in access-controlled repositories and deleted when no longer needed.</p>
 
   <h2>7. Your rights</h2>
   <p>You may request access to, a copy of, correction, deletion, restriction or portability of your personal data, object to processing, or withdraw consent where processing is based on consent, by contacting <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>our support address<% } %>. We respond within 30 days. You also have the right to lodge a complaint with Thailand's Personal Data Protection Committee (PDPC).</p>
@@ -45,6 +47,6 @@
   <p>This website uses strictly necessary cookies only (session cookies for the customer portal and administration pages). No advertising or tracking cookies. The Lemon Squeezy checkout uses cookies under Lemon Squeezy's own policy.</p>
 
   <h2>9. Changes</h2>
-  <p>If we make material changes we will notify you by email and update the effective date on this page.</p>
+  <p>If we make material changes we will notify customers by email and update the effective date on this page.</p>
 </section>
 <%- include('partials/foot') %>

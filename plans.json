@@ -1,23 +1,70 @@
 {
-  "_comment": "Plans shown on the website. Billing is invoice-based (monthly usage → Lemon Squeezy custom-price checkout), so no checkout_url is needed.",
+  "_comment": "Service cards shown on /pricing. Prices are indicative starting points (edit freely). checkout_url is unused: all invoices go through Lemon Squeezy custom-price checkouts from the admin/portal.",
   "currency": "THB",
   "plans": [
     {
-      "key": "payg",
-      "name": "Pay as you go",
-      "name_th": "Pay as you go",
-      "type": "usage",
-      "price_label": "฿0 / month + usage",
-      "price_label_en": "฿0 / month + usage",
-      "unit_label": "No setup fee, no minimum, no contract. Invoiced monthly for the records actually processed; pay via Lemon Squeezy.",
-      "unit_label_en": "No setup fee, no minimum, no contract. Invoiced monthly for the records actually processed; pay via Lemon Squeezy.",
+      "key": "consulting",
+      "name": "AI consulting & system design",
+      "type": "hourly",
+      "price_label": "฿1,500 / hour",
+      "unit_label": "Minimum 2 hours. Workshops, process analysis, AI feasibility and architecture, proof-of-concepts. Billed on time actually spent, reported weekly.",
+      "checkout_url": "",
+      "featured": false,
+      "cta": "Book a discovery call",
+      "features": [
+        "Process mapping and automation roadmap",
+        "AI use-case assessment, model and vendor selection",
+        "Architecture, data flow and security design",
+        "Proof-of-concept builds and cost estimates"
+      ]
+    },
+    {
+      "key": "projects",
+      "name": "Automation, web & integration projects",
+      "type": "project",
+      "price_label": "from ฿15,000 / project",
+      "unit_label": "Fixed price after a free discovery call and written proposal. 50% deposit on acceptance, balance on delivery; milestones for larger projects.",
       "checkout_url": "",
       "featured": true,
+      "cta": "Request a quote",
       "features": [
-        "All modes of the software (reports / document downloads / submissions)",
-        "Unlimited installs under one operator name",
-        "Real-time usage and invoice history in the customer portal",
+        "Software robots for web portals and back-office tasks",
+        "Websites, customer portals and admin dashboards",
+        "API integrations (ERP, CRM, accounting, LINE, payments)",
+        "Data pipelines, databases and BI dashboards",
+        "Source code handed over, 30-day defect warranty"
+      ]
+    },
+    {
+      "key": "payg",
+      "name": "Pay-as-you-go automation tools",
+      "type": "usage",
+      "price_label": "฿0 / month + usage",
+      "unit_label": "For tools we operate for you. No setup fee, no minimum, no contract. Unit price per record is agreed per customer; invoiced monthly for records actually processed.",
+      "checkout_url": "",
+      "featured": false,
+      "cta": "Open an account",
+      "features": [
+        "Per-record pricing, typically from ฿0.50 per record",
+        "Unlimited installs under one customer account",
+        "Real-time usage, invoices and receipts in the customer portal",
         "Free updates and email support within 1 business day"
+      ]
+    },
+    {
+      "key": "support",
+      "name": "Maintenance & support",
+      "type": "monthly",
+      "price_label": "from ฿2,000 / month",
+      "unit_label": "Hosting, monitoring, security updates and bug fixes for systems we built or took over. Cancel with 30 days' notice.",
+      "checkout_url": "",
+      "featured": false,
+      "cta": "Ask about support plans",
+      "features": [
+        "Email support within 1 business day (faster SLAs available)",
+        "Monthly health check and dependency updates",
+        "Backups and uptime monitoring",
+        "Small changes included up to the plan's monthly hours"
       ]
     }
   ]

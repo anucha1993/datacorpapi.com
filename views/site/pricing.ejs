@@ -1,46 +1,43 @@
 <%- include('partials/head') %>
 <section class="page">
-  <h1>Pricing &amp; Billing</h1>
-  <p class="lead">All prices are in Thai Baht (THB) and exclude VAT/sales tax, which Lemon Squeezy calculates at checkout based on the buyer's country. Pay by credit/debit card or PayPal.</p>
+  <h1>Services &amp; Pricing</h1>
+  <p class="lead">All prices are in Thai Baht (THB) and exclude VAT/sales tax, which Lemon Squeezy calculates at checkout based on the buyer's country. Pay by credit/debit card or PayPal.
+    Every project starts with a free discovery call and a written proposal; nothing is charged until you accept it.</p>
 
-  <div class="plans single">
-    <div class="plan featured">
-      <div class="pname">Pay as you go</div>
-      <div class="pprice">฿0 / month + usage</div>
-      <div class="punit muted">No setup fee, no minimum, no contract. At the start of each month you receive an invoice for the records actually processed in the previous month, payable via Lemon Squeezy.</div>
-      <ul>
-        <li>All modes of the software (reports / document downloads / submissions)</li>
-        <li>Unlimited installs under one operator name</li>
-        <li>Real-time usage and invoice history in the customer portal</li>
-        <li>Free updates and email support within 1 business day</li>
-      </ul>
-      <a href="/contact" class="btn primary">Open an account</a>
-      <p class="muted small">Opening an account is free — nothing is charged until you actually use the software. Already have an account? <a href="/portal/login">Customer login</a></p>
+  <div class="plans">
+    <% for (const p of plans) { %>
+    <div class="plan <%= p.featured ? 'featured' : '' %>" id="plan-<%= p.key %>">
+      <div class="pname"><%= p.name %></div>
+      <div class="pprice"><%= p.price_label %></div>
+      <div class="punit muted"><%= p.unit_label %></div>
+      <ul><% for (const f of (p.features || [])) { %><li><%= f %></li><% } %></ul>
+      <a href="<%= p.cta_url || '/contact' %>" class="btn <%= p.featured ? 'primary' : '' %>"><%= p.cta || 'Request a quote' %></a>
     </div>
-  </div>
-
-  <h2>Unit price per task type</h2>
-  <p class="muted">Used to calculate your monthly invoice · 1 record = 1 application / 1 document / 1 worker processed successfully</p>
-  <table class="prices">
-    <thead><tr><th>Task type</th><th>Group</th><th class="r">Price / record</th><th class="r">Price / run</th></tr></thead>
-    <tbody>
-    <% for (const p of prices) { %>
-      <tr><td><%= p.mode_label || p.mode %></td><td><span class="tag g-<%= p.mode_group || '' %>"><%= GROUP_LABELS[p.mode_group] || '' %></span></td>
-        <td class="r">฿<%= fmtMoney(p.price_per_record) %></td><td class="r"><%= Number(p.price_per_run) ? '฿' + fmtMoney(p.price_per_run) : '—' %></td></tr>
     <% } %>
-    </tbody>
-  </table>
+  </div>
+  <p class="muted small center">Prices shown are indicative starting points; the exact figure is in your written proposal. Already a customer? <a href="/portal/login">Customer login</a></p>
 
   <h2>How billing works</h2>
+  <h3>Projects (consulting, development, websites, integrations)</h3>
   <ul class="bullets">
-    <li><b>Free account</b> — no charge until you start using the software; no card on file.</li>
-    <li><b>Invoice on the 1st of every month</b> — records processed in the previous month × unit price, visible in the customer portal.</li>
-    <li><b>Pay within 15 days</b> via the Lemon Squeezy payment link in the portal (card or PayPal). The receipt is emailed immediately and can carry your company name, address and tax ID.</li>
-    <li>Months with usage below ฿17 are carried forward to the next invoice (payment-provider minimum).</li>
-    <li>You can verify usage before paying: the portal lists every job, and you can request a monthly report at <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>our support email<% } %>.</li>
-    <li>Jobs cancelled or interrupted midway are billed only for the records completed before stopping.</li>
-    <li>No contract — stop using the software and there is no further invoice. See the <a href="/refund">Refund &amp; Cancellation Policy</a>.</li>
-    <li>Price changes are announced by email at least 30 days in advance.</li>
+    <li><b>Written proposal</b> with scope, deliverables, timeline and price. Fixed price for defined scope; hourly for open-ended consulting.</li>
+    <li><b>Deposit of 50%</b> on acceptance, invoiced through a Lemon Squeezy payment link; the balance on delivery. Larger projects are split into milestones, each invoiced on acceptance of that milestone.</li>
+    <li>Invoices are due within 15 days. The receipt is emailed immediately by Lemon Squeezy and can carry your company name, address and tax ID.</li>
+    <li>Change requests outside the agreed scope are quoted separately before any work starts.</li>
+    <li>Source code and deliverables are handed over on full payment. 30-day defect-fix warranty after delivery.</li>
+  </ul>
+  <h3>Pay-as-you-go automation tools</h3>
+  <ul class="bullets">
+    <li><b>Free account, no card on file.</b> Unit prices per record (for example per document downloaded or per application processed) are agreed in your proposal and shown in your customer portal.</li>
+    <li><b>Invoice on the 1st of every month</b> for the records actually processed in the previous month, payable within 15 days via the payment link in the portal.</li>
+    <li>You can verify usage before paying: the portal lists every job, per task type and per machine, and you can export it to CSV.</li>
+    <li>Jobs cancelled or interrupted midway are billed only for the records completed. Months with usage below ฿17 are carried forward (payment-provider minimum).</li>
+    <li>No contract: stop using the tool and there is no further invoice. See the <a href="/refund">Refund &amp; Cancellation Policy</a>.</li>
+  </ul>
+  <h3>Maintenance &amp; support plans</h3>
+  <ul class="bullets">
+    <li>Monthly plans covering hosting, monitoring, updates and a response-time commitment, invoiced monthly in advance and cancellable with 30 days' notice.</li>
+    <li>Price changes for any recurring service are announced by email at least 30 days in advance.</li>
   </ul>
 </section>
 <%- include('partials/foot') %>

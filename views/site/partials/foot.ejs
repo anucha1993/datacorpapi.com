@@ -3,7 +3,8 @@
   <div class="wrap cols">
     <div>
       <div class="fh"><%= co.PRODUCT_NAME %></div>
-      <div class="muted"><%= co.COMPANY_NAME %><% if (co.COMPANY_NAME_EN) { %><br><%= co.COMPANY_NAME_EN %><% } %></div>
+      <div class="muted">AI system design · Business automation · Web &amp; API development · Data &amp; dashboards</div>
+      <div class="muted" style="margin-top:6px"><%= co.COMPANY_NAME %><% if (co.COMPANY_NAME_EN) { %><br><%= co.COMPANY_NAME_EN %><% } %></div>
       <% if (co.COMPANY_TAX_ID) { %><div class="muted">Tax ID <%= co.COMPANY_TAX_ID %></div><% } %>
       <% if (co.COMPANY_ADDRESS) { %><div class="muted"><%= co.COMPANY_ADDRESS %></div><% } %>
     </div>
@@ -13,6 +14,7 @@
       <% if (co.COMPANY_PHONE) { %><div><a href="tel:<%= co.COMPANY_PHONE.replace(/[^0-9+]/g, '') %>"><%= co.COMPANY_PHONE %></a></div><% } %>
       <% if (co.COMPANY_LINE) { %><div>LINE: <%= co.COMPANY_LINE %></div><% } %>
       <div class="muted"><%= co.SUPPORT_HOURS %></div>
+      <div style="margin-top:8px"><a href="/contact">Request a quote</a> · <a href="/portal/login">Customer login</a></div>
     </div>
     <div>
       <div class="fh">Legal</div>
@@ -23,7 +25,7 @@
     </div>
   </div>
   <div class="wrap legal muted">
-    © <%= new Date().getFullYear() %> <%= co.COMPANY_NAME || co.PRODUCT_NAME %>. Orders are processed by our online reseller &amp; Merchant of Record, Lemon Squeezy, who also handles order-related inquiries and returns. Card statements will show Lemon Squeezy.
+    © <%= new Date().getFullYear() %> <%= co.COMPANY_NAME || co.PRODUCT_NAME %>. Online payments are processed by our reseller &amp; Merchant of Record, Lemon Squeezy, who also handles order-related inquiries and returns. Card statements will show Lemon Squeezy.
   </div>
 </footer>
 </body>

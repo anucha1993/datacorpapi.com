@@ -57,3 +57,12 @@ table.prices th, table.prices td { border-bottom: 1px solid var(--border); paddi
   .hero, .grid3, .steps, .sitefoot .cols { grid-template-columns: 1fr; }
   .sitehead .wrap { height: auto; padding: 8px 20px; flex-wrap: wrap; }
 }
+/* services-site additions */
+.hero-points { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 6px; font-size: 14px; color: #374151; }
+.hero-points li::before { content: "✓ "; color: var(--accent); font-weight: 700; }
+.page h3 { font-size: 16px; margin: 18px 0 6px; }
+.plan .pprice { font-size: 22px; }
+.hero-panel { border: 1px solid var(--border); border-radius: 14px; padding: 18px; background: linear-gradient(180deg, #fff, var(--bg)); box-shadow: 0 10px 30px rgba(0,0,0,.06); display: grid; gap: 12px; }
+.hp-row { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.4; }
+.hp-ic { font-size: 22px; width: 36px; height: 36px; border-radius: 10px; background: var(--info-bg); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.hp-foot { border-top: 1px solid var(--border); padding-top: 10px; }

@@ -1,4 +1,4 @@
-# เว็บไซต์ + ระบบหลังบ้าน — e-WorkPermit Tools
+# เว็บไซต์ + ระบบหลังบ้าน — DataCorp API (บริการออกแบบระบบด้วย AI, ระบบอัตโนมัติ, รับทำเว็บไซต์)
 
 Node.js (Express + EJS) + MySQL/MariaDB ทำ 3 หน้าที่ในแอปเดียว
 
@@ -36,7 +36,7 @@ node seed.js     # (ทางเลือก) ใส่ข้อมูลตั�
 
 ## 3. เอาขึ้นออนไลน์
 - **Plesk:** ดูขั้นตอนละเอียดใน [DEPLOY-PLESK.md](DEPLOY-PLESK.md)
-- ต้องเป็น HTTPS บนโดเมนจริง (เช่น `https://ewp.thefirstgoodmangroup.com`) เพราะ Lemon Squeezy ต้องยิง webhook มาหาและผู้ตรวจต้องเปิดดูได้
+- ต้องเป็น HTTPS บนโดเมนจริง (เช่น `https://datacorpapi.com`) เพราะ Lemon Squeezy ต้องยิง webhook มาหาและผู้ตรวจต้องเปิดดูได้
 - **VPS:** `docker compose up -d` (เว็บ + MariaDB/MySQL) แล้วตั้ง reverse proxy (Caddy/Nginx/Cloudflare Tunnel) ชี้พอร์ต 3000 หรือรันด้วย `pm2 start server.js --name ewp-web`
 - **โฮสต์ Node.js (cPanel "Setup Node.js App", Render, Railway):** ชี้ที่ `server.js` ตั้ง env ตาม `.env` และใช้ MySQL ของโฮสต์ (โปรแกรมบนเครื่องผู้ใช้ต้องต่อ MySQL ตัวเดียวกันได้ — เปิด Remote MySQL ให้ IP ของออฟฟิศ)
 - ตั้ง cron ออกใบแจ้งหนี้ทุกวันที่ 1: `0 6 1 * * cd /path/webapp && node invoices.js >> invoices.log 2>&1`

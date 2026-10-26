@@ -1,71 +1,83 @@
 <%- include('partials/head') %>
 <section class="hero">
   <div>
-    <span class="pill">Software for HR teams managing migrant-worker permits</span>
-    <h1><%= co.PRODUCT_NAME %><br><small>Automate reports, document downloads and form filling in Thailand's e-WorkPermit system</small></h1>
-    <p class="lead">A Windows application that does the repetitive clicking in the Department of Employment's e-WorkPermit portal for you:
-      pull hundreds of application statuses into Excel, download receipts and appointment slips in bulk, and fill BT.30 / BT.44 forms straight from a spreadsheet.
-      You pay only for the records actually processed.</p>
+    <span class="pill">AI systems · Business automation · Web &amp; API development</span>
+    <h1>We design and build software that does the repetitive work for you<br><small>AI-assisted system design, process automation, websites and integrations for businesses in Thailand and abroad</small></h1>
+    <p class="lead">From a first workshop to a running system: we map your workflow, design the right mix of AI and conventional software, build it in short milestones and keep it running.
+      Projects are quoted up front; automation tools we operate for you are billed per use, so you only pay for work actually done.</p>
     <div class="actions">
-      <a href="/contact" class="btn primary big">Open an account</a>
-      <a href="/pricing" class="btn big">See pricing</a>
+      <a href="/contact" class="btn primary big">Request a quote</a>
+      <a href="/pricing" class="btn big">Services &amp; pricing</a>
       <a href="/portal/login" class="btn big">Customer login</a>
     </div>
+    <ul class="hero-points">
+      <li>Free 30-minute discovery call, written proposal within 3 business days</li>
+      <li>Fixed-price or time-and-materials, milestone demos, source code handed over</li>
+      <li>English and Thai, remote-first, invoices payable by card or PayPal</li>
+    </ul>
   </div>
-  <div class="shot"><img src="/hero.jpg" alt="<%= co.PRODUCT_NAME %> application screenshot" loading="lazy" onerror="this.parentNode.style.display='none'"></div>
+  <div class="shot">
+    <div class="hero-panel">
+      <div class="hp-row"><span class="hp-ic">🤖</span><div><b>AI system design</b><br><span class="muted">Document understanding, assistants on your data, decision support</span></div></div>
+      <div class="hp-row"><span class="hp-ic">⚙️</span><div><b>Process automation</b><br><span class="muted">Bots for web portals, bulk extraction, Excel-driven workflows</span></div></div>
+      <div class="hp-row"><span class="hp-ic">🌐</span><div><b>Web &amp; API development</b><br><span class="muted">Portals, dashboards, integrations with ERP, CRM, LINE, payments</span></div></div>
+      <div class="hp-row"><span class="hp-ic">📊</span><div><b>Data &amp; dashboards</b><br><span class="muted">Pipelines, metering and billing, one source of truth</span></div></div>
+      <div class="hp-foot muted small">Typical engagement: 2 to 8 weeks · fixed price · source code handed over</div>
+    </div>
+  </div>
 </section>
 
-<section id="features" class="features">
-  <h2>What the software does</h2>
+<section id="services" class="features">
+  <h2>What we do</h2>
   <div class="grid3">
-    <div class="feat"><div class="ic">📊</div><h3>Reports and data extraction</h3>
-      <p>Pull application lists from e-Tracking by application type, status and date range, including worker details and officer remarks, into Excel.
-      Works across many accounts in one run. Also permit application reports, worker name lists and Ticket ID checks.</p></div>
-    <div class="feat"><div class="ic">📥</div><h3>Bulk document downloads</h3>
-      <p>Receipts, BT.44 / BT.22 / BT.53 / BT.55 / BT.52 / BT.56 forms, result notices, application receipts, payment slips, acknowledgements and appointment slips,
-      named by passport number and sorted into folders automatically. Re-runs skip files that already exist.</p></div>
-    <div class="feat"><div class="ic">✍️</div><h3>Form filling from Excel</h3>
-      <p>Worker registration, employer notification (BT.52), MoU renewal (BT.30) and employer change (BT.44) filled from a spreadsheet,
-      with a dry-run mode that stops before submission and a confirmation prompt before any step that carries a government fee.</p></div>
-    <div class="feat"><div class="ic">📅</div><h3>Real-time appointment slot checker</h3>
-      <p>Scans available dates and time slots for card-photo appointments at every branch, with an auto-refreshing monitor window.</p></div>
-    <div class="feat"><div class="ic">🔒</div><h3>Your data stays on your computer</h3>
-      <p>The software runs on your own PC with your own e-WorkPermit login. Reports and PDFs are saved locally.
-      We only receive usage statistics (operator, mode, record count, time) for billing — never your password or worker data.</p></div>
-    <div class="feat"><div class="ic">📈</div><h3>Transparent usage</h3>
-      <p>Every job is logged. Review usage per operator, per mode and per month in the customer portal before you are invoiced.</p></div>
+    <div class="feat"><div class="ic">🤖</div><h3>AI system design &amp; consulting</h3>
+      <p>We analyse your processes and design where AI genuinely helps: document understanding, classification, extraction, chat assistants on your own data, decision support.
+      Model selection, prompt and pipeline design, proof-of-concepts, cost and risk assessment.</p></div>
+    <div class="feat"><div class="ic">⚙️</div><h3>Business process automation</h3>
+      <p>Software robots that take over repetitive work in web portals and back-office systems: bulk data extraction, scheduled reports, document downloads,
+      Excel-driven form filling, reconciliation. Built with dry-run modes and confirmation steps where money or legal filings are involved.</p></div>
+    <div class="feat"><div class="ic">🌐</div><h3>Websites &amp; web applications</h3>
+      <p>Corporate websites, customer portals, admin dashboards, booking and e-commerce systems. Responsive, fast, SEO-ready, with hosting, SSL and maintenance handled for you.</p></div>
+    <div class="feat"><div class="ic">🔌</div><h3>API &amp; system integration</h3>
+      <p>Connect ERP, CRM, accounting, e-signature, LINE, payment gateways and government e-services. Data synchronisation, webhooks, secure REST APIs for your partners.</p></div>
+    <div class="feat"><div class="ic">📊</div><h3>Data pipelines &amp; dashboards</h3>
+      <p>ETL jobs, databases, reporting and BI dashboards, usage metering and billing systems. Turn scattered spreadsheets and exports into one reliable source of truth.</p></div>
+    <div class="feat"><div class="ic">🛠️</div><h3>Maintenance &amp; support</h3>
+      <p>Monitoring, updates and bug fixes for systems we built or inherited from other developers. Email support within 1 business day; SLA options for critical systems.</p></div>
   </div>
 </section>
 
-<section class="how">
-  <h2>How it works</h2>
+<section id="process" class="how">
+  <h2>How we work</h2>
   <ol class="steps">
-    <li><b>Open an account</b> — send us your operator name and email via the contact page; we set up your free account within 1 business day.</li>
-    <li><b>Install</b> — download the installer and setup guide from your email. Windows 10/11, unlimited machines.</li>
-    <li><b>Use it</b> — enter your operator name in the app, pick a mode and press Start. The software records how many items it processed.</li>
-    <li><b>Get invoiced monthly</b> — on the 1st we issue an invoice for the previous month's usage × unit prices. Pay via Lemon Squeezy in the portal; the receipt arrives by email instantly.</li>
+    <li><b>Discovery</b> — a free 30-minute call or workshop to understand the problem, the people involved and the systems you already use.</li>
+    <li><b>Proposal &amp; quote</b> — a written scope with deliverables, timeline and a fixed price (or hourly rate for open-ended work). No obligation.</li>
+    <li><b>Build in milestones</b> — short iterations with working demos, your feedback at each step, and a deposit invoice only when you accept the proposal.</li>
+    <li><b>Launch &amp; support</b> — deployment, documentation and training, source code handed over, then maintenance or pay-as-you-go operation if you want us to run it.</li>
   </ol>
 </section>
 
 <section id="pricing" class="pricing">
   <h2>Pricing</h2>
-  <p class="lead">No setup fee, no minimum, no contract. You pay for the records actually processed. Invoices are issued on the 1st of each month and paid via Lemon Squeezy.</p>
-  <p class="center"><a href="/pricing" class="btn primary">See unit prices per task →</a></p>
+  <p class="lead">Project work is quoted up front with no hidden costs. Automation tools that we operate for you are billed monthly for the records actually processed.
+    All invoices are paid online by card or PayPal through Lemon Squeezy, and receipts carry your company name and tax ID.</p>
+  <p class="center"><a href="/pricing" class="btn primary">See services &amp; pricing →</a></p>
 </section>
 
 <section id="faq" class="faq">
   <h2>Frequently asked questions</h2>
-  <details><summary>Is this a document-processing service?</summary><p>No. It is <b>software</b> that you install and operate yourself with your own e-WorkPermit account. We never access your account or file anything on your behalf.</p></details>
-  <details><summary>How is usage billed? What counts as a "record"?</summary><p>1 record = 1 application / 1 document / 1 worker processed successfully in a given mode. Unit prices differ per mode (see <a href="/pricing">Pricing</a>). Jobs cancelled midway are billed only for what was completed. On the 1st of each month we issue an invoice for the previous month, payable via Lemon Squeezy in the customer portal.</p></details>
-  <details><summary>What do I need?</summary><p>Windows 10/11, Python 3.12 or newer (installer provided), a working e-WorkPermit account and an internet connection.</p></details>
-  <details><summary>Is there a contract?</summary><p>No. No card on file, no automatic charges. If you stop using the software, there is no invoice for that month — only invoices for months already used remain payable. See the <a href="/refund">Refund &amp; Cancellation Policy</a>.</p></details>
-  <details><summary>Who issues the receipt?</summary><p>Lemon Squeezy is the Merchant of Record, so it issues the receipt and handles sales tax. Your card statement will show Lemon Squeezy. You can add your company name, address and tax ID to the receipt.</p></details>
-  <details><summary>Is our data safe?</summary><p>Your password and worker data never leave your computer. The software sends us only usage statistics for billing. Read the <a href="/privacy">Privacy Policy</a>.</p></details>
+  <details><summary>Who are you?</summary><p><%= co.PRODUCT_NAME %> is an independent software development and consulting practice based in Pathum Thani, Thailand, operated by <%= co.COMPANY_NAME %>. We work with small and medium-sized businesses, HR and service companies, and agencies that need custom software without a large vendor overhead.</p></details>
+  <details><summary>What kind of projects do you take?</summary><p>Anything from a two-week automation script to a multi-month web platform: AI-assisted document processing, bots for web portals, customer portals, dashboards, API integrations and corporate websites. If a task is repetitive and rule-based, we can usually automate it.</p></details>
+  <details><summary>How do you charge?</summary><p>Three ways, depending on the work: a <b>fixed price</b> per project (most common), an <b>hourly rate</b> for consulting and open-ended work, or <b>pay-as-you-go</b> for automation tools we operate for you, billed monthly per record processed. See <a href="/pricing">Pricing</a>.</p></details>
+  <details><summary>Who owns the code and the data?</summary><p>You do. Deliverables and their source code are transferred to you on full payment, and any data you share for a project stays confidential and is deleted after the project on request. For metered tools, your business data stays on your own systems; we only receive usage counts for billing. See the <a href="/privacy">Privacy Policy</a>.</p></details>
+  <details><summary>Who issues the receipt?</summary><p>Online payments are processed by Lemon Squeezy as Merchant of Record. Lemon Squeezy issues the receipt, handles sales tax and appears on your card statement. You can add your company name, address and tax ID to every receipt.</p></details>
+  <details><summary>Do you work with clients outside Thailand?</summary><p>Yes. We work remotely in English and Thai, meet over video and deliver through your preferred tools. Invoices are in Thai Baht and payable by international cards or PayPal.</p></details>
+  <details><summary>Is there a contract or minimum commitment?</summary><p>Each project has its own proposal, which you accept by paying the deposit. There is no retainer or minimum term unless you choose a maintenance plan. Pay-as-you-go tools have no monthly minimum; months without usage are not invoiced.</p></details>
 </section>
 
 <section class="contactcta">
-  <h2>Questions, or want a trial first?</h2>
+  <h2>Tell us what you want to automate</h2>
   <p>Email <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } %>
-     <% if (co.COMPANY_PHONE) { %> · call <%= co.COMPANY_PHONE %><% } %> or <a href="/contact">send us a message</a> (<%= co.SUPPORT_HOURS %>)</p>
+     <% if (co.COMPANY_PHONE) { %> · call <%= co.COMPANY_PHONE %><% } %> or <a href="/contact">send us a message</a> (<%= co.SUPPORT_HOURS %>). We reply within 1 business day.</p>
 </section>
 <%- include('partials/foot') %>

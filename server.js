@@ -622,4 +622,4 @@ app.use((err, req, res, _next) => {
   });
 });
 
-app.listen(PORT, () => console.log(`✓ ewp web http://localhost:${PORT}  (admin: /admin)`));
+app.listen(PORT, () => console.log(`✓ web http://localhost:${PORT}  (admin: /admin)`));

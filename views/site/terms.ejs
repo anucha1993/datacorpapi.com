@@ -1,50 +1,69 @@
 <%- include('partials/head') %>
 <section class="page legaldoc">
   <h1>Terms of Service</h1>
-  <p class="muted">Effective <%= co.EFFECTIVE_DATE %> · Provider: <%= co.COMPANY_NAME %><% if (co.COMPANY_NAME_EN) { %> (<%= co.COMPANY_NAME_EN %>)<% } %> ("we", "us") · Product: <%= co.PRODUCT_NAME %> (the "Software")</p>
+  <p class="muted">Effective <%= co.EFFECTIVE_DATE %> · Provider: <%= co.COMPANY_NAME %><% if (co.COMPANY_NAME_EN) { %> (<%= co.COMPANY_NAME_EN %>)<% } %>, trading as <%= co.PRODUCT_NAME %> ("we", "us")</p>
 
   <h2>1. Acceptance</h2>
-  <p>By opening an account, installing or using the Software, or paying an invoice, you ("you", the "Customer") agree to these Terms, our <a href="/privacy">Privacy Policy</a> and our <a href="/refund">Refund &amp; Cancellation Policy</a>. If you use the Software on behalf of an organisation, you confirm that you are authorised to bind it.</p>
+  <p>These Terms apply to all services we provide: consulting, software and web development, system integration, maintenance, and software tools we license or operate for you (the "Services"). By accepting a proposal, paying an invoice, opening a customer account or using one of our tools, you ("you", the "Customer") agree to these Terms, our <a href="/privacy">Privacy Policy</a> and our <a href="/refund">Refund &amp; Cancellation Policy</a>. If you act on behalf of an organisation, you confirm that you are authorised to bind it. A signed proposal or statement of work prevails over these Terms where they conflict.</p>
 
-  <h2>2. Nature of the service</h2>
-  <p>The Software is a Windows desktop application that runs on the Customer's own computers and automates repetitive tasks in the e-WorkPermit web portal operated by Thailand's Department of Employment (for example extracting reports, downloading documents and filling forms from Excel files), using the Customer's own e-WorkPermit credentials. We are a software vendor only. We are <b>not</b> a filing agent or document-processing service, we are not affiliated with the Department of Employment, and we make no representation about the outcome of any application.</p>
+  <h2>2. Proposals, scope and changes</h2>
+  <ul>
+    <li>Project work is described in a written proposal (scope, deliverables, timeline, price, payment schedule). The proposal is accepted when you confirm it in writing or pay the deposit invoice.</li>
+    <li>Work outside the agreed scope is quoted separately and starts only after your written approval.</li>
+    <li>Estimates for hourly work are indicative. We report hours at least weekly and will warn you before an estimate is exceeded.</li>
+    <li>Timelines depend on timely input from you (content, access, feedback, decisions). Delays on your side extend the timeline accordingly.</li>
+  </ul>
 
-  <h2>3. Licence</h2>
-  <p>We grant you a non-exclusive, non-transferable licence to install and use the Software on any number of devices within your organisation, for your internal business purposes, under the operator name registered to your account. You may not resell, rent, or operate the Software as a service bureau for third parties, nor modify, decompile or redistribute it without our written consent. All intellectual property in the Software remains ours.</p>
+  <h2>3. Fees, invoicing and payment</h2>
+  <ul>
+    <li>Prices are in Thai Baht and exclude VAT/sales tax, which is added at checkout where applicable.</li>
+    <li>Projects: 50% deposit on acceptance, balance on delivery, or per milestone as stated in the proposal. Hourly work: invoiced monthly in arrears. Pay-as-you-go tools: invoiced on the 1st of each month for the previous month's recorded usage at the unit prices agreed with you. Maintenance plans: invoiced monthly in advance.</li>
+    <li>Invoices are payable within 15 days through the payment link we send or the customer portal. Amounts below the payment provider's minimum are carried forward to the next invoice.</li>
+    <li>Online payments are processed by <b>Lemon Squeezy, LLC</b> as our authorised reseller and Merchant of Record. Lemon Squeezy issues the receipt, collects applicable taxes and handles payment, refund and chargeback matters under the <a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Lemon Squeezy Buyer Terms</a>.</li>
+    <li>If an invoice remains unpaid after its due date we may pause work, suspend access to tools or portals, and withhold deliverables until payment is received.</li>
+    <li>Changes to recurring prices (maintenance plans, unit prices for tools) are announced by email at least 30 days in advance.</li>
+  </ul>
 
   <h2>4. Your responsibilities</h2>
   <ul>
-    <li>You must hold a valid e-WorkPermit account and are responsible for every action the Software performs through that account at your instruction.</li>
-    <li>You must verify input data (Excel files) and results before relying on them, in particular before any step that submits an application or incurs a government fee. The Software asks for confirmation before such steps.</li>
-    <li>Usage is attributed to the operator name entered in the Software. You are responsible for all usage recorded under your operator name and must keep your portal password confidential.</li>
-    <li>You must not use the Software in breach of the e-WorkPermit terms of use, data-protection law or any other applicable law.</li>
+    <li>Provide accurate information, content, test data and the system access needed for the work, and ensure you are entitled to give us that access.</li>
+    <li>Review and test deliverables and the output of automation tools before relying on them, in particular before anything is submitted to a government authority, a customer or a payment system. Our tools ask for confirmation before such steps where technically possible.</li>
+    <li>Use the Services lawfully and in line with the terms of any third-party system they interact with (web portals, APIs, platforms).</li>
+    <li>For tools licensed to you, usage is attributed to your customer account and serial number. You are responsible for all usage recorded under them and for keeping your portal password confidential.</li>
   </ul>
 
-  <h2>5. Fees, invoicing and payment</h2>
+  <h2>5. Intellectual property</h2>
   <ul>
-    <li>Fees are calculated from the number of records the Software processes successfully, which the Software records and transmits to us automatically, multiplied by the unit prices published on the <a href="/pricing">Pricing</a> page.</li>
-    <li>On the 1st day of each month we issue an invoice for the previous month's usage. Invoices are payable within 15 days through the payment link in the customer portal. Amounts below the payment provider's minimum are carried forward to the next invoice.</li>
-    <li>Payments are processed by <b>Lemon Squeezy, LLC</b> as our authorised reseller and Merchant of Record. Lemon Squeezy issues the receipt, collects applicable taxes and handles payment, refund and chargeback matters under the <a href="https://lemonsqueezy.com/buyer-terms" rel="noopener" target="_blank">Lemon Squeezy Buyer Terms</a>.</li>
-    <li>If an invoice remains unpaid after its due date we may suspend your account until payment is received.</li>
-    <li>Unit price changes are announced by email at least 30 days before they take effect.</li>
+    <li><b>Deliverables</b> (custom code, designs, documents) created specifically for you are transferred to you on full payment of the related invoices. Until then we retain ownership and grant you a licence to evaluate them.</li>
+    <li><b>Our pre-existing materials</b> (frameworks, libraries, internal tools and know-how) remain ours. Where they are embedded in deliverables, you receive a perpetual, non-exclusive, royalty-free licence to use them as part of those deliverables.</li>
+    <li><b>Licensed tools</b> (software we operate for you on a pay-as-you-go basis) are licensed, not sold: you may install and use them within your organisation under your account; you may not resell, sublicense, decompile or operate them as a service for third parties.</li>
+    <li>Third-party components and AI services are subject to their own licences, which we identify in the proposal.</li>
   </ul>
 
-  <h2>6. Term and termination</h2>
-  <p>There is no fixed term and no automatic recurring charge. You may stop using the Software at any time; months without usage are not invoiced, but invoices for months already used remain payable. We may suspend or terminate your account for non-payment or breach of these Terms. You may request permanent closure of your account by email.</p>
+  <h2>6. Acceptance, warranty and support</h2>
+  <ul>
+    <li>Deliverables are deemed accepted when you confirm acceptance or 10 business days after delivery without written objection, or when you put them into productive use.</li>
+    <li>We correct defects reported within 30 days of acceptance free of charge where the deliverable does not materially conform to the proposal. Changes in third-party systems, platforms or APIs after delivery are not defects; we fix them under a maintenance plan or a separate quote.</li>
+    <li>Support is provided by email<% if (co.COMPANY_EMAIL) { %> (<%= co.COMPANY_EMAIL %>)<% } %> during <%= co.SUPPORT_HOURS %>. Response times and uptime commitments apply only where a maintenance plan says so.</li>
+    <li>AI-based features produce probabilistic output. We design, test and document their limits, but we do not warrant that every AI result is correct; human review remains your responsibility.</li>
+  </ul>
 
-  <h2>7. Support and updates</h2>
-  <p>We provide email support<% if (co.COMPANY_EMAIL) { %> (<%= co.COMPANY_EMAIL %>)<% } %> during <%= co.SUPPORT_HOURS %> and deliver Software updates for as long as your account is active. The e-WorkPermit portal is a third-party system that may change without notice; we will make reasonable efforts to keep the Software working but do not guarantee that every function will be available at all times.</p>
+  <h2>7. Confidentiality</h2>
+  <p>Each party keeps the other's non-public information confidential and uses it only for the Services. We may name you as a customer and describe the project in general terms unless you ask us not to.</p>
 
-  <h2>8. Warranty and liability</h2>
-  <p>The Software is provided "as is". We do not warrant that it will be error-free or uninterrupted. You remain solely responsible for decisions about, and submissions to, government authorities. Our total liability to you for any claim is limited to the fees you paid us in the three months preceding the event giving rise to the claim. We are not liable for indirect or consequential loss, government fees, penalties, or the outcome of any application.</p>
+  <h2>8. Term and termination</h2>
+  <p>Project engagements end on delivery. Either party may terminate a project for convenience with 14 days' written notice; you pay for work completed to that date (see the Refund &amp; Cancellation Policy). Maintenance plans run month to month and can be cancelled with 30 days' notice. Pay-as-you-go tools have no fixed term; months without usage are not invoiced. We may suspend or terminate for non-payment or material breach that is not cured within 14 days of notice.</p>
 
-  <h2>9. Personal data</h2>
-  <p>We process personal data as described in our <a href="/privacy">Privacy Policy</a>, in accordance with Thailand's Personal Data Protection Act B.E. 2562 (2019).</p>
+  <h2>9. Liability</h2>
+  <p>The Services are provided with reasonable skill and care. To the extent permitted by law, our total liability for any claim is limited to the fees you paid us for the Service concerned in the 3 months before the event giving rise to the claim. We are not liable for indirect or consequential loss, lost profits, government fees or penalties, or decisions made by third parties or authorities. Nothing limits liability for fraud or wilful misconduct.</p>
 
-  <h2>10. Governing law</h2>
+  <h2>10. Personal data</h2>
+  <p>We process personal data as described in our <a href="/privacy">Privacy Policy</a>, in accordance with Thailand's Personal Data Protection Act B.E. 2562 (2019). Where we process personal data on your behalf during a project, we do so on your instructions and under a data processing agreement if you require one.</p>
+
+  <h2>11. Governing law</h2>
   <p>These Terms are governed by the laws of Thailand. Disputes are subject to the jurisdiction of the Thai courts.</p>
 
-  <h2>11. Contact</h2>
+  <h2>12. Contact</h2>
   <p><%= co.COMPANY_NAME %><% if (co.COMPANY_ADDRESS) { %> · <%= co.COMPANY_ADDRESS %><% } %><% if (co.COMPANY_EMAIL) { %> · <a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } %><% if (co.COMPANY_PHONE) { %> · <%= co.COMPANY_PHONE %><% } %></p>
 </section>
 <%- include('partials/foot') %>

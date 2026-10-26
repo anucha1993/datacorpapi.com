@@ -1,22 +1,34 @@
 <%- include('partials/head') %>
 <section class="page legaldoc">
   <h1>Refund &amp; Cancellation Policy</h1>
-  <p class="muted">Effective <%= co.EFFECTIVE_DATE %> · Applies to all use of <%= co.PRODUCT_NAME %></p>
+  <p class="muted">Effective <%= co.EFFECTIVE_DATE %> · Applies to all services and tools provided by <%= co.COMPANY_NAME %> (<%= co.PRODUCT_NAME %>)</p>
 
-  <h2>Cancellation / stopping use</h2>
+  <h2>Projects: consulting, development, websites, integrations</h2>
   <ul>
-    <li>There is <b>no contract and no automatic charge</b>. You can stop using the software at any time without notice. Months with no usage produce no invoice.</li>
-    <li>Invoices are issued on the 1st of the month for the previous month's actual usage and are due within 15 days. If an invoice remains unpaid after the due date, we may suspend your account until it is paid.</li>
-    <li>To close your account permanently, email us<% if (co.COMPANY_EMAIL) { %> at <a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } %>. We will close the account and delete your data in line with our Privacy Policy.</li>
+    <li><b>Before work starts:</b> if you cancel within 7 days of paying the deposit and we have not started work, the deposit is refunded in full.</li>
+    <li><b>After work starts:</b> either party may cancel with 14 days' written notice. You pay for work completed up to the cancellation date (at the agreed hourly rate or the proportion of the fixed price corresponding to completed deliverables). Any deposit above that amount is refunded; any shortfall is invoiced. Completed work is handed over on settlement.</li>
+    <li><b>Milestones already accepted</b> are non-refundable.</li>
+    <li><b>Defects:</b> if a deliverable does not materially conform to the proposal and we cannot fix it within 10 business days of your report, you may reject that deliverable and receive a refund of the fees paid for it.</li>
+    <li>Hourly consulting is billed on time actually spent and is non-refundable once the hours have been delivered and reported.</li>
   </ul>
 
-  <h2>Refunds</h2>
+  <h2>Pay-as-you-go automation tools</h2>
   <ul>
-    <li><b>Usage fees</b> cover work the software has already completed and are therefore <b>non-refundable</b>, except where the software recorded usage incorrectly (for example double counting). In that case we correct the invoice before payment, or refund the difference in full if already paid.</li>
-    <li><b>Software not working:</b> if the software does not work with your e-WorkPermit account as described on this website and we cannot fix the problem within 5 business days of your report, we refund the usage fees for the affected month in full, or void the invoice if it has not yet been paid.</li>
-    <li><b>Disputed amounts:</b> report any discrepancy within 15 days of the invoice date. We verify against the usage log (visible in your customer portal) and correct the invoice before payment.</li>
+    <li>There is <b>no contract and no automatic charge</b>. You can stop using a tool at any time without notice. Months with no usage produce no invoice.</li>
+    <li>Usage fees cover work the tool has already completed and are therefore non-refundable, except where usage was recorded incorrectly (for example double counting). In that case we correct the invoice before payment, or refund the difference in full if already paid.</li>
+    <li>If a tool does not work as described in your proposal and we cannot fix the problem within 5 business days of your report, we refund the usage fees for the affected month in full, or void the invoice if it has not yet been paid.</li>
+    <li>Report any discrepancy within 15 days of the invoice date. We verify against the usage log visible in your customer portal.</li>
+  </ul>
+
+  <h2>Maintenance &amp; support plans</h2>
+  <ul>
+    <li>Cancel at any time with 30 days' notice; the plan ends at the close of the notice period and no further invoices are issued. Months already started are not refunded pro rata.</li>
+  </ul>
+
+  <h2>All services</h2>
+  <ul>
     <li><b>Duplicate or erroneous charges</b> are always refunded in full.</li>
-    <li>No refunds are given for: a suspended or non-working e-WorkPermit account on your side, decisions made by government authorities, or government fees — these are not our charges.</li>
+    <li>No refunds are given for third-party costs incurred on your behalf with your approval (hosting, domains, licences, API usage, government fees) or for outcomes decided by third parties or authorities.</li>
   </ul>
 
   <h2>How to request a refund</h2>

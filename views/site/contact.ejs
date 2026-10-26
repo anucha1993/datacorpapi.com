@@ -13,7 +13,8 @@
         <% if (co.COMPANY_LINE) { %>LINE: <%= co.COMPANY_LINE %><br><% } %>
         Support hours: <%= co.SUPPORT_HOURS %>
       </p>
-      <p class="muted">To open an account, send us your preferred operator name and billing email. For payments, receipts or refunds contact us directly or use the links in your Lemon Squeezy receipt email (Lemon Squeezy is the Merchant of Record).</p>
+      <p class="muted">For a quote, tell us what you want to build or automate, which systems are involved and your rough timeline; we reply within 1 business day with next steps or a proposal.
+        For payments, receipts or refunds, contact us directly or use the links in your Lemon Squeezy receipt email (Lemon Squeezy is the Merchant of Record).</p>
     </div>
     <div class="card">
       <h2>Send a message</h2>
@@ -25,7 +26,7 @@
         <input type="text" name="name" placeholder="Your name" required maxlength="190" value="<%= form.name || '' %>">
         <input type="email" name="email" placeholder="Email" required maxlength="190" value="<%= form.email || '' %>">
         <input type="text" name="company" placeholder="Company (optional)" maxlength="190" value="<%= form.company || '' %>">
-        <textarea name="message" rows="5" placeholder="Tell us about your needs — e.g. number of workers you manage, modes you are interested in, or your invoice number" required maxlength="4000"><%= form.message || '' %></textarea>
+        <textarea name="message" rows="6" placeholder="What would you like to build or automate? Systems involved, volume, timeline, or your invoice number if this is a billing question" required maxlength="4000"><%= form.message || '' %></textarea>
         <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
         <button class="btn primary">Send</button>
       </form>
