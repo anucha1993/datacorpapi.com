@@ -51,6 +51,7 @@ INSERT IGNORE INTO usage_prices (mode, mode_label, price_per_record, price_per_r
   ('ticket', 'Ticket ID check',                        0.50, 0),
   ('receipts', 'Receipts / BT.44 / BT.22 forms',              2.00, 0),
   ('results', 'Result notice / application receipt',                     2.00, 0),
+  ('medical_cert', 'Medical certificate download',                       2.00, 0),
   ('bill_payment', 'Payment slips',                           2.00, 0),
   ('payment_receipts', 'Full receipt set',                     2.00, 0),
   ('bt30_ctn', 'Acknowledgement / appointment slips',                     2.00, 0),

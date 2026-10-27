@@ -79,14 +79,14 @@ async function qSafe(sql, params = [], fallback = []) {
 const MODE_LABELS = {
   etracking: "e-Tracking — application list", permit_report: "Permit application report",
   aliens: "Foreign worker list (account)", namelist_alien: "Renewal name list (NameList)",
-  ticket: "Ticket ID check", receipts: "Receipts / BT.44 / BT.22 forms", results: "Result notice / application receipt",
+  ticket: "Ticket ID check", receipts: "Receipts / BT.44 / BT.22 forms", results: "Result notice / application receipt", medical_cert: "Medical certificate download",
   bill_payment: "Payment slips", payment_receipts: "Full receipt set", bt30_ctn: "Acknowledgement / appointment slips",
   appointment: "Card appointment (address from receipt)", register: "Worker registration", inform: "Employer notification (BT.52)",
   bt30: "MoU permit renewal (BT.30)", bt44: "Employer change (BT.44)", booking_availability: "Appointment slot checker (real-time)",
 };
 const MODE_GROUP = {
   etracking: "report", permit_report: "report", aliens: "report", namelist_alien: "report", ticket: "report",
-  receipts: "download", results: "download", bill_payment: "download", payment_receipts: "download",
+  receipts: "download", results: "download", medical_cert: "download", bill_payment: "download", payment_receipts: "download",
   bt30_ctn: "download", appointment: "download", register: "submit", inform: "submit", bt30: "submit",
   bt44: "submit", booking_availability: "booking",
 };
