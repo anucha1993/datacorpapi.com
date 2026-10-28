@@ -1,23 +1,48 @@
 <%- include('partials/header') %>
-<div class="pagehead"><h1>Billing details</h1></div>
-<form method="post" action="/portal/profile" class="card" style="max-width:640px">
-  <% if (saved) { %><p class="ok">Saved. These details will be pre-filled at checkout and shown on your receipts.</p><% } %>
-  <% if (error) { %><p class="alert"><%= error %></p><% } %>
-  <p class="muted">Enter these once. Every time you pay an invoice, the <%= co.PAY.name %> checkout is pre-filled with this information so the receipt is issued to your company name and address.</p>
-  <div class="stack">
-    <label>Operator name (cannot be changed) <input value="<%= user.operator %>" disabled></label>
-    <label>Serial number — enter this in the desktop app (Settings → Serial number)
-      <span class="inputgroup"><input value="<%= user.serial_no || '' %>" readonly style="font-family:Consolas,monospace;font-weight:600"><button type="button" class="btn" onclick="navigator.clipboard.writeText('<%= user.serial_no || '' %>');this.textContent='Copied'">Copy</button></span>
-    </label>
-    <label>Company / buyer name (as it should appear on receipts) <input name="company_name" value="<%= user.company_name || '' %>" maxlength="190" required></label>
-    <div class="formrow">
-      <label>Tax ID (13 digits) <input name="tax_id" value="<%= user.tax_id || '' %>" maxlength="32" pattern="[0-9\-]{10,20}" placeholder="0105500000000"></label>
-      <label>Postal code <input name="zip" value="<%= user.zip || '' %>" maxlength="16" pattern="[0-9]{5}" placeholder="10110" required></label>
-    </div>
-    <label>Address <textarea name="address" rows="3" maxlength="500" required><%= user.address || '' %></textarea></label>
-    <label>Email for receipts <input name="billing_email" type="email" value="<%= user.billing_email || user.email || '' %>" maxlength="190" required></label>
-    <label>Display name in the portal <input name="display_name" value="<%= user.display_name || '' %>" maxlength="190"></label>
-    <button class="primary">Save</button>
+<div class="pagehead">
+  <div class="titles">
+    <h1>Company details</h1>
+    <p class="subtitle">Used on your invoices and receipts, and pre-filled at checkout.</p>
   </div>
-</form>
+</div>
+<% if (saved) { %><p class="ok" role="status">Saved. These details will be used on your next checkout and receipt.</p><% } %>
+<% if (error) { %><p class="alert" role="alert"><%= error %></p><% } %>
+
+<div class="layout-side">
+  <form method="post" action="/portal/profile" class="card">
+    <div class="section-title">Billing information</div>
+    <div class="form-grid stack" style="display:grid">
+      <label class="full">Company / buyer name <span class="hint">Exactly as it should appear on receipts</span>
+        <input name="company_name" value="<%= user.company_name || '' %>" maxlength="190" required autocomplete="organization"></label>
+      <label>Tax ID <span class="hint">13-digit Thai tax ID (optional for individuals)</span>
+        <input name="tax_id" value="<%= user.tax_id || '' %>" maxlength="32" pattern="[0-9\-]{10,20}" placeholder="0105500000000" inputmode="numeric"></label>
+      <label>Receipt email <span class="hint">Payment confirmations are sent here</span>
+        <input name="billing_email" type="email" value="<%= user.billing_email || user.email || '' %>" maxlength="190" required autocomplete="email"></label>
+      <label class="full">Address
+        <textarea name="address" rows="3" maxlength="500" required autocomplete="street-address" placeholder="Building, street, sub-district, district, province"><%= user.address || '' %></textarea></label>
+      <label>Postal code
+        <input name="zip" value="<%= user.zip || '' %>" maxlength="16" pattern="[0-9]{5}" placeholder="10110" required inputmode="numeric" autocomplete="postal-code"></label>
+      <label>Display name <span class="hint">Shown in the portal only</span>
+        <input name="display_name" value="<%= user.display_name || '' %>" maxlength="190"></label>
+    </div>
+    <hr class="divider">
+    <div class="btnrow"><button class="primary">Save changes</button><a class="btn" href="/portal/billing">Cancel</a></div>
+  </form>
+
+  <aside>
+    <section class="card">
+      <div class="section-title">Account</div>
+      <dl class="kv" style="grid-template-columns:110px 1fr">
+        <dt>Operator</dt><dd class="mono"><%= user.operator %></dd>
+      </dl>
+      <hr class="divider">
+      <div class="section-title">Serial number</div>
+      <p class="muted small" style="margin-top:0">Enter this in the desktop app (Settings → Serial number) so usage is recorded to this account.</p>
+      <div class="inputgroup">
+        <input value="<%= user.serial_no || '' %>" readonly class="mono" style="font-weight:600" aria-label="Serial number">
+        <button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied'">Copy</button>
+      </div>
+    </section>
+  </aside>
+</div>
 <%- include('partials/footer') %>

@@ -15,6 +15,7 @@ const path = require("path");
 const crypto = require("crypto");
 const express = require("express");
 const cookieSession = require("cookie-session");
+const multer = require("multer");
 const mysql = require("mysql2/promise");
 const ls = require("./lib/lemonsqueezy");
 const billing = require("./lib/billing");
@@ -129,6 +130,41 @@ function loadPlans() {
   }
   return cfg.plans || [];
 }
+/**
+ * ข้อมูลสำหรับเอกสารใบแจ้งหนี้ (views/partials/invoice_doc.ejs): ผู้ซื้อ รายการ ไฟล์แนบ
+ * บิลรายเดือนแตกรายการตามประเภทงาน (ถ้ายอดจาก view ยังตรงกับยอดในบิล) ไม่งั้นแสดงเป็นบรรทัดเดียว
+ */
+async function invoiceDoc(inv) {
+  const [buyerRows, files] = await Promise.all([
+    q("SELECT * FROM portal_users WHERE operator = ? LIMIT 1", [inv.operator]),
+    invoices.listAttachments(q, [inv.id]),
+  ]);
+  let lines = [];
+  if (inv.kind === "manual") {
+    lines.push({ name: inv.title || "Service", desc: inv.note || "", qty: 1, unit: Number(inv.amount_thb), amount: Number(inv.amount_thb) });
+  } else {
+    const byMode = await q("SELECT mode_label, billable_records, unit_price, amount_thb FROM v_usage_monthly WHERE ym = ? AND operator = ? AND amount_thb <> 0 ORDER BY amount_thb DESC", [inv.ym, inv.operator]);
+    const viewSum = byMode.reduce((s, r) => s + Number(r.amount_thb || 0), 0);
+    if (byMode.length && Math.abs(viewSum - Number(inv.usage_thb)) < 0.01) {
+      lines = byMode.map(r => ({ name: r.mode_label, desc: `Usage ${inv.ym}`, qty: Number(r.billable_records), unit: r.unit_price != null ? Number(r.unit_price) : null, amount: Number(r.amount_thb) }));
+    } else if (Number(inv.usage_thb)) {
+      lines.push({ name: `Usage for ${inv.ym}`, desc: `${fmtNum(inv.records)} billable records`, qty: 1, unit: Number(inv.usage_thb), amount: Number(inv.usage_thb) });
+    }
+    if (Number(inv.carried_thb)) lines.push({ name: "Balance carried forward", desc: "Previous months below the payment minimum", qty: 1, unit: Number(inv.carried_thb), amount: Number(inv.carried_thb) });
+    if (Number(inv.adjust_thb)) lines.push({ name: "Adjustment", desc: inv.note || "", qty: 1, unit: Number(inv.adjust_thb), amount: Number(inv.adjust_thb) });
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  return { inv, buyer: buyerRows[0] || { operator: inv.operator }, lines, files, overdue: inv.status === "open" && !!inv.due_at && inv.due_at < today };
+}
+function sendAttachment(res, a) {
+  res.setHeader("Content-Type", a.mime);
+  res.setHeader("Content-Length", a.size);
+  res.setHeader("Content-Disposition", `inline; filename="${a.filename.replace(/[^\x20-\x7e]|"/g, "_")}"; filename*=UTF-8''${encodeURIComponent(a.filename)}`);
+  res.setHeader("Cache-Control", "private, max-age=300");
+  res.end(a.data);
+}
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: invoices.ATTACH_MAX, files: 1 } });
+
 /** rate-limit ง่าย ๆ ในหน่วยความจำ: key → [timestamps] */
 const buckets = new Map();
 function hit(key, limit, windowMs) {
@@ -320,7 +356,9 @@ app.get("/portal/billing", requirePortal, async (req, res, next) => {
     const sum = { open: 0, open_n: 0, paid: 0 };
     for (const r of inv) { if (r.status === "open") { sum.open += Number(r.amount_thb); sum.open_n++; } if (r.status === "paid") sum.paid += Number(r.amount_thb); }
     const profileComplete = !!(u.company_name && u.address && u.zip && (u.billing_email || u.email));
-    res.render("portal/billing", { co: company(), title: "Billing", user: u, invoices: inv, sum, currentEstimate: Number(cur[0].amt || 0),
+    const files = {};
+    for (const a of await invoices.listAttachments(q, inv.map(r => r.id))) (files[a.invoice_id] ||= []).push(a);
+    res.render("portal/billing", { co: company(), title: "Billing", pageTitle: "Invoices & payments", user: u, invoices: inv, files, sum, currentEstimate: Number(cur[0].amt || 0),
       today: new Date().toISOString().slice(0, 10), paidNo: String(req.query.paid || "").slice(0, 32) || null, profileComplete });
   } catch (e) { next(e); }
 });
@@ -349,27 +387,57 @@ app.post("/portal/password", requirePortal, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/** หน้าร้านค้าบริการของลูกค้า: ซื้อบริการเพิ่มเติม จ่ายผ่าน checkout เดียวกับใบแจ้งหนี้ปกติ */
+/** ใบแจ้งหนี้ฉบับเต็ม (พิมพ์/บันทึก PDF ได้) — ลูกค้าเห็นเฉพาะของตัวเอง */
+app.get("/portal/invoices/:no", requirePortal, async (req, res, next) => {
+  try {
+    const inv = (await q("SELECT * FROM billing_invoices WHERE invoice_no = ? AND operator = ? LIMIT 1", [String(req.params.no).slice(0, 32), req.portalUser.operator]))[0];
+    if (!inv) return res.status(404).render("portal/error", { co: company(), user: req.portalUser, title: "Invoice not found", message: "This invoice does not exist or belongs to another account.", detail: "" });
+    res.render("portal/invoice", { co: company(), title: "Billing", pageTitle: inv.invoice_no, user: req.portalUser, ...(await invoiceDoc(inv)) });
+  } catch (e) { next(e); }
+});
+app.get("/portal/attachments/:id", requirePortal, async (req, res, next) => {
+  try {
+    const a = await invoices.getAttachment(q, req.params.id);
+    const owner = a && (await q("SELECT 1 FROM billing_invoices WHERE id = ? AND operator = ?", [a.invoice_id, req.portalUser.operator]))[0];
+    if (!owner) return res.status(404).render("portal/error", { co: company(), user: req.portalUser, title: "File not found", message: "This file does not exist.", detail: "" });
+    sendAttachment(res, a);
+  } catch (e) { next(e); }
+});
+
+/** หน้าร้านค้าบริการของลูกค้า: เลือกบริการ → ตรวจสอบคำสั่งซื้อ → ไปหน้าชำระเงินของ Polar */
+const renderServices = async (req, res, error = null, status = 200) =>
+  res.status(status).render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error });
 app.get("/portal/services", requirePortal, async (req, res, next) => {
-  try { res.render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error: null }); }
-  catch (e) { next(e); }
+  try { await renderServices(req, res); } catch (e) { next(e); }
+});
+app.get("/portal/services/:id", requirePortal, async (req, res, next) => {
+  try {
+    const svc = await services.get(q, req.params.id);
+    if (!svc || !svc.is_active) return renderServices(req, res, "This service is no longer available.", 404);
+    const u = req.portalUser;
+    res.render("portal/checkout", { co: company(), title: "Services", pageTitle: "Review order", user: u, svc, error: null,
+      profileComplete: !!(u.company_name && u.address && u.zip && (u.billing_email || u.email)) });
+  } catch (e) { next(e); }
 });
 app.post("/portal/services/:id/buy", requirePortal, async (req, res, next) => {
+  const u = req.portalUser;
+  let svc = null;
+  const back = (error, status = 400) => res.status(status).render("portal/checkout", { co: company(), title: "Services", pageTitle: "Review order", user: u, svc, error,
+    profileComplete: !!(u.company_name && u.address && u.zip && (u.billing_email || u.email)) });
   try {
-    if (!hit("buy:" + req.portalUser.operator, 5, 10 * 60 * 1000)) {
-      return res.status(429).render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error: "Too many purchase attempts. Please wait a few minutes and try again." });
-    }
-    const svc = await services.get(q, req.params.id);
-    if (!svc || !svc.is_active) {
-      return res.status(404).render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error: "This service is no longer available." });
-    }
-    const inv = await invoices.createManualInvoice(q, { operator: req.portalUser.operator, amount: svc.price_thb, title: svc.name, note: svc.description }, payOpts());
+    svc = await services.get(q, req.params.id);
+    if (!svc || !svc.is_active) return renderServices(req, res, "This service is no longer available.", 404);
+    if (!req.body.agree) return back("Please accept the Terms of Service and Refund Policy to continue.");
+    if (!hit("buy:" + u.operator, 5, 10 * 60 * 1000)) return back("Too many purchase attempts. Please wait a few minutes and try again.", 429);
+    // กดซื้อซ้ำภายใน 24 ชม. → ใช้บิลเดิมที่ยังไม่จ่าย ไม่สร้างบิลซ้อน
+    const existing = await invoices.findOpenServiceInvoice(q, u.operator, svc.id);
+    if (existing) return res.redirect(existing.checkout_url);
+    const inv = await invoices.createManualInvoice(q, { operator: u.operator, amount: svc.price_thb, title: svc.name, note: svc.description, serviceId: svc.id, paymentLink: svc.payment_link }, payOpts());
     if (inv.checkout_url) return res.redirect(inv.checkout_url);
-    res.redirect("/portal/billing");
+    res.redirect("/portal/invoices/" + encodeURIComponent(inv.invoice_no));
   } catch (e) {
     if (e.code && String(e.code).startsWith("ER_")) return next(e);
-    try { res.status(400).render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error: e.message }); }
-    catch (e2) { next(e2); }
+    try { back(e.message); } catch (e2) { next(e2); }
   }
 });
 
@@ -519,14 +587,25 @@ admin.post("/billing/operator", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// ---- ใบแจ้งหนี้รายเดือน ----
+// ---- ใบแจ้งหนี้ ----
+const INV_FILTERS = { open: "i.status = 'open'", overdue: "i.status = 'open' AND i.due_at < CURDATE()", paid: "i.status = 'paid'", void: "i.status = 'void'", carried: "i.status = 'carried'", manual: "i.kind = 'manual'" };
 async function renderInvoices(req, res, next, extra = {}) {
   try {
-    const ym = validYm(req.query.ym || (req.body && req.body.ym));
-    const [rows, months, carried] = await Promise.all([
-      q("SELECT i.*, p.company_name FROM billing_invoices i LEFT JOIN portal_users p ON p.operator = i.operator WHERE i.ym = ? ORDER BY FIELD(i.status,'open','carried','paid','void'), i.operator", [ym]),
+    const src = { ...req.query, ...(req.body || {}) };
+    const all = src.ym === "all", ym = all ? "all" : validYm(src.ym);
+    const status = INV_FILTERS[src.status] ? src.status : "", operator = String(src.operator || "").trim().slice(0, 100);
+    const where = [], params = [];
+    if (!all) { where.push("i.ym = ?"); params.push(ym); }
+    if (status) where.push(INV_FILTERS[status]);
+    if (operator) { where.push("i.operator = ?"); params.push(operator); }
+    const [rows, months, carried, svcRows] = await Promise.all([
+      q(`SELECT i.*, p.company_name, (SELECT COUNT(*) FROM billing_attachments a WHERE a.invoice_id = i.id) files
+         FROM billing_invoices i LEFT JOIN portal_users p ON p.operator = i.operator
+         ${where.length ? "WHERE " + where.join(" AND ") : ""}
+         ORDER BY FIELD(i.status,'open','carried','paid','void'), i.issued_at DESC, i.id DESC LIMIT 500`, params),
       monthsAvailable(),
       q("SELECT COALESCE(SUM(amount_thb),0) s FROM billing_invoices WHERE status = 'carried'"),
+      services.listAll(q),
     ]);
     const today = new Date().toISOString().slice(0, 10);
     const opsRows = await q("SELECT operator FROM portal_users WHERE is_active = 1 UNION SELECT DISTINCT operator FROM usage_runs WHERE operator <> '' ORDER BY operator");
@@ -537,7 +616,8 @@ async function renderInvoices(req, res, next, extra = {}) {
       if (r.status === "paid") { sum.paid += Number(r.amount_thb); sum.paid_n++; }
     }
     const pay = payments.info();
-    res.render("invoices", { title: "Invoices", ym, months, rows, sum, today, operators, pay, lsReady: pay.ready, testMode: pay.testMode, msg: req.query.msg || null, error: null, report: null, ...extra });
+    res.render("invoices", { title: "Invoices", ym, months, rows, sum, today, operators, filters: { status, operator }, services: svcRows,
+      pay, lsReady: pay.ready, testMode: pay.testMode, msg: req.query.msg || null, error: req.query.error || null, report: null, ...extra });
   } catch (e) { next(e); }
 }
 admin.get("/invoices", (req, res, next) => renderInvoices(req, res, next));
@@ -551,30 +631,88 @@ admin.post("/invoices/generate", async (req, res, next) => {
 });
 admin.post("/invoices/manual", async (req, res, next) => {
   try {
-    const inv = await invoices.createManualInvoice(q, { operator: req.body.operator, amount: req.body.amount, title: req.body.title, note: req.body.note, dueDays: req.body.due_days },
-      payOpts());
+    // เลือกบริการจากแคตตาล็อกได้ — ยอด/ชื่อ/รายละเอียดว่าง = ใช้ของบริการ, ยอดตรงราคาบริการ = ใช้ลิงก์ Polar ที่แปะไว้
+    const svc = req.body.service_id ? await services.get(q, req.body.service_id) : null;
+    const amount = String(req.body.amount || "").trim() || (svc ? svc.price_thb : "");
+    const inv = await invoices.createManualInvoice(q, {
+      operator: req.body.operator, amount, title: req.body.title || (svc ? svc.name : ""), note: req.body.note || (svc ? svc.description : ""), dueDays: req.body.due_days,
+      serviceId: svc ? svc.id : null, paymentLink: svc && Number(svc.price_thb) === Number(amount) ? svc.payment_link : "",
+    }, payOpts());
     const msg = `Created ${inv.invoice_no} for ${inv.operator}: ฿${inv.amount_thb}` + (inv.linkError ? ` (payment link failed: ${inv.linkError})` : inv.checkout_url ? " with payment link" : "");
-    res.redirect("/admin/invoices?ym=" + inv.ym + "&msg=" + encodeURIComponent(msg));
+    res.redirect(`/admin/invoices/${inv.id}?msg=` + encodeURIComponent(msg));
   } catch (e) {
     if (e.code && String(e.code).startsWith("ER_")) return next(e);
     req.query.ym = validYm(req.query.ym);
     renderInvoices(req, res, next, { error: e.message });
   }
 });
-const invRedirect = (req, res, id, msg) => q("SELECT ym FROM billing_invoices WHERE id = ?", [id]).then(r => res.redirect("/admin/invoices?ym=" + (r[0] ? r[0].ym : thisMonth()) + (msg ? "&msg=" + encodeURIComponent(msg) : "")));
+/** หลังทำรายการ: กลับหน้ารายละเอียดบิล (ถ้ามาจากหน้านั้น) หรือรายการบิลของเดือน */
+const invRedirect = (req, res, id, msg, isError = false) => {
+  if (req.body && req.body.back === "detail") return res.redirect(`/admin/invoices/${id}` + (msg ? (isError ? "?error=" : "?msg=") + encodeURIComponent(msg) : ""));
+  return q("SELECT ym FROM billing_invoices WHERE id = ?", [id]).then(r => res.redirect("/admin/invoices?ym=" + (r[0] ? r[0].ym : thisMonth()) + (msg ? (isError ? "&error=" : "&msg=") + encodeURIComponent(msg) : "")));
+};
+const invFail = (req, res, next, id) => (e) => {
+  if (e.code && String(e.code).startsWith("ER_")) return next(e);
+  if (req.body && req.body.back === "detail") return invRedirect(req, res, id, e.message, true);
+  renderInvoices(req, res, next, { error: e.message });
+};
+admin.get("/invoices/:id(\\d+)", async (req, res, next) => {
+  try {
+    const inv = (await q("SELECT * FROM billing_invoices WHERE id = ?", [Number(req.params.id)]))[0];
+    if (!inv) return res.status(404).render("error", { title: "Invoice not found", message: "No invoice with this id.", detail: "" });
+    res.render("invoice", { title: "Invoices", co: company(), pay: payments.info(), siteUrl: company().SITE_URL || "", ATTACH_KINDS: invoices.ATTACH_KINDS,
+      msg: req.query.msg || null, error: req.query.error || null, ...(await invoiceDoc(inv)) });
+  } catch (e) { next(e); }
+});
 admin.post("/invoices/:id/adjust", async (req, res, next) => {
-  try { const inv = await invoices.adjustInvoice(q, Number(req.params.id), { adjust_thb: req.body.adjust_thb, note: req.body.note }, payOpts()); invRedirect(req, res, inv.id, `${inv.invoice_no} adjusted to ฿${inv.amount_thb}`); }
-  catch (e) { renderInvoices(req, res, next, { error: e.message }); }
+  const id = Number(req.params.id);
+  try { const inv = await invoices.adjustInvoice(q, id, { adjust_thb: req.body.adjust_thb, note: req.body.note }, payOpts()); invRedirect(req, res, id, `${inv.invoice_no} adjusted to ฿${inv.amount_thb}`); }
+  catch (e) { invFail(req, res, next, id)(e); }
 });
 admin.post("/invoices/:id/link", async (req, res, next) => {
-  try { await invoices.regenerateLink(q, Number(req.params.id), { testMode: payOpts().testMode }); invRedirect(req, res, Number(req.params.id), "Payment link created"); }
-  catch (e) { renderInvoices(req, res, next, { error: e.message }); }
+  const id = Number(req.params.id);
+  try { await invoices.regenerateLink(q, id, { testMode: payOpts().testMode }); invRedirect(req, res, id, "Payment link created"); }
+  catch (e) { invFail(req, res, next, id)(e); }
 });
 admin.post("/invoices/:id/paid", async (req, res, next) => {
-  try { await invoices.markPaidManual(q, Number(req.params.id), "Marked paid by admin"); invRedirect(req, res, Number(req.params.id), "Marked as paid"); } catch (e) { next(e); }
+  try { await invoices.markPaidManual(q, Number(req.params.id), String(req.body.note || "").trim() || "Marked paid by admin"); invRedirect(req, res, Number(req.params.id), "Marked as paid"); } catch (e) { next(e); }
 });
 admin.post("/invoices/:id/void", async (req, res, next) => {
   try { await invoices.voidInvoice(q, Number(req.params.id), "Voided by admin"); invRedirect(req, res, Number(req.params.id), "Invoice voided"); } catch (e) { next(e); }
+});
+admin.post("/invoices/:id/receipt-url", async (req, res, next) => {
+  const id = Number(req.params.id);
+  try { await invoices.setReceiptUrl(q, id, req.body.receipt_url); invRedirect(req, res, id, "Receipt link saved"); }
+  catch (e) { invFail(req, res, next, id)(e); }
+});
+/** แนบไฟล์ใบเสร็จ/ใบกำกับภาษี (PDF/รูป ≤ 5 MB) — ลูกค้าดาวน์โหลดได้ในพอร์ทัล, ติ๊ก mark_paid เพื่อปิดบิลที่รับเงินช่องทางอื่น */
+admin.post("/invoices/:id/attachments", (req, res, next) => {
+  const id = Number(req.params.id);
+  upload.single("file")(req, res, async (err) => {
+    req.body = { ...(req.body || {}), back: "detail" };
+    if (err) return invRedirect(req, res, id, err.code === "LIMIT_FILE_SIZE" ? "File is larger than 5 MB" : err.message, true);
+    try {
+      await invoices.addAttachment(q, id, req.file, req.body.kind);
+      if (req.body.mark_paid) await invoices.markPaidManual(q, id, "Paid — receipt attached by admin");
+      invRedirect(req, res, id, "File attached — the customer can download it from the portal");
+    } catch (e) { invFail(req, res, next, id)(e); }
+  });
+});
+admin.get("/attachments/:id", async (req, res, next) => {
+  try {
+    const a = await invoices.getAttachment(q, req.params.id);
+    if (!a) return res.status(404).render("error", { title: "File not found", message: "This attachment no longer exists.", detail: "" });
+    sendAttachment(res, a);
+  } catch (e) { next(e); }
+});
+admin.post("/attachments/:id/delete", async (req, res, next) => {
+  try {
+    const a = await invoices.getAttachment(q, req.params.id);
+    if (!a) return res.redirect("/admin/invoices");
+    await invoices.deleteAttachment(q, a.id);
+    req.body.back = "detail";
+    invRedirect(req, res, a.invoice_id, "Attachment removed");
+  } catch (e) { next(e); }
 });
 
 // ---- ขายบริการ (แสดงในพอร์ทัลลูกค้า ให้กดซื้อ/จ่ายเองได้) ----
@@ -587,7 +725,7 @@ admin.get("/services", async (req, res, next) => {
 });
 admin.post("/services", async (req, res, next) => {
   try {
-    await services.create(q, { name: req.body.name, description: req.body.description, price_thb: req.body.price_thb, minThb: invoices.MIN_THB });
+    await services.create(q, { name: req.body.name, description: req.body.description, price_thb: req.body.price_thb, payment_link: req.body.payment_link, sort_order: req.body.sort_order, minThb: invoices.MIN_THB });
     res.redirect("/admin/services?msg=" + encodeURIComponent("Service added"));
   } catch (e) {
     if (e.code && String(e.code).startsWith("ER_")) return next(e);
@@ -597,7 +735,7 @@ admin.post("/services", async (req, res, next) => {
 });
 admin.post("/services/:id/update", async (req, res, next) => {
   try {
-    await services.update(q, Number(req.params.id), { name: req.body.name, description: req.body.description, price_thb: req.body.price_thb, minThb: invoices.MIN_THB });
+    await services.update(q, Number(req.params.id), { name: req.body.name, description: req.body.description, price_thb: req.body.price_thb, payment_link: req.body.payment_link, sort_order: req.body.sort_order, minThb: invoices.MIN_THB });
     res.redirect("/admin/services?msg=" + encodeURIComponent("Service updated"));
   } catch (e) {
     if (e.code && String(e.code).startsWith("ER_")) return next(e);
@@ -694,19 +832,20 @@ app.get("/api/summary", requireAuth, async (req, res, next) => {
 });
 
 // ---- errors ----
+const errView = (req) => req.path.startsWith("/portal") ? "portal/error" : (req.path.startsWith("/admin") || req.path.startsWith("/api")) ? "error" : "site/error";
 app.use((req, res) => {
-  const pub = !req.path.startsWith("/admin") && !req.path.startsWith("/api") && !req.path.startsWith("/portal");
-  res.status(404).render(pub ? "site/error" : "error", { co: company(), path: req.path, title: "Page not found", message: "The page you requested does not exist.", detail: req.path });
+  res.status(404).render(errView(req), { user: req.portalUser || null, co: company(), path: req.path, title: "Page not found", message: "The page you requested does not exist.", detail: req.path });
 });
 app.use((err, req, res, _next) => {
   if (err && err.type === "entity.parse.failed") return res.status(400).json({ ok: false, error: "invalid_json", message: "Request body must be valid JSON" });
   console.error(err);
   const dbDown = ["ECONNREFUSED", "ETIMEDOUT", "ER_ACCESS_DENIED_ERROR", "ENOTFOUND", "PROTOCOL_CONNECTION_LOST", "ER_NO_SUCH_TABLE"].includes(err.code);
-  const pub = !req.path.startsWith("/admin") && !req.path.startsWith("/api") && !req.path.startsWith("/portal");
-  res.status(500).render(pub ? "site/error" : "error", {
-    co: company(), path: req.path, title: "Something went wrong",
-    message: dbDown ? "Database connection failed — check DB_* in .env, the database user's privileges, and that the sql/*.sql files were applied." : "An internal error occurred.",
-    detail: pub ? "" : `${err.code || ""} ${err.sqlMessage || err.message || ""}`.trim(),
+  const view = errView(req), adminView = view === "error";
+  res.status(500).render(view, {
+    co: company(), path: req.path, title: "Something went wrong", user: req.portalUser || null,
+    message: !adminView ? "We couldn't complete your request. Please try again in a few minutes — if it keeps happening, contact support."
+      : dbDown ? "Database connection failed — check DB_* in .env, the database user's privileges, and that the sql/*.sql files were applied." : "An internal error occurred.",
+    detail: !adminView ? "" : `${err.code || ""} ${err.sqlMessage || err.message || ""}`.trim(),
   });
 });
 

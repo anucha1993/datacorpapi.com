@@ -1,19 +1,32 @@
 <%- include('partials/header') %>
 <div class="pagehead">
-  <h1>Usage for <%= ym %></h1>
+  <div class="titles">
+    <h1>Welcome<%= user.company_name || user.display_name ? ', ' + (user.company_name || user.display_name) : '' %></h1>
+    <p class="subtitle">Usage for <b><%= ym %></b> · serial <code style="font-weight:600"><%= user.serial_no || '—' %></code></p>
+  </div>
   <div class="tools">
     <form method="get" class="monthpick" action="/portal">
       <label>Month
         <select name="ym" onchange="this.form.submit()"><% for (const m of months) { %><option value="<%= m %>" <%= m === ym ? 'selected' : '' %>><%= m %></option><% } %></select>
       </label>
     </form>
-    <a class="btn" href="/portal/export.csv?ym=<%= ym %>">⬇ CSV</a>
-    <a class="btn" href="/portal/billing">Billing</a>
+    <a class="btn" href="/portal/export.csv?ym=<%= ym %>">Export CSV</a>
   </div>
 </div>
 
-<p class="muted small">Your serial number: <code style="font-weight:600"><%= user.serial_no || '—' %></code> — enter it in the desktop app so usage is recorded to this account (<a href="/portal/profile">details</a>).</p>
-<% if (user.must_change) { %><p class="alert">Please <a href="/portal/password">change the password</a> you were given before continuing.</p><% } %>
+<% if (user.must_change) { %><p class="notice">Please <a href="/portal/password">change the temporary password</a> you were given.</p><% } %>
+
+<% const owed = openInvoices.reduce((s, i) => s + Number(i.amount_thb || 0), 0); %>
+<% if (openInvoices.length) { %>
+<section class="balance">
+  <div>
+    <div class="k">Outstanding balance</div>
+    <div class="v">฿<%= fmtMoney(owed) %> <small><%= openInvoices.length %> unpaid invoice<%= openInvoices.length === 1 ? '' : 's' %></small></div>
+    <div class="meta">Earliest due <%= openInvoices.map(i => i.due_at).filter(Boolean).sort()[0] || '—' %></div>
+  </div>
+  <a class="btn lg" href="<%= openInvoices.length === 1 ? '/portal/invoices/' + encodeURIComponent(openInvoices[0].invoice_no) : '/portal/billing' %>">Review &amp; pay</a>
+</section>
+<% } %>
 
 <section class="tiles">
   <div class="tile"><div class="k">Estimated charge this month</div><div class="v"><%= fmtMoney(totals.amount) %> <small>THB</small></div></div>
@@ -65,8 +78,8 @@
     <% } %>
 
     <h2 style="margin-top:18px">Unpaid invoices</h2>
-    <% if (!openInvoices.length) { %><p class="muted">Nothing outstanding</p><% } else { for (const i of openInvoices) { %>
-      <p><b><%= i.invoice_no %></b> for <%= i.ym %> · <b><%= fmtMoney(i.amount_thb) %></b> THB · due <%= i.due_at || '-' %> → <a href="/portal/billing">Pay now</a></p>
+    <% if (!openInvoices.length) { %><p class="muted">Nothing outstanding — you're all paid up.</p><% } else { for (const i of openInvoices) { %>
+      <p><a class="linkish mono" href="/portal/invoices/<%= encodeURIComponent(i.invoice_no) %>"><%= i.invoice_no %></a> · <b>฿<%= fmtMoney(i.amount_thb) %></b> · <span class="muted">due <%= i.due_at || '—' %></span></p>
     <% } } %>
   </section>
 </div>

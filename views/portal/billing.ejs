@@ -1,41 +1,65 @@
 <%- include('partials/header') %>
-<div class="pagehead"><h1>Billing</h1></div>
+<div class="pagehead">
+  <div class="titles">
+    <h1>Invoices &amp; payments</h1>
+    <p class="subtitle">Pay outstanding invoices and download receipts.</p>
+  </div>
+  <div class="tools"><a class="btn" href="/portal/services">Buy a service</a></div>
+</div>
 
-<% if (paidNo) { %><p class="ok">Payment for invoice <%= paidNo %> received — thank you. The status will update within a few minutes.</p><% } %>
-<% if (!profileComplete) { %><p class="alert">Your <a href="/portal/profile">billing details</a> (company name, address, tax ID) are incomplete. Please fill them in before paying so your receipt is issued correctly.</p><% } %>
+<% if (paidNo) { %><p class="ok" role="status">Thank you — payment for <b><%= paidNo %></b> was received. The invoice status and receipt update automatically within a few minutes.</p><% } %>
+<% if (!profileComplete) { %><p class="notice">Your <a href="/portal/profile">company details</a> are incomplete. Add your company name, address and tax ID before paying so receipts are issued correctly.</p><% } %>
 
-<section class="tiles">
-  <div class="tile"><div class="k">Outstanding</div><div class="v"><%= fmtMoney(sum.open) %> <small>THB · <%= sum.open_n %> invoice<%= sum.open_n === 1 ? '' : 's' %></small></div></div>
-  <div class="tile"><div class="k">This month so far (estimate)</div><div class="v"><%= fmtMoney(currentEstimate) %> <small>THB</small></div><div class="muted small">Invoiced on the 1st of next month</div></div>
-  <div class="tile"><div class="k">Total paid</div><div class="v"><%= fmtMoney(sum.paid) %> <small>THB</small></div></div>
+<% const firstOpen = invoices.find(r => r.status === 'open' && r.checkout_url); %>
+<section class="balance <%= sum.open_n ? '' : 'clear' %>">
+  <div>
+    <div class="k"><%= sum.open_n ? 'Outstanding balance' : 'You are all paid up' %></div>
+    <div class="v">฿<%= fmtMoney(sum.open) %> <small><%= sum.open_n %> unpaid invoice<%= sum.open_n === 1 ? '' : 's' %></small></div>
+    <div class="meta">Current month so far: ฿<%= fmtMoney(currentEstimate) %> (estimate — invoiced on the 1st of next month)</div>
+  </div>
+  <% if (sum.open_n === 1 && firstOpen) { %><a class="btn lg" href="/portal/invoices/<%= encodeURIComponent(firstOpen.invoice_no) %>">Review &amp; pay</a>
+  <% } else if (sum.open_n) { %><a class="btn lg" href="#invoices">View unpaid invoices</a><% } %>
 </section>
 
-<section class="card">
-  <h2>Invoices</h2>
-  <% if (!invoices.length) { %><p class="muted">No invoices yet — your first invoice is issued after the end of the month in which you start using the software.</p><% } else { %>
-  <div class="scroll"><table class="dense">
-    <thead><tr><th>Invoice</th><th>Period</th><th class="r">Records</th><th class="r">Amount (THB)</th><th>Due</th><th>Status</th><th></th></tr></thead>
+<section class="tiles">
+  <div class="tile"><div class="k">Total paid</div><div class="v"><%= fmtMoney(sum.paid) %> <small>THB</small></div></div>
+  <div class="tile"><div class="k">Invoices</div><div class="v"><%= fmtNum(invoices.length) %></div></div>
+  <div class="tile"><div class="k">Payment method</div><div class="v" style="font-size:16px;margin-top:8px"><%= co.PAY.name %> <small>· <%= co.PAY.paymentMethods %></small></div></div>
+</section>
+
+<section class="card flush" id="invoices">
+  <div class="card-head"><h2>Invoice history</h2></div>
+  <% if (!invoices.length) { %>
+    <div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <h3>No invoices yet</h3>
+      <p>Your first usage invoice is issued after the end of the month in which you start using the software.</p>
+    </div>
+  <% } else { %>
+  <div class="scroll"><table>
+    <thead><tr><th>Invoice</th><th>Description</th><th>Issued</th><th>Due</th><th class="r">Amount (THB)</th><th>Status</th><th class="r">Action</th></tr></thead>
     <tbody>
-    <% for (const r of invoices) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; %>
+    <% for (const r of invoices) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; const fl = files[r.id] || []; %>
       <tr class="<%= overdue ? 'hl' : '' %>">
-        <td class="nowrap"><%= r.invoice_no %><% if (r.title) { %><br><small class="muted"><%= r.title %></small><% } %></td>
-        <td><% if (r.kind === 'manual') { %><span class="muted">—</span><% } else { %><a href="/portal?ym=<%= r.ym %>"><%= r.ym %></a><% } %></td>
-        <td class="r"><%= fmtNum(r.records) %></td>
-        <td class="r strong"><%= fmtMoney(r.amount_thb) %><% if (Number(r.carried_thb) || Number(r.adjust_thb)) { %><br><small class="muted">usage <%= fmtMoney(r.usage_thb) %><% if (Number(r.carried_thb)) { %> + carried <%= fmtMoney(r.carried_thb) %><% } %><% if (Number(r.adjust_thb)) { %> adj. <%= fmtMoney(r.adjust_thb) %><% } %></small><% } %></td>
-        <td class="nowrap muted"><%= r.due_at || '' %><% if (overdue) { %> <span class="st st-error">Overdue</span><% } %></td>
-        <td><span class="st st-<%= r.status === 'open' ? 'cancelled' : r.status === 'paid' ? 'ok' : 'error' %>"><%= STATUS_INV[r.status] || r.status %></span><% if (r.status === 'paid' && r.paid_at) { %><br><small class="muted"><%= String(r.paid_at).slice(0, 10) %></small><% } %></td>
-        <td class="nowrap">
-          <% if (r.status === 'open' && r.checkout_url) { %><a href="<%= r.checkout_url %>" class="btn primary">Pay now</a>
-          <% } else if (r.status === 'open') { %><span class="muted">Payment link pending</span>
-          <% } else if (r.status === 'paid' && r.receipt_url) { %><a href="<%= r.receipt_url %>" target="_blank" rel="noopener">Receipt ↗</a>
-          <% } else if (r.status === 'carried') { %><span class="muted small">Below ฿<%= MIN_THB %> — added to next month's invoice</span><% } %>
+        <td class="nowrap"><a class="linkish mono" href="/portal/invoices/<%= encodeURIComponent(r.invoice_no) %>"><%= r.invoice_no %></a></td>
+        <td><%= r.kind === 'manual' ? (r.title || 'Service') : 'Usage for ' + r.ym %><% if (r.kind !== 'manual' && r.records) { %><br><small class="muted"><%= fmtNum(r.records) %> records</small><% } %></td>
+        <td class="nowrap muted"><%= String(r.issued_at || '').slice(0, 10) %></td>
+        <td class="nowrap muted"><%= r.status === 'open' ? (r.due_at || '—') : '—' %></td>
+        <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
+        <td><span class="badge b-<%= overdue ? 'overdue' : r.status %>"><%= overdue ? 'Overdue' : (STATUS_INV[r.status] || r.status) %></span></td>
+        <td class="r nowrap">
+          <% if (r.status === 'open' && r.checkout_url) { %><a href="<%= r.checkout_url %>" class="btn primary small">Pay now</a>
+          <% } else if (r.status === 'paid' && (r.receipt_url || fl.length)) { %>
+            <% if (r.receipt_url) { %><a href="<%= r.receipt_url %>" target="_blank" rel="noopener" class="btn small">Receipt</a><% } %>
+            <% for (const f of fl) { %><a href="/portal/attachments/<%= f.id %>" target="_blank" class="btn small" title="<%= f.filename %>"><%= f.kind === 'tax_invoice' ? 'Tax invoice' : f.kind === 'receipt' && !r.receipt_url ? 'Receipt' : 'Attachment' %></a><% } %>
+          <% } else if (r.status === 'carried') { %><span class="muted small">Added to next invoice</span><% } %>
+          <a href="/portal/invoices/<%= encodeURIComponent(r.invoice_no) %>" class="btn small">View</a>
         </td>
       </tr>
-      <% if (r.note) { %><tr><td></td><td colspan="6" class="muted small">Note: <%= r.note %></td></tr><% } %>
     <% } %>
     </tbody>
   </table></div>
   <% } %>
-  <p class="muted small" style="margin-top:10px">Pay by <%= co.PAY.paymentMethods %> via <%= co.PAY.name %> (Merchant of Record). A confirmation is emailed after payment; a downloadable receipt showing your company name, address and tax ID appears here as "Receipt" within a few minutes. · <a href="/refund" target="_blank">Refund policy</a></p>
 </section>
+<p class="muted small">Payments are processed by <%= co.PAY.legalName %> (Merchant of Record). A confirmation email is sent after payment and the receipt — issued to the company name, address and tax ID in your <a href="/portal/profile">company details</a> — appears here within a few minutes. Invoices below ฿<%= MIN_THB %> are carried forward. · <a href="/refund" target="_blank">Refund policy</a></p>
 <%- include('partials/footer') %>

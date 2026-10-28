@@ -1,0 +1,111 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <div class="titles">
+    <a href="/admin/invoices?ym=<%= inv.ym %>" class="muted small no-print">← Invoices <%= inv.ym %></a>
+    <h1><%= inv.invoice_no %> <span class="badge b-<%= overdue ? 'overdue' : inv.status %>" style="vertical-align:middle"><%= overdue ? 'Overdue' : (STATUS_INV[inv.status] || inv.status) %></span></h1>
+    <p class="subtitle"><a href="/admin/operator/<%= encodeURIComponent(inv.operator) %>?ym=<%= inv.ym %>"><%= inv.operator %></a><%= buyer.company_name ? ' · ' + buyer.company_name : '' %> · ฿<%= fmtMoney(inv.amount_thb) %></p>
+  </div>
+  <div class="tools no-print"><button type="button" onclick="window.print()">Print / Save PDF</button></div>
+</div>
+<% if (msg) { %><p class="ok no-print"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert no-print"><%= error %></p><% } %>
+
+<div class="layout-side wide">
+  <%- include('partials/invoice_doc') %>
+
+  <aside class="no-print">
+    <% if (inv.status === 'open') { %>
+    <section class="card">
+      <div class="section-title">Payment link</div>
+      <% if (inv.checkout_url) { %>
+        <div class="inputgroup" style="margin-bottom:10px"><input value="<%= inv.checkout_url %>" readonly aria-label="Payment link"><button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied'">Copy</button></div>
+        <div class="btnrow">
+          <a class="btn small" href="<%= inv.checkout_url %>" target="_blank" rel="noopener">Open checkout ↗</a>
+          <form method="post" action="/admin/invoices/<%= inv.id %>/link" class="inline"><input type="hidden" name="back" value="detail"><button class="btn small">Regenerate</button></form>
+        </div>
+        <p class="muted small" style="margin:10px 0 0"><%= inv.provider === 'polar' ? 'Polar' : inv.provider || pay.name %> checkout<%= inv.checkout_test ? ' (test mode)' : '' %>. Paid automatically via webhook.</p>
+      <% } else { %>
+        <p class="muted small" style="margin-top:0">No payment link yet<%= pay.ready ? '' : ' — ' + pay.envApi + ' is not set' %>.</p>
+        <form method="post" action="/admin/invoices/<%= inv.id %>/link"><input type="hidden" name="back" value="detail"><button class="primary block">Create payment link</button></form>
+      <% } %>
+      <% if (siteUrl) { %>
+        <hr class="divider">
+        <div class="section-title">Customer portal link</div>
+        <div class="inputgroup"><input value="<%= siteUrl %>/portal/invoices/<%= encodeURIComponent(inv.invoice_no) %>" readonly aria-label="Portal link"><button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied'">Copy</button></div>
+        <p class="muted small" style="margin:6px 0 0">Send this to the customer — they sign in, see the invoice and pay.</p>
+      <% } %>
+    </section>
+    <% } %>
+
+    <section class="card">
+      <div class="section-title">Receipts &amp; documents</div>
+      <% if (inv.receipt_url || files.length) { %>
+      <ul class="filelist" style="margin-bottom:14px">
+        <% if (inv.receipt_url) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="fname">Receipt link</span><a class="btn small" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Open</a></li><% } %>
+        <% for (const f of files) { %>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span class="fname" title="<%= f.filename %> · <%= Math.ceil(f.size / 1024) %> KB · <%= f.uploaded_at %>"><%= ATTACH_KINDS[f.kind] %> · <%= f.filename %></span>
+          <a class="btn small" href="/admin/attachments/<%= f.id %>" target="_blank">View</a>
+          <form method="post" action="/admin/attachments/<%= f.id %>/delete" class="inline" onsubmit="return confirm('Remove this file? The customer will no longer see it.')"><button class="btn small danger" title="Remove">✕</button></form>
+        </li>
+        <% } %>
+      </ul>
+      <% } %>
+      <form method="post" action="/admin/invoices/<%= inv.id %>/attachments" enctype="multipart/form-data" class="stack">
+        <label>Attach file <span class="hint">PDF, PNG, JPG or WebP · max 5 MB · visible to the customer</span>
+          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" required></label>
+        <label>Document type
+          <select name="kind"><% for (const [k, v] of Object.entries(ATTACH_KINDS)) { %><option value="<%= k %>"><%= v %></option><% } %></select></label>
+        <% if (inv.status !== 'paid') { %><label class="check"><input type="checkbox" name="mark_paid" value="1"> <span>Also mark this invoice as paid (e.g. bank transfer received)</span></label><% } %>
+        <button class="primary">Upload</button>
+      </form>
+      <hr class="divider">
+      <form method="post" action="/admin/invoices/<%= inv.id %>/receipt-url" class="stack">
+        <input type="hidden" name="back" value="detail">
+        <label>Or link to an external receipt <span class="hint">e.g. a Polar / Google Drive URL — leave empty to remove</span>
+          <input name="receipt_url" type="url" value="<%= inv.receipt_url %>" placeholder="https://…" maxlength="700"></label>
+        <button>Save link</button>
+      </form>
+    </section>
+
+    <% if (inv.status !== 'paid') { %>
+    <section class="card">
+      <div class="section-title">Record payment</div>
+      <form method="post" action="/admin/invoices/<%= inv.id %>/paid" class="stack" onsubmit="return confirm('Mark <%= inv.invoice_no %> as paid?')">
+        <input type="hidden" name="back" value="detail">
+        <label>Note <span class="hint">e.g. bank transfer ref., date received</span><input name="note" maxlength="200" placeholder="Bank transfer KBank 28 Oct"></label>
+        <button class="primary">Mark as paid</button>
+      </form>
+      <hr class="divider">
+      <details>
+        <summary class="btn small">Adjust amount</summary>
+        <form method="post" action="/admin/invoices/<%= inv.id %>/adjust" class="stack" style="margin-top:12px">
+          <input type="hidden" name="back" value="detail">
+          <label>Adjustment (+/− THB) <span class="hint">Total = usage + carried + adjustment. A new payment link is created.</span>
+            <input name="adjust_thb" type="number" step="0.01" value="<%= inv.adjust_thb %>"></label>
+          <label>Note <span class="hint">Visible to the customer</span><input name="note" value="<%= inv.note %>" maxlength="500"></label>
+          <button>Save adjustment</button>
+        </form>
+      </details>
+      <hr class="divider">
+      <form method="post" action="/admin/invoices/<%= inv.id %>/void" onsubmit="return confirm('Void <%= inv.invoice_no %>? The customer will no longer be able to pay it.')">
+        <input type="hidden" name="back" value="detail">
+        <button class="danger">Void invoice</button>
+      </form>
+    </section>
+    <% } %>
+
+    <section class="card">
+      <div class="section-title">Details</div>
+      <dl class="kv" style="grid-template-columns:110px 1fr;font-size:13px">
+        <dt>Type</dt><dd><%= inv.kind === 'manual' ? (inv.service_id ? 'Service #' + inv.service_id : 'Custom charge') : 'Monthly usage' %></dd>
+        <dt>Provider</dt><dd><%= inv.provider || '—' %></dd>
+        <% if (inv.provider_order_id || inv.ls_order_id) { %><dt>Order</dt><dd class="mono"><%= inv.provider_order_id || inv.ls_order_id %></dd><% } %>
+        <% if (inv.paid_at) { %><dt>Paid</dt><dd><%= inv.paid_at %> · <%= inv.paid_via %></dd><% } %>
+        <% if (inv.note) { %><dt>Notes</dt><dd><%= inv.note %></dd><% } %>
+        <dt>Updated</dt><dd><%= inv.updated_at %></dd>
+      </dl>
+    </section>
+  </aside>
+</div>
+<%- include('partials/footer') %>

@@ -3,23 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Customer login · <%= co.PRODUCT_NAME %></title>
+<title>Sign in · <%= co.PRODUCT_NAME %> customer portal</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 </head>
-<body class="center">
-<form method="post" action="/portal/login" class="card login">
-  <h1><%= co.PRODUCT_NAME %></h1>
-  <p class="muted">Customer login — view your usage, invoices and payments</p>
-  <% if (error) { %><p class="alert"><%= error %></p><% } %>
-  <input type="text" name="operator" placeholder="Operator name (as used in the app)" value="<%= operator || '' %>" autofocus required autocomplete="username">
-  <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
-  <button class="primary">Sign in</button>
-  <p class="muted small">No account yet, or forgot your password? Contact <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>us<% } %></p>
-  <p class="muted small"><a href="/">← Back to website</a></p>
-</form>
+<body>
+<div class="auth">
+  <aside class="auth-side">
+    <a class="brand" href="/" style="text-decoration:none"><span class="brand-mark"><%= (co.PRODUCT_NAME || 'P').charAt(0) %></span><%= co.PRODUCT_NAME %></a>
+    <div>
+      <h2>Your account, invoices and payments in one place.</h2>
+      <ul>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Track usage and charges in real time</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pay invoices online by <%= co.PAY.paymentMethods %></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Download receipts issued to your company</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Buy additional services in a few clicks</li>
+      </ul>
+    </div>
+    <div class="fine">Payments are processed by <%= co.PAY.legalName %>, our Merchant of Record. We never see or store your card details.</div>
+  </aside>
+  <main class="auth-main">
+    <form method="post" action="/portal/login" class="auth-form">
+      <h1>Sign in</h1>
+      <p class="subtitle" style="margin-bottom:24px">Welcome back — sign in to the customer portal.</p>
+      <% if (error) { %><p class="alert" role="alert"><%= error %></p><% } %>
+      <div class="stack">
+        <label>Operator name
+          <input type="text" name="operator" value="<%= operator || '' %>" autofocus required autocomplete="username" placeholder="The name you use in the app">
+        </label>
+        <label>Password
+          <input type="password" name="password" required autocomplete="current-password">
+        </label>
+        <button class="primary lg block">Sign in</button>
+      </div>
+      <hr class="divider">
+      <p class="muted small">No account yet, or forgot your password? Contact <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>support<% } %>.</p>
+      <p class="muted small"><a href="/">← Back to website</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a></p>
+    </form>
+  </main>
+</div>
 </body>
 </html>

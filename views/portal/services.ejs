@@ -1,22 +1,36 @@
 <%- include('partials/header') %>
-<div class="pagehead"><h1>Services</h1></div>
-<p class="muted small">Buy additional services below — you'll be taken straight to a secure <%= co.PAY.name %> checkout. Once paid, the receipt appears in <a href="/portal/billing">Billing</a>.</p>
-<% if (error) { %><p class="alert"><%= error %></p><% } %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>Buy services</h1>
+    <p class="subtitle">Order additional services online — pay securely and get your receipt instantly.</p>
+  </div>
+</div>
+<% if (error) { %><p class="alert" role="alert"><%= error %></p><% } %>
 
 <% if (!rows.length) { %>
-<section class="card"><p class="muted">No services available to purchase right now — contact <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>us<% } %> if you need something custom.</p></section>
+<section class="card"><div class="empty">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+  <h3>No services available right now</h3>
+  <p>Need something specific? Contact <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>us<% } %> for a custom quote.</p>
+</div></section>
 <% } else { %>
-<section class="plans">
+<section class="svc-grid">
   <% for (const s of rows) { %>
-  <div class="plan">
-    <div class="pname"><%= s.name %></div>
-    <div class="pprice"><%= fmtMoney(s.price_thb) %> <small>THB</small></div>
-    <% if (s.description) { %><p class="muted small" style="flex:1"><%= s.description %></p><% } %>
-    <form method="post" action="/portal/services/<%= s.id %>/buy">
-      <button class="primary" style="width:100%">Buy now</button>
-    </form>
-  </div>
+  <article class="svc">
+    <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+    <h3><%= s.name %></h3>
+    <p class="desc"><%= s.description || 'One-time service.' %></p>
+    <div class="foot">
+      <div class="price">฿<%= fmtMoney(s.price_thb) %> <small>one-time · THB</small></div>
+      <a class="btn primary block" href="/portal/services/<%= s.id %>">Order now</a>
+    </div>
+  </article>
   <% } %>
 </section>
+<div class="trust" style="margin-top:18px">
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Secure checkout by <%= co.PAY.name %></span>
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Receipt issued to your company</span>
+  <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Prices in Thai Baht, no hidden fees</span>
+</div>
 <% } %>
 <%- include('partials/footer') %>

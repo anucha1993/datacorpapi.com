@@ -16,6 +16,10 @@ mysql -h HOST -u USER -p DATABASE < sql/usage_schema.sql     # การใช�
 mysql -h HOST -u USER -p DATABASE < sql/billing_schema.sql   # ข้อมูลจาก Lemon Squeezy (ลูกค้า/คำสั่งซื้อ/webhook) + ข้อความติดต่อ
 mysql -h HOST -u USER -p DATABASE < sql/portal_schema.sql    # บัญชี login ของลูกค้า
 mysql -h HOST -u USER -p DATABASE < sql/invoice_schema.sql   # ใบแจ้งหนี้ + ข้อมูลออกใบเสร็จ
+mysql -h HOST -u USER -p DATABASE < sql/invoice_manual.sql   # บิลระบุยอดเอง
+mysql -h HOST -u USER -p DATABASE < sql/polar_schema.sql     # Polar order/receipt
+mysql -h HOST -u USER -p DATABASE < sql/service_catalog.sql  # แคตตาล็อกบริการที่ขายในพอร์ทัล
+mysql -h HOST -u USER -p DATABASE < sql/services_receipts.sql # ลิงก์ชำระเงิน Polar ของบริการ + ไฟล์แนบใบเสร็จ
 ```
 
 ## 2. ตั้งค่า `.env`
