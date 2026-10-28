@@ -22,6 +22,7 @@ const { company } = require("./lib/company");
 const portal = require("./lib/portal");
 const invoices = require("./lib/invoices");
 const payments = require("./lib/payments");
+const services = require("./lib/services");
 const polar = require("./lib/polar");
 
 const PORT = Number(process.env.PORT || 3000);
@@ -348,6 +349,30 @@ app.post("/portal/password", requirePortal, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+/** หน้าร้านค้าบริการของลูกค้า: ซื้อบริการเพิ่มเติม จ่ายผ่าน checkout เดียวกับใบแจ้งหนี้ปกติ */
+app.get("/portal/services", requirePortal, async (req, res, next) => {
+  try { res.render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error: null }); }
+  catch (e) { next(e); }
+});
+app.post("/portal/services/:id/buy", requirePortal, async (req, res, next) => {
+  try {
+    if (!hit("buy:" + req.portalUser.operator, 5, 10 * 60 * 1000)) {
+      return res.status(429).render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error: "Too many purchase attempts. Please wait a few minutes and try again." });
+    }
+    const svc = await services.get(q, req.params.id);
+    if (!svc || !svc.is_active) {
+      return res.status(404).render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error: "This service is no longer available." });
+    }
+    const inv = await invoices.createManualInvoice(q, { operator: req.portalUser.operator, amount: svc.price_thb, title: svc.name, note: svc.description }, payOpts());
+    if (inv.checkout_url) return res.redirect(inv.checkout_url);
+    res.redirect("/portal/billing");
+  } catch (e) {
+    if (e.code && String(e.code).startsWith("ER_")) return next(e);
+    try { res.status(400).render("portal/services", { co: company(), title: "Services", user: req.portalUser, rows: await services.listActive(q), error: e.message }); }
+    catch (e2) { next(e2); }
+  }
+});
+
 // =========================== auth ===========================
 app.get("/login", (req, res) => res.render("login", { error: ADMIN_DISABLED ? "ADMIN_PASSWORD is not set in the server .env file" : null, title: "Sign in" }));
 app.post("/login", (req, res) => {
@@ -550,6 +575,43 @@ admin.post("/invoices/:id/paid", async (req, res, next) => {
 });
 admin.post("/invoices/:id/void", async (req, res, next) => {
   try { await invoices.voidInvoice(q, Number(req.params.id), "Voided by admin"); invRedirect(req, res, Number(req.params.id), "Invoice voided"); } catch (e) { next(e); }
+});
+
+// ---- ขายบริการ (แสดงในพอร์ทัลลูกค้า ให้กดซื้อ/จ่ายเองได้) ----
+admin.get("/services", async (req, res, next) => {
+  try {
+    const rows = await services.listAll(q);
+    const editing = req.query.edit ? rows.find(r => r.id === Number(req.query.edit)) : null;
+    res.render("services", { title: "Services", rows, editing, pay: payments.info(), msg: req.query.msg || null, error: null });
+  } catch (e) { next(e); }
+});
+admin.post("/services", async (req, res, next) => {
+  try {
+    await services.create(q, { name: req.body.name, description: req.body.description, price_thb: req.body.price_thb, minThb: invoices.MIN_THB });
+    res.redirect("/admin/services?msg=" + encodeURIComponent("Service added"));
+  } catch (e) {
+    if (e.code && String(e.code).startsWith("ER_")) return next(e);
+    try { res.status(400).render("services", { title: "Services", rows: await services.listAll(q), editing: null, pay: payments.info(), msg: null, error: e.message }); }
+    catch (e2) { next(e2); }
+  }
+});
+admin.post("/services/:id/update", async (req, res, next) => {
+  try {
+    await services.update(q, Number(req.params.id), { name: req.body.name, description: req.body.description, price_thb: req.body.price_thb, minThb: invoices.MIN_THB });
+    res.redirect("/admin/services?msg=" + encodeURIComponent("Service updated"));
+  } catch (e) {
+    if (e.code && String(e.code).startsWith("ER_")) return next(e);
+    try {
+      const rows = await services.listAll(q);
+      res.status(400).render("services", { title: "Services", rows, editing: rows.find(r => r.id === Number(req.params.id)), pay: payments.info(), msg: null, error: e.message });
+    } catch (e2) { next(e2); }
+  }
+});
+admin.post("/services/:id/toggle", async (req, res, next) => {
+  try { await services.toggle(q, Number(req.params.id)); res.redirect("/admin/services"); } catch (e) { next(e); }
+});
+admin.post("/services/:id/delete", async (req, res, next) => {
+  try { await services.remove(q, Number(req.params.id)); res.redirect("/admin/services?msg=" + encodeURIComponent("Service deleted")); } catch (e) { next(e); }
 });
 
 // ---- บัญชีลูกค้า Customer Portal ----

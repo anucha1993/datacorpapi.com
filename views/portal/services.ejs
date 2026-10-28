@@ -1,0 +1,22 @@
+<%- include('partials/header') %>
+<div class="pagehead"><h1>Services</h1></div>
+<p class="muted small">Buy additional services below — you'll be taken straight to a secure <%= co.PAY.name %> checkout. Once paid, the receipt appears in <a href="/portal/billing">Billing</a>.</p>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+
+<% if (!rows.length) { %>
+<section class="card"><p class="muted">No services available to purchase right now — contact <% if (co.COMPANY_EMAIL) { %><a href="mailto:<%= co.COMPANY_EMAIL %>"><%= co.COMPANY_EMAIL %></a><% } else { %>us<% } %> if you need something custom.</p></section>
+<% } else { %>
+<section class="plans">
+  <% for (const s of rows) { %>
+  <div class="plan">
+    <div class="pname"><%= s.name %></div>
+    <div class="pprice"><%= fmtMoney(s.price_thb) %> <small>THB</small></div>
+    <% if (s.description) { %><p class="muted small" style="flex:1"><%= s.description %></p><% } %>
+    <form method="post" action="/portal/services/<%= s.id %>/buy">
+      <button class="primary" style="width:100%">Buy now</button>
+    </form>
+  </div>
+  <% } %>
+</section>
+<% } %>
+<%- include('partials/footer') %>
