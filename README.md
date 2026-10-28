@@ -33,7 +33,8 @@ user ของเว็บต้องมีสิทธิ์ `SELECT, INSERT, 
 cd webapp && npm install
 copy .env.example .env      # Linux/Mac: cp .env.example .env
 ```
-- `ADMIN_PASSWORD`, `SESSION_SECRET`, `DB_*`
+- `SESSION_SECRET` (สุ่ม 64 ตัว: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), `DB_*`
+- `ADMIN_PASSWORD` = **รหัสตั้งค่าใช้ครั้งเดียว** (10+ ตัว) สำหรับสร้างบัญชี owner คนแรกที่ `/login` — หลังจากนั้นแอดมินใช้บัญชีในตาราง `admin_users` (รัน `sql/admin_users.sql`) เพิ่มคนอื่น/รีเซ็ตรหัส/2FA ได้ที่ **Admin users** และ **My account**
 - **ข้อมูลธุรกิจ** `COMPANY_NAME` `COMPANY_NAME_EN` `COMPANY_TAX_ID` `COMPANY_ADDRESS` `COMPANY_EMAIL` `COMPANY_PHONE` `SITE_URL`
 - Polar: `PAYMENT_PROVIDER=polar` `POLAR_ACCESS_TOKEN` `POLAR_WEBHOOK_SECRET` `POLAR_PRODUCT_ID` `POLAR_SERVER` (ข้อ 4) — แพ็กเกจรายเดือน/รายปีใช้ได้กับ Polar เท่านั้น
 

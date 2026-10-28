@@ -5,19 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin sign in</title>
 <meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body class="center">
-<form method="post" action="/login" class="card login">
-  <h1>Admin</h1>
-  <p class="muted">Usage, invoices and customer management — enter the admin password</p>
+<% if (mode === 'setup') { %>
+<form method="post" action="/login/setup" class="card login stack wide">
+  <img class="login-logo" src="/logo-full.png" alt="DataCorp — AI Key & Services" width="200">
+  <h1>Create the first owner account</h1>
+  <p class="muted">No admin accounts exist yet. Enter the setup key (<code>ADMIN_PASSWORD</code> in the server <code>.env</code>) once, then choose your own username and password. The setup key stops working after this.</p>
   <% if (error) { %><p class="alert"><%= error %></p><% } %>
-  <input type="password" name="password" placeholder="Password" autofocus required>
+  <% if (!setupKeyOk) { %><p class="notice small">Set <code>ADMIN_PASSWORD</code> in <code>.env</code> to a long random value (10+ characters) and restart the app before continuing.</p><% } %>
+  <label>Setup key<input type="password" name="setup_key" required autocomplete="off"></label>
+  <label>Username <span class="hint">lowercase letters, numbers, . _ -</span><input name="username" value="<%= username %>" required minlength="3" maxlength="60" pattern="[a-zA-Z0-9][a-zA-Z0-9._\-]{2,59}" autocomplete="username"></label>
+  <label>Your name<input name="display_name" maxlength="120" autocomplete="name"></label>
+  <label>Email<input type="email" name="email" maxlength="190" autocomplete="email"></label>
+  <label>Password <span class="hint">10+ characters, letters and numbers</span><input type="password" name="password" required minlength="10" autocomplete="new-password"></label>
+  <label>Repeat password<input type="password" name="password2" required minlength="10" autocomplete="new-password"></label>
+  <button class="primary">Create owner account</button>
+</form>
+<% } else if (mode === '2fa') { %>
+<form method="post" action="/login/2fa" class="card login stack">
+  <img class="login-logo" src="/logo-full.png" alt="DataCorp — AI Key & Services" width="200">
+  <h1>Two-step verification</h1>
+  <p class="muted">Enter the 6-digit code from your authenticator app.</p>
+  <% if (error) { %><p class="alert"><%= error %></p><% } %>
+  <input name="code" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="123 456" autocomplete="one-time-code" autofocus required class="otp">
+  <button class="primary">Verify</button>
+  <p class="muted small"><button class="link" formaction="/login/cancel" formnovalidate>← Use a different account</button></p>
+</form>
+<% } else { %>
+<form method="post" action="/login" class="card login stack">
+  <img class="login-logo" src="/logo-full.png" alt="DataCorp — AI Key & Services" width="200">
+  <h1>Admin sign in</h1>
+  <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+  <% if (error) { %><p class="alert"><%= error %></p><% } %>
+  <label>Username<input name="username" value="<%= username %>" required autocomplete="username" autofocus></label>
+  <label>Password<input type="password" name="password" required autocomplete="current-password"></label>
   <button class="primary">Sign in</button>
   <p class="muted small"><a href="/portal/login">Customer login</a> · <a href="/">Website</a></p>
 </form>
+<% } %>
 </body>
 </html>

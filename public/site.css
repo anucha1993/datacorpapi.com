@@ -4,7 +4,8 @@ body.site { background: #fff; }
 .sitehead { border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20;
   background: rgba(255,255,255,.85); backdrop-filter: saturate(180%) blur(10px); -webkit-backdrop-filter: saturate(180%) blur(10px); }
 .sitehead .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-.sitehead .logo { font-weight: 800; font-size: 19px; color: var(--text); letter-spacing: -.01em; }
+.sitehead .logo { font-weight: 800; font-size: 19px; color: var(--text); letter-spacing: -.01em; display: inline-flex; align-items: center; gap: 9px; }
+.sitehead .logo img { width: 34px; height: 34px; object-fit: contain; }
 .sitehead nav { display: flex; gap: 2px; align-items: center; flex-wrap: wrap; }
 .sitehead nav a { padding: 7px 13px; border-radius: var(--radius-sm); color: var(--text); font-weight: 500; font-size: 14.5px; transition: background .15s ease, color .15s ease; }
 .sitehead nav a:hover { background: var(--accent-soft); color: var(--accent-h); text-decoration: none; }

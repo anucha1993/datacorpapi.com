@@ -1,0 +1,63 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>Admin users</h1>
+    <p class="subtitle">People who can sign in to this admin. Owners can also manage these accounts.</p>
+  </div>
+  <div class="tools"><a class="btn primary" href="#new" onclick="document.getElementById('new').open=true">+ New admin</a></div>
+</div>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert" role="alert"><%= error %></p><% } %>
+
+<details class="card" id="new" <%= error && form.username ? 'open' : '' %>>
+  <summary class="card-head" style="cursor:pointer;margin:0"><h2>Add an admin</h2><span class="muted small">they choose their own password at first sign-in</span></summary>
+  <form method="post" action="/admin/admins" style="margin-top:16px">
+    <div class="form-grid stack" style="display:grid">
+      <label>Username <span class="hint">lowercase letters, numbers, . _ -</span><input name="username" value="<%= form.username || '' %>" required minlength="3" maxlength="60" autocomplete="off"></label>
+      <label>Role
+        <select name="role"><option value="staff" <%= form.role !== 'owner' ? 'selected' : '' %>>Staff — everything except admin accounts</option><option value="owner" <%= form.role === 'owner' ? 'selected' : '' %>>Owner — can also manage admin accounts</option></select>
+      </label>
+      <label>Name<input name="display_name" value="<%= form.display_name || '' %>" maxlength="120"></label>
+      <label>Email<input type="email" name="email" value="<%= form.email || '' %>" maxlength="190"></label>
+      <label class="full">Temporary password <span class="hint">10+ characters, letters and numbers — send it privately; they must change it at first sign-in</span><input name="password" required minlength="10" autocomplete="new-password"></label>
+    </div>
+    <hr class="divider">
+    <button class="primary">Create admin</button>
+  </form>
+</details>
+
+<section class="card flush">
+  <div class="scroll"><table>
+    <thead><tr><th>Admin</th><th>Role</th><th>2FA</th><th>Last sign-in</th><th>Status</th><th class="r"></th></tr></thead>
+    <tbody>
+    <% for (const a of rows) { const self = a.id === me.id; %>
+      <tr class="<%= a.is_active ? '' : 'hl' %>">
+        <td><b><%= a.username %></b><%= self ? ' (you)' : '' %><br><small class="muted"><%= a.display_name %><%= a.email ? ' · ' + a.email : '' %></small></td>
+        <td>
+          <% if (self) { %><%= ROLES[a.role] %><% } else { %>
+          <form method="post" action="/admin/admins/<%= a.id %>/role" class="inline">
+            <select name="role" onchange="this.form.submit()" aria-label="Role of <%= a.username %>"><% for (const [k, v] of Object.entries(ROLES)) { %><option value="<%= k %>" <%= a.role === k ? 'selected' : '' %>><%= v %></option><% } %></select>
+          </form><% } %>
+        </td>
+        <td><span class="badge b-<%= Number(a.has_2fa) ? 'active' : 'open' %>"><%= Number(a.has_2fa) ? 'On' : 'Off' %></span></td>
+        <td class="muted nowrap"><%= a.last_login_at ? String(a.last_login_at).slice(0, 16) : 'never' %><% if (a.last_login_ip) { %><br><small><%= a.last_login_ip %></small><% } %></td>
+        <td><span class="badge b-<%= a.is_active ? 'active' : 'void' %>"><%= a.is_active ? 'Active' : 'Disabled' %></span><% if (a.must_change) { %><br><small class="muted">password change pending</small><% } %></td>
+        <td class="r nowrap">
+          <% if (!self) { %>
+          <details class="inline-menu">
+            <summary class="btn small">Reset password</summary>
+            <form method="post" action="/admin/admins/<%= a.id %>/password" class="stack" style="margin-top:8px">
+              <input name="password" required minlength="10" placeholder="New temporary password" autocomplete="new-password">
+              <button class="btn small primary">Set temporary password</button>
+            </form>
+          </details>
+          <% if (Number(a.has_2fa)) { %><form method="post" action="/admin/admins/<%= a.id %>/reset-2fa" class="inline" onsubmit="return confirm('Remove 2FA from <%= a.username %>? Use this when they lost their phone.')"><button class="btn small">Reset 2FA</button></form><% } %>
+          <form method="post" action="/admin/admins/<%= a.id %>/toggle" class="inline" <%- a.is_active ? `onsubmit="return confirm('Disable ${a.username}? They are signed out immediately.')"` : '' %>><button class="btn small <%= a.is_active ? 'danger' : '' %>"><%= a.is_active ? 'Disable' : 'Enable' %></button></form>
+          <% } else { %><a class="btn small" href="/admin/account">My account</a><% } %>
+        </td>
+      </tr>
+    <% } %>
+    </tbody>
+  </table></div>
+</section>
+<%- include('partials/footer') %>

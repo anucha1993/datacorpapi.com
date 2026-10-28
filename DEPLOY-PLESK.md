@@ -35,8 +35,8 @@ Websites & Domains → datacorpapi.com → **Node.js** → Enable Node.js แล
 ที่ File Manager สร้างไฟล์ `/httpdocs/webapp/.env` (คัดลอกจาก `.env.example`) ค่าที่ต่างจากเครื่องตัวเอง:
 ```env
 PORT=3000
-ADMIN_PASSWORD=<รหัสยาว ๆ ใหม่>
-SESSION_SECRET=<สุ่ม 40+ ตัวอักษร>
+ADMIN_PASSWORD=<สุ่มใหม่ 10+ ตัว — ใช้ครั้งเดียวตอนสร้างบัญชี owner คนแรก>
+SESSION_SECRET=<สุ่ม 64 ตัว hex — ห้ามใช้ค่าจาก .env.example เก่า>
 DB_HOST=localhost            # MariaDB อยู่เครื่องเดียวกัน
 DB_PORT=3306
 DB_NAME=thaidata_ewp
@@ -88,7 +88,8 @@ Git → **Pull now** (หรืออัตโนมัติเมื่อ pus
 ## ปัญหาที่พบบ่อย
 | อาการ | สาเหตุ/วิธีแก้ |
 |---|---|
-| หน้า "We're sorry, but something went wrong" ของ Passenger | ดู log; มักเป็น `.env` ไม่มี `ADMIN_PASSWORD` หรือ npm install ยังไม่รัน |
+| หน้า "We're sorry, but something went wrong" ของ Passenger | ดู log; มักเป็น npm install ยังไม่รัน หรือ `.env` ไม่ครบ |
+| `/login` ขึ้น "Setup required" | ยังไม่ได้รัน `sql/admin_users.sql` |
 | CSS ไม่โหลด | Document root ไม่ได้ชี้ `webapp/public` |
 | `/api/health` → `ER_ACCESS_DENIED_ERROR` | DB_USER/DB_PASSWORD ผิด หรือ user ไม่มีสิทธิ์บน `thaidata_ewp` |
 | webhook ได้ 401 | `POLAR_WEBHOOK_SECRET` ไม่ตรงกับ secret ของ endpoint ใน Polar (sandbox กับ production คนละค่า) |

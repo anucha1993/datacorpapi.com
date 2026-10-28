@@ -6,6 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><%= _page %> · <%= co.PRODUCT_NAME %> customer portal</title>
 <meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,7 +17,7 @@
 <body>
 <div class="shell portal">
   <aside class="sidebar">
-    <div class="sidebar-brand"><a href="/portal"><span class="brand-mark"><%= (co.PRODUCT_NAME || 'P').charAt(0) %></span><span><%= co.PRODUCT_NAME %></span></a></div>
+    <div class="sidebar-brand"><a href="/portal"><img class="brand-logo" src="/logo-mark.png" alt="" width="32" height="32"><span><%= co.PRODUCT_NAME %></span></a></div>
     <nav class="sidebar-nav" aria-label="Portal">
       <a href="/portal" class="<%= title === 'Overview' ? 'on' : '' %>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="lbl">Overview</span></a>
       <a href="/portal/plans" class="<%= title === 'Plans' ? 'on' : '' %>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg><span class="lbl">Plans &amp; keys</span></a>

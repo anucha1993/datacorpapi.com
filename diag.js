@@ -39,9 +39,27 @@ const bad = (m) => console.log("✗ " + m);
     ok(`MySQL ต่อได้ (${process.env.DB_USER}@${process.env.DB_HOST}/${process.env.DB_NAME})`);
     const [t] = await c.query("SHOW TABLES");
     const names = t.map(x => Object.values(x)[0]);
-    for (const need of ["portal_users", "billing_invoices", "service_catalog", "billing_attachments", "products", "product_plans", "subscriptions", "access_keys", "usage_counters", "contact_messages"]) names.includes(need) ? ok("table " + need) : bad("table " + need + " ไม่พบ → รัน sql/*.sql");
+    for (const need of ["portal_users", "billing_invoices", "service_catalog", "billing_attachments", "admin_users", "products", "product_plans", "subscriptions", "access_keys", "usage_counters", "contact_messages"]) names.includes(need) ? ok("table " + need) : bad("table " + need + " ไม่พบ → รัน sql/*.sql");
     await c.end();
   } catch (e) { bad("MySQL ต่อไม่ได้: " + (e.code || "") + " " + e.message); }
+
+  // ค่าลับที่เคยหลุดใน .env.example (repo สาธารณะ) ต้องเปลี่ยน
+  {
+    const h = (v) => require("crypto").createHash("sha256").update(String(v || "").trim()).digest("hex");
+    if (h(process.env.SESSION_SECRET) === "0bbb10203aa32ec7d632e1964ff5e2fe24a33f012ac70c9ca98d1c6270c02fd6") bad("SESSION_SECRET เป็นค่าตัวอย่างที่หลุดใน GitHub → สุ่มค่าใหม่ทันที");
+    else if ((process.env.SESSION_SECRET || "").trim().length < 32) bad("SESSION_SECRET สั้นเกินไป (ควร 32+ ตัว)");
+    else ok("SESSION_SECRET ปลอดภัย");
+    if ((process.env.ADMIN_PASSWORD || "") === "Ewp-aoA_ECTM-2026") bad("ADMIN_PASSWORD เป็นค่าตัวอย่างที่หลุดใน GitHub → เปลี่ยนทันที");
+  }
+
+  // เซิร์ฟเวอร์ต่อ Polar ได้ไหม + token ใช้ได้ไหม (อ่านอย่างเดียว)
+  if ((process.env.POLAR_ACCESS_TOKEN || "").trim()) {
+    const base = /^(sandbox|test)$/i.test((process.env.POLAR_SERVER || "").trim()) ? "https://sandbox-api.polar.sh" : "https://api.polar.sh";
+    try {
+      const r = await fetch(base + "/v1/products/?limit=1", { headers: { Authorization: "Bearer " + process.env.POLAR_ACCESS_TOKEN.trim() }, signal: AbortSignal.timeout(15000) });
+      r.ok ? ok("Polar API ต่อได้ (" + base + ")") : bad("Polar API ตอบ " + r.status + (r.status === 401 ? " → token ผิด หรือ POLAR_SERVER ไม่ตรงกับที่สร้าง token" : ""));
+    } catch (e) { const c = e.cause || e; bad("ต่อ " + base + " ไม่ได้: " + (c.code || c.name) + " " + c.message + " → เซิร์ฟเวอร์ออกอินเทอร์เน็ต/DNS/SSL ไม่ได้"); }
+  }
 
   // โหลดแอปจริงแบบไม่เปิดพอร์ต (ตรวจ syntax/require ทั้งไฟล์)
   try {

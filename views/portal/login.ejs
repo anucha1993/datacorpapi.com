@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in · <%= co.PRODUCT_NAME %> customer portal</title>
 <meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,7 +16,7 @@
 <body>
 <div class="auth">
   <aside class="auth-side">
-    <a class="brand" href="/" style="text-decoration:none"><span class="brand-mark"><%= (co.PRODUCT_NAME || 'P').charAt(0) %></span><%= co.PRODUCT_NAME %></a>
+    <a class="brand" href="/" style="text-decoration:none"><img class="brand-logo" src="/logo-mark.png" alt="" width="32" height="32"><%= co.PRODUCT_NAME %></a>
     <div>
       <h2>Your account, invoices and payments in one place.</h2>
       <ul>

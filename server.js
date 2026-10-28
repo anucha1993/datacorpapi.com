@@ -12,6 +12,8 @@
  */
 "use strict";
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
+// โฮสต์ส่วนใหญ่ไม่มีเส้นทาง IPv6 ออกเน็ต แต่ Node ≥17 อาจลอง IPv6 ก่อน → fetch ไป Polar ค้าง/"fetch failed"
+require("dns").setDefaultResultOrder("ipv4first");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -28,18 +30,27 @@ const payments = require("./lib/payments");
 const services = require("./lib/services");
 const polar = require("./lib/polar");
 const platform = require("./lib/platform");
+const admins = require("./lib/admins");
+const QRCode = require("qrcode");
 
 const PORT = Number(process.env.PORT || 3000);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
-const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+// ค่าที่เคยอยู่ใน .env.example (repo สาธารณะ) — ใครก็ปลอม cookie ได้ จึงไม่ยอมใช้ (เก็บเป็น sha256 ไม่ใช่ค่าจริง)
+const LEAKED_SESSION_SECRETS = ["0bbb10203aa32ec7d632e1964ff5e2fe24a33f012ac70c9ca98d1c6270c02fd6"];
+const SESSION_SECRET = (() => {
+  const s = (process.env.SESSION_SECRET || "").trim();
+  if (s.length >= 32 && !LEAKED_SESSION_SECRETS.includes(crypto.createHash("sha256").update(s).digest("hex"))) return s;
+  if (s) console.error("⚠ SESSION_SECRET is too short or is the public example value — using a random one (everyone is signed out on restart). Set a new random SESSION_SECRET in .env");
+  return crypto.randomBytes(32).toString("hex");
+})();
 const LS_WEBHOOK_SECRET = (process.env.LS_WEBHOOK_SECRET || "").trim();
 const POLAR_WEBHOOK_SECRET = (process.env.POLAR_WEBHOOK_SECRET || "").trim();
 const payOpts = () => ({ apiReady: payments.info().ready, testMode: payments.info().testMode });
 const STATUS_INV = { open: "Unpaid", paid: "Paid", void: "Void", carried: "Carried forward" };
 
-// ไม่ปิดแอปถ้ายังไม่ได้ตั้งรหัส admin — หน้าเว็บสาธารณะต้องเปิดได้เสมอ แค่ปิดการ login หลังบ้านไว้
-const ADMIN_DISABLED = !ADMIN_PASSWORD;
-if (ADMIN_DISABLED) console.error("⚠ ADMIN_PASSWORD is not set in .env — /admin is disabled until it is set");
+// ADMIN_PASSWORD ใช้ครั้งเดียว: เป็นรหัสตั้งค่าเพื่อสร้างบัญชี owner คนแรก (ตอนตาราง admin_users ยังว่าง) — หลังจากนั้นไม่ถูกใช้อีก
+const SETUP_KEY_OK = ADMIN_PASSWORD.length >= 10 && ADMIN_PASSWORD !== "Ewp-aoA_ECTM-2026";
+if (!process.env.SESSION_SECRET) console.error("⚠ SESSION_SECRET is not set in .env — everyone is signed out whenever the app restarts");
 {
   const co = company();
   if (!co.isComplete) console.warn("⚠ Business details missing in .env (payment provider reviewers must see them on the site):", co.missing.join(", "));
@@ -250,6 +261,8 @@ app.use("/api/v1", api);
 app.use(express.urlencoded({ extended: false, limit: "64kb" }));
 app.use(express.static(path.join(__dirname, "public"), { maxAge: "1h" }));
 app.use(cookieSession({ name: "ewpusage", secret: SESSION_SECRET, httpOnly: true, sameSite: "lax", maxAge: 12 * 60 * 60 * 1000 }));
+// cookie ส่งผ่าน HTTPS เท่านั้นเมื่อเว็บเปิดด้วย HTTPS (trust proxy อ่าน X-Forwarded-Proto จาก Plesk/nginx)
+app.use((req, res, next) => { if (req.secure && req.sessionOptions) req.sessionOptions.secure = true; next(); });
 
 // =========================== หน้าเว็บสาธารณะ ===========================
 const site = (req, res, view, extra = {}) => res.render(`site/${view}`, { co: company(), path: req.path, ...extra });
@@ -292,7 +305,7 @@ app.post("/api/license/verify", express.json({ limit: "8kb" }), async (req, res)
 app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nDisallow: /portal\nDisallow: /api\nAllow: /\n"));
 app.get("/api/health", async (req, res) => {
   const pay = payments.info();
-  const cfg = { admin_password: !ADMIN_DISABLED, company_complete: company().isComplete, payment_provider: pay.key, payment_api: pay.ready, payment_test_mode: pay.testMode, webhook_secret: pay.webhookReady, node: process.version };
+  const cfg = { company_complete: company().isComplete, payment_provider: pay.key, payment_api: pay.ready, payment_test_mode: pay.testMode, webhook_secret: pay.webhookReady, node: process.version };
   try { await q("SELECT 1"); res.json({ ok: true, ...cfg }); } catch (e) { res.status(500).json({ ok: false, error: e.code || "db", ...cfg }); }
 });
 
@@ -590,20 +603,103 @@ app.post("/portal/services/:id/buy", requirePortal, async (req, res, next) => {
   }
 });
 
-// =========================== auth ===========================
-app.get("/login", (req, res) => res.render("login", { error: ADMIN_DISABLED ? "ADMIN_PASSWORD is not set in the server .env file" : null, title: "Sign in" }));
-app.post("/login", (req, res) => {
-  if (ADMIN_DISABLED) return res.status(503).render("login", { error: "ADMIN_PASSWORD is not set in the server .env file", title: "Sign in" });
-  if (!hit("login:" + req.ip, 5, 60 * 1000)) return res.status(429).render("login", { error: "Too many attempts. Wait 1 minute and try again.", title: "Sign in" });
-  if (safeEq(req.body.password || "", ADMIN_PASSWORD)) { req.session.auth = true; return res.redirect("/admin"); }
-  res.status(401).render("login", { error: "Incorrect password.", title: "Sign in" });
-});
-app.post("/logout", (req, res) => { req.session = null; res.redirect("/login"); });
+// =========================== auth (admin accounts) ===========================
+const ADMIN_IDLE_MS = 2 * 60 * 60 * 1000;   // ไม่ได้ใช้งาน 2 ชั่วโมง → ต้อง login ใหม่
+const ADMIN_MAX_MS = 12 * 60 * 60 * 1000;   // login ได้นานสุด 12 ชั่วโมงต่อครั้ง
+const PENDING_2FA_MS = 5 * 60 * 1000;
+const loginView = (res, mode, extra = {}, status = 200) => res.status(status).render("login", { title: "Sign in", mode, error: null, msg: null, username: "", setupKeyOk: SETUP_KEY_OK, ...extra });
+const clearAdmin = (req) => { if (req.session) { delete req.session.aid; delete req.session.asv; delete req.session.at; delete req.session.al; delete req.session.p2fa; delete req.session.totpSetup; } };
+function finishLogin(req, res, user) {
+  clearAdmin(req);
+  Object.assign(req.session, { aid: user.id, asv: user.session_version, at: Date.now(), al: Date.now() });
+  return admins.recordLogin(q, user.id, req.ip).then(() => res.redirect(user.must_change ? "/admin/account?must=1" : "/admin"));
+}
+/** โหมดของหน้า login: setup (ยังไม่มีบัญชี) · 2fa (รอรหัส 6 หลัก) · login */
+async function loginMode(req) {
+  if ((await admins.count(q)) === 0) return "setup";
+  const p = req.session && req.session.p2fa;
+  return p && p.exp > Date.now() ? "2fa" : "login";
+}
 
-const requireAuth = (req, res, next) => {
-  if (req.session && req.session.auth) return next();
-  res.redirect("/login");
+app.get("/login", async (req, res, next) => {
+  try {
+    if (req.session && req.session.aid) return res.redirect("/admin");
+    const msg = req.query.expired ? "Your session ended — please sign in again." : req.query.out ? "You have been signed out." : null;
+    loginView(res, await loginMode(req), { msg });
+  } catch (e) {
+    if (e.code === "ER_NO_SUCH_TABLE") return res.status(503).render("error", { title: "Setup required", message: "Admin accounts are not set up yet.", detail: "Run sql/admin_users.sql on the database, then reload this page." });
+    next(e);
+  }
+});
+
+app.post("/login", async (req, res, next) => {
+  try {
+    const mode = await loginMode(req);
+    if (mode !== "login") return res.redirect("/login");
+    const username = String(req.body.username || "").trim().slice(0, 60);
+    if (!hit("alogin:" + req.ip, 10, 10 * 60 * 1000)) return loginView(res, "login", { username, error: "Too many attempts from this network. Wait 10 minutes and try again." }, 429);
+    const r = await admins.authenticate(q, username, req.body.password || "", req.ip);
+    if (r.error) return loginView(res, "login", { username, error: r.error }, 401);
+    if (r.user.totp_secret) {
+      clearAdmin(req);
+      req.session.p2fa = { id: r.user.id, sv: r.user.session_version, exp: Date.now() + PENDING_2FA_MS };
+      return res.redirect("/login");
+    }
+    await finishLogin(req, res, r.user);
+  } catch (e) { next(e); }
+});
+
+app.post("/login/2fa", async (req, res, next) => {
+  try {
+    const p = req.session && req.session.p2fa;
+    if (!p || p.exp < Date.now()) { clearAdmin(req); return res.redirect("/login?expired=1"); }
+    if (!hit("a2fa:" + p.id, 6, 5 * 60 * 1000)) { clearAdmin(req); return loginView(res, "login", { error: "Too many wrong codes. Sign in again." }, 429); }
+    const user = (await q("SELECT * FROM admin_users WHERE id = ?", [p.id]))[0];
+    if (!user || !user.is_active || user.session_version !== p.sv) { clearAdmin(req); return res.redirect("/login?expired=1"); }
+    if (!(await admins.verify2fa(q, user.id, req.body.code))) return loginView(res, "2fa", { error: "That code is not correct. Use the newest code from your authenticator app." }, 401);
+    await finishLogin(req, res, user);
+  } catch (e) { next(e); }
+});
+app.post("/login/cancel", (req, res) => { clearAdmin(req); res.redirect("/login"); });
+
+/** สร้างบัญชี owner คนแรก — ใช้ได้เฉพาะตอนตาราง admin_users ว่าง และต้องรู้ ADMIN_PASSWORD ใน .env */
+app.post("/login/setup", async (req, res, next) => {
+  const form = { username: String(req.body.username || "").slice(0, 60) };
+  try {
+    if ((await loginMode(req)) !== "setup") return res.redirect("/login");
+    if (!hit("asetup:" + req.ip, 5, 10 * 60 * 1000)) return loginView(res, "setup", { ...form, error: "Too many attempts. Wait 10 minutes." }, 429);
+    if (!SETUP_KEY_OK) return loginView(res, "setup", { ...form, error: "Set a long ADMIN_PASSWORD (10+ characters, not the example value) in .env and restart the app first." }, 503);
+    if (!safeEq(req.body.setup_key || "", ADMIN_PASSWORD)) return loginView(res, "setup", { ...form, error: "Setup key is incorrect." }, 401);
+    if (req.body.password !== req.body.password2) return loginView(res, "setup", { ...form, error: "The two passwords do not match." }, 400);
+    const id = await admins.create(q, { username: req.body.username, password: req.body.password, display_name: req.body.display_name, email: req.body.email, role: "owner", must_change: 0 });
+    const user = (await q("SELECT * FROM admin_users WHERE id = ?", [id]))[0];
+    await finishLogin(req, res, user);
+  } catch (e) {
+    if (isDbError(e)) return next(e);
+    loginView(res, "setup", { ...form, error: e.message }, 400);
+  }
+});
+
+app.post("/logout", (req, res) => { req.session = null; res.redirect("/login?out=1"); });
+
+const requireAuth = async (req, res, next) => {
+  try {
+    const s = req.session || {};
+    if (!s.aid) return res.redirect("/login");
+    const now = Date.now();
+    const me = await admins.get(q, s.aid);
+    if (!me || !me.is_active || me.session_version !== s.asv || now - (s.at || 0) > ADMIN_MAX_MS || now - (s.al || 0) > ADMIN_IDLE_MS) {
+      clearAdmin(req);
+      return res.redirect("/login?expired=1");
+    }
+    if (now - s.al > 60 * 1000) s.al = now; // ต่ออายุ idle (เขียน cookie ใหม่ไม่เกินนาทีละครั้ง)
+    req.admin = me; res.locals.me = me;
+    if (me.must_change && !req.path.startsWith("/account")) return res.redirect("/admin/account?must=1");
+    next();
+  } catch (e) { next(e); }
 };
+const requireOwner = (req, res, next) => (req.admin && req.admin.role === "owner" ? next()
+  : res.status(403).render("error", { title: "Owners only", message: "Only an owner can manage admin accounts.", detail: "" }));
 
 // =========================== admin ===========================
 const admin = express.Router();
@@ -680,8 +776,10 @@ admin.post("/plans/:id(\\d+)", async (req, res, next) => {
 });
 admin.post("/plans/:id(\\d+)/toggle", async (req, res, next) => {
   try {
-    const pl = (await q("SELECT product_id FROM product_plans WHERE id = ?", [Number(req.params.id)]))[0];
+    const pl = (await q("SELECT product_id, billing, price_thb, polar_product_id, is_active FROM product_plans WHERE id = ?", [Number(req.params.id)]))[0];
     if (!pl) return res.redirect("/admin/products");
+    if (!pl.is_active && pl.billing !== "usage" && Number(pl.price_thb) > 0 && !pl.polar_product_id)
+      return back(res, `/admin/products/${pl.product_id}`, "Add the Polar product ID to this paid plan (Edit) before making it visible", true);
     await q("UPDATE product_plans SET is_active = 1 - is_active WHERE id = ?", [Number(req.params.id)]);
     back(res, `/admin/products/${pl.product_id}`, "Plan visibility updated (existing subscribers keep their plan)");
   } catch (e) { next(e); }
@@ -970,6 +1068,99 @@ admin.post("/messages/:id/read", async (req, res, next) => {
   try { await q("UPDATE contact_messages SET is_read = 1 WHERE id = ?", [Number(req.params.id)]); res.redirect("/admin/messages"); }
   catch (e) { next(e); }
 });
+
+// ---------- บัญชีของฉัน: โปรไฟล์ / เปลี่ยนรหัสผ่าน / 2FA / ออกจากระบบทุกเครื่อง ----------
+async function renderAccount(req, res, extra = {}, status = 200) {
+  const setup = req.session.totpSetup;
+  const qr = setup && !req.admin.has_2fa ? await QRCode.toDataURL(admins.otpauthUrl(setup, req.admin.username), { margin: 1, width: 220 }) : null;
+  res.status(status).render("admin_account", { title: "My account", me: req.admin, must: req.query.must === "1" || !!req.admin.must_change,
+    totpSecret: qr ? setup : null, qr, msg: req.query.msg || null, error: req.query.error || null, ...extra });
+}
+admin.get("/account", (req, res, next) => renderAccount(req, res).catch(next));
+admin.post("/account/profile", async (req, res, next) => {
+  try { await admins.updateProfile(q, req.admin.id, req.body); back(res, "/admin/account", "Profile saved"); } catch (e) { next(e); }
+});
+admin.post("/account/password", async (req, res, next) => {
+  try {
+    if (!hit("apw:" + req.admin.id, 6, 10 * 60 * 1000)) return renderAccount(req, res, { error: "Too many attempts. Wait 10 minutes." }, 429);
+    if (req.body.next !== req.body.next2) return renderAccount(req, res, { error: "The two new passwords do not match." }, 400);
+    req.session.asv = await admins.changePassword(q, req.admin.id, { current: req.body.current, next: req.body.next });
+    back(res, "/admin/account", "Password changed — all other sessions of this account were signed out");
+  } catch (e) {
+    if (isDbError(e)) return next(e);
+    renderAccount(req, res, { error: e.message }, 400).catch(next);
+  }
+});
+admin.post("/account/2fa/start", (req, res) => { req.session.totpSetup = admins.newTotpSecret(); res.redirect("/admin/account#twofa"); });
+admin.post("/account/2fa/enable", async (req, res, next) => {
+  try {
+    if (!req.session.totpSetup) return res.redirect("/admin/account");
+    await admins.enable2fa(q, req.admin.id, req.session.totpSetup, req.body.code);
+    delete req.session.totpSetup;
+    back(res, "/admin/account", "Two-factor authentication is on");
+  } catch (e) {
+    if (isDbError(e)) return next(e);
+    renderAccount(req, res, { error: e.message }, 400).catch(next);
+  }
+});
+admin.post("/account/2fa/disable", async (req, res, next) => {
+  try {
+    const row = (await q("SELECT password_hash FROM admin_users WHERE id = ?", [req.admin.id]))[0];
+    if (!portal.verifyPassword(req.body.password || "", row.password_hash)) return renderAccount(req, res, { error: "Password is incorrect — two-factor authentication is still on." }, 401);
+    await admins.disable2fa(q, req.admin.id);
+    back(res, "/admin/account", "Two-factor authentication turned off");
+  } catch (e) { next(e); }
+});
+admin.post("/account/signout-all", async (req, res, next) => {
+  try { req.session.asv = await admins.signOutEverywhere(q, req.admin.id); back(res, "/admin/account", "Signed out of every other browser and device"); } catch (e) { next(e); }
+});
+
+// ---------- ผู้ดูแลระบบ (owner เท่านั้น) ----------
+async function renderAdmins(req, res, extra = {}, status = 200) {
+  res.status(status).render("admins", { title: "Admin users", rows: await admins.list(q), ROLES: admins.ROLES, form: {}, msg: req.query.msg || null, error: req.query.error || null, ...extra });
+}
+admin.get("/admins", requireOwner, (req, res, next) => renderAdmins(req, res).catch(next));
+admin.post("/admins", requireOwner, async (req, res, next) => {
+  try {
+    await admins.create(q, { username: req.body.username, password: req.body.password, display_name: req.body.display_name, email: req.body.email, role: req.body.role, must_change: 1 });
+    back(res, "/admin/admins", `Account "${admins.normalizeUsername(req.body.username)}" created — they must choose a new password at first sign-in`);
+  } catch (e) {
+    if (isDbError(e)) return next(e);
+    renderAdmins(req, res, { error: e.message, form: { ...req.body, password: "" } }, 400).catch(next);
+  }
+});
+const adminAction = (fn) => [requireOwner, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!(await admins.get(q, id))) return res.redirect("/admin/admins");
+    const msg = await fn(req, id);
+    back(res, "/admin/admins", msg);
+  } catch (e) {
+    if (isDbError(e)) return next(e);
+    back(res, "/admin/admins", e.message, true);
+  }
+}];
+admin.post("/admins/:id(\\d+)/toggle", ...adminAction(async (req, id) => {
+  if (id === req.admin.id) throw new Error("You cannot disable your own account");
+  const a = await admins.get(q, id);
+  await admins.setActive(q, id, !a.is_active);
+  return a.is_active ? `"${a.username}" disabled and signed out` : `"${a.username}" enabled`;
+}));
+admin.post("/admins/:id(\\d+)/role", ...adminAction(async (req, id) => {
+  if (id === req.admin.id) throw new Error("Ask another owner to change your role");
+  await admins.setRole(q, id, req.body.role);
+  return "Role updated";
+}));
+admin.post("/admins/:id(\\d+)/password", ...adminAction(async (req, id) => {
+  if (id === req.admin.id) throw new Error("Use My account to change your own password");
+  await admins.changePassword(q, id, { next: req.body.password, requireCurrent: false, mustChange: 1 });
+  return "Temporary password set — they must change it at next sign-in (their sessions were signed out)";
+}));
+admin.post("/admins/:id(\\d+)/reset-2fa", ...adminAction(async (req, id) => {
+  await admins.disable2fa(q, id);
+  await admins.signOutEverywhere(q, id);
+  return "Two-factor authentication removed — they can set it up again from My account";
+}));
 
 app.use("/admin", admin);
 

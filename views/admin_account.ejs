@@ -1,0 +1,73 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>My account</h1>
+    <p class="subtitle"><b><%= me.username %></b> · <%= me.role === 'owner' ? 'Owner' : 'Staff' %><% if (me.last_login_at) { %> · last sign-in <%= String(me.last_login_at).slice(0, 16) %><%= me.last_login_ip ? ' from ' + me.last_login_ip : '' %><% } %></p>
+  </div>
+</div>
+<% if (must) { %><p class="notice">Choose a new password to continue — your account was given a temporary one.</p><% } %>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert" role="alert"><%= error %></p><% } %>
+
+<div class="layout-side wide">
+  <div>
+    <section class="card">
+      <div class="card-head"><h2>Password</h2></div>
+      <form method="post" action="/admin/account/password" class="form-grid stack" style="display:grid">
+        <label class="full">Current password<input type="password" name="current" required autocomplete="current-password"></label>
+        <label>New password <span class="hint">10+ characters, letters and numbers</span><input type="password" name="next" required minlength="10" autocomplete="new-password"></label>
+        <label>Repeat new password<input type="password" name="next2" required minlength="10" autocomplete="new-password"></label>
+        <div class="full"><button class="primary">Change password</button></div>
+      </form>
+    </section>
+
+    <% if (!must) { %>
+    <section class="card" id="twofa">
+      <div class="card-head"><h2>Two-factor authentication</h2><span class="badge b-<%= me.has_2fa ? 'active' : 'open' %>"><%= me.has_2fa ? 'On' : 'Off' %></span></div>
+      <% if (me.has_2fa) { %>
+        <p class="muted" style="margin-top:0">Every sign-in asks for a 6-digit code from your authenticator app.</p>
+        <form method="post" action="/admin/account/2fa/disable" class="stack" style="max-width:360px">
+          <label>Confirm with your password to turn it off<input type="password" name="password" required autocomplete="current-password"></label>
+          <div><button class="btn danger">Turn off 2FA</button></div>
+        </form>
+      <% } else if (qr) { %>
+        <ol class="muted" style="margin-top:0;padding-left:18px;line-height:1.7">
+          <li>Open Google Authenticator, Microsoft Authenticator or 1Password on your phone.</li>
+          <li>Scan this QR code (or type the key by hand).</li>
+          <li>Enter the 6-digit code it shows.</li>
+        </ol>
+        <div class="qr-box">
+          <img src="<%= qr %>" alt="QR code for your authenticator app" width="180" height="180">
+          <form method="post" action="/admin/account/2fa/enable" class="stack" style="flex:1;min-width:220px">
+            <div><div class="section-title">Key</div><span class="secret-code"><%= totpSecret.replace(/(.{4})/g, '$1 ').trim() %></span></div>
+            <label>6-digit code<input name="code" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7" required autocomplete="one-time-code" class="otp" style="max-width:180px"></label>
+            <div><button class="primary">Turn on 2FA</button></div>
+          </form>
+        </div>
+      <% } else { %>
+        <p class="muted" style="margin-top:0">Protect this account with a code from your phone, so a leaked password alone is not enough to sign in. <b>Strongly recommended</b> — this account can issue keys and change billing.</p>
+        <form method="post" action="/admin/account/2fa/start"><button class="primary">Set up 2FA</button></form>
+      <% } %>
+    </section>
+    <% } %>
+  </div>
+
+  <aside>
+    <% if (!must) { %>
+    <section class="card">
+      <div class="card-head"><h2>Profile</h2></div>
+      <form method="post" action="/admin/account/profile" class="stack">
+        <label>Name<input name="display_name" value="<%= me.display_name %>" maxlength="120"></label>
+        <label>Email<input type="email" name="email" value="<%= me.email %>" maxlength="190"></label>
+        <div><button class="btn">Save</button></div>
+      </form>
+    </section>
+    <% } %>
+    <section class="card">
+      <div class="card-head"><h2>Sessions</h2></div>
+      <p class="muted small" style="margin-top:0">Signed-in sessions end after 2 hours without activity or 12 hours in total. If you signed in on a shared or lost device, sign out everywhere.</p>
+      <form method="post" action="/admin/account/signout-all" onsubmit="return confirm('Sign out of every other browser and device?')"><button class="btn">Sign out other sessions</button></form>
+    </section>
+  </aside>
+</div>
+<%- include('partials/footer') %>
