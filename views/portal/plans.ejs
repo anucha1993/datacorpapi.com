@@ -1,0 +1,48 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>Plans</h1>
+    <p class="subtitle">Pick a plan per product. Upgrade any time — your existing keys keep working.</p>
+  </div>
+</div>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+
+<% if (!products.length) { %>
+<section class="card"><div class="empty"><h3>No plans available yet</h3><p>Please check back soon or contact <%= co.COMPANY_EMAIL || 'support' %>.</p></div></section>
+<% } %>
+
+<% for (const p of products) { const cur = current[p.id]; %>
+<section class="product-block">
+  <div class="product-head">
+    <div>
+      <h2><%= p.name %> <span class="tag"><%= p.kind === 'license' ? 'License key' : 'API key' %></span></h2>
+      <% if (p.tagline) { %><p class="muted" style="margin:4px 0 0"><%= p.tagline %></p><% } %>
+    </div>
+    <% if (p.docs_url) { %><a class="btn small" href="<%= p.docs_url %>" target="_blank" rel="noopener">Docs ↗</a><% } %>
+  </div>
+  <div class="plan-grid">
+    <% for (const pl of p.plans) { const isCur = cur && cur.plan_id === pl.id; const feats = String(pl.features || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean); %>
+    <div class="plan-card <%= pl.is_featured ? 'featured' : '' %> <%= isCur ? 'current' : '' %>">
+      <% if (isCur) { %><span class="ribbon">Current plan</span><% } else if (pl.is_featured) { %><span class="ribbon">Most popular</span><% } %>
+      <div class="plan-name"><%= pl.name %></div>
+      <div class="plan-price">
+        <% if (pl.billing === 'usage') { %>฿<%= fmtUnit(pl.unit_price_thb) %> <small>per <%= p.unit_label.replace(/s$/, '') %></small>
+        <% } else if (!Number(pl.price_thb)) { %>Free
+        <% } else { %>฿<%= fmtMoney(pl.price_thb) %> <small>/ <%= pl.billing === 'year' ? 'year' : 'month' %></small><% } %>
+      </div>
+      <ul class="feat">
+        <li><%= pl.included_units == null ? 'Unlimited ' + p.unit_label : Number(pl.included_units) === 0 ? 'Pay only for the ' + p.unit_label + ' you use' : fmtNum(pl.included_units) + ' ' + p.unit_label + ' / month' + (pl.billing === 'usage' ? ' free' : '') %></li>
+        <% if (Number(pl.unit_price_thb) && pl.billing !== 'usage') { %><li>Then ฿<%= fmtUnit(pl.unit_price_thb) %> per extra <%= p.unit_label.replace(/s$/, '') %></li><% } %>
+        <% if (pl.included_units != null && !Number(pl.unit_price_thb)) { %><li class="muted">Hard limit — pauses at quota</li><% } %>
+        <li><%= p.kind === 'license' ? pl.max_keys + ' license' + (pl.max_keys > 1 ? 's' : '') + ' · ' + (Number(pl.max_devices) ? pl.max_devices + ' device' + (pl.max_devices > 1 ? 's' : '') + ' each' : 'unlimited devices') : 'Up to ' + pl.max_keys + ' API keys' %></li>
+        <% for (const f of feats) { %><li><%= f %></li><% } %>
+      </ul>
+      <% if (isCur) { %><a class="btn block" href="/portal/subscriptions/<%= cur.id %>">Manage</a>
+      <% } else { %><a class="btn <%= pl.is_featured ? 'primary' : '' %> block" href="/portal/plans/<%= pl.id %>"><%= cur ? 'Switch to ' + pl.name : (Number(pl.price_thb) && pl.billing !== 'usage' ? 'Subscribe' : 'Get started') %></a><% } %>
+    </div>
+    <% } %>
+  </div>
+</section>
+<% } %>
+<p class="muted small">Prices in Thai Baht. Paid plans renew automatically until cancelled; cancel any time from the plan page and keep access until the end of the paid period. Usage over quota is invoiced on the 1st of the next month. <a href="/refund" target="_blank">Refund policy</a></p>
+<%- include('partials/footer') %>

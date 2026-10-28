@@ -1,5 +1,5 @@
 {
-  "_comment": "Service cards shown on /pricing. Prices are indicative starting points (edit freely). checkout_url is unused: all invoices go through Lemon Squeezy custom-price checkouts from the admin/portal.",
+  "_comment": "Project/consulting cards shown under the API & software plans on /pricing. API/license plans are managed in Admin → Products.",
   "currency": "THB",
   "plans": [
     {
@@ -33,22 +33,6 @@
         "API integrations (ERP, CRM, accounting, LINE, payments)",
         "Data pipelines, databases and BI dashboards",
         "Source code handed over, 30-day defect warranty"
-      ]
-    },
-    {
-      "key": "payg",
-      "name": "Pay-as-you-go automation tools",
-      "type": "usage",
-      "price_label": "฿0 / month + usage",
-      "unit_label": "For tools we operate for you. No setup fee, no minimum, no contract. Unit price per record is agreed per customer; invoiced monthly for records actually processed.",
-      "checkout_url": "",
-      "featured": false,
-      "cta": "Open an account",
-      "features": [
-        "Per-record pricing, typically from ฿0.50 per record",
-        "Unlimited installs under one customer account",
-        "Real-time usage, invoices and receipts in the customer portal",
-        "Free updates and email support within 1 business day"
       ]
     },
     {

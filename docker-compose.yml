@@ -1,23 +1,32 @@
-# รันเว็บแอป + MySQL บนเซิร์ฟเวอร์เดียวด้วยคำสั่งเดียว:
-#   cp .env.example .env   (แก้รหัสผ่าน)
+# รันเว็บแอป + ฐานข้อมูลบนเซิร์ฟเวอร์เดียวด้วยคำสั่งเดียว:
+#   cp .env.example .env   (แก้รหัสผ่าน / DB_NAME / DB_USER / DB_PASSWORD)
 #   docker compose up -d
-# MySQL จะสร้างตารางจาก ./sql/usage_schema.sql ให้อัตโนมัติตอนสร้างครั้งแรก
-# (อย่าลืมแก้รหัสผ่าน ewp_app / ewp_web ในไฟล์ SQL ให้ตรงกับ .env ก่อนรันครั้งแรก)
+# MariaDB สร้างตารางจาก ./sql/*.sql ให้อัตโนมัติตอนสร้างครั้งแรก (ไฟล์ SQL ใช้ syntax ของ MariaDB เช่น ADD COLUMN IF NOT EXISTS)
+
 services:
   db:
-    image: mysql:8.4
+    image: mariadb:11.4
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME_root}
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME_root}
+      MARIADB_DATABASE: ${DB_NAME:-ewp_usage}
+      MARIADB_USER: ${DB_USER:-ewp_web}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_web_password}
       TZ: Asia/Bangkok
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone=+07:00
     volumes:
       - dbdata:/var/lib/mysql
-      - ./sql/usage_schema.sql:/docker-entrypoint-initdb.d/01_usage_schema.sql:ro
-    ports:
-      - "3306:3306"   # ให้โปรแกรมบนเครื่องผู้ใช้ต่อเข้ามา (ปิดถ้าไม่ต้องการเปิดออกนอกเครื่อง)
+      - ./sql/portal_schema.sql:/docker-entrypoint-initdb.d/01_portal.sql:ro
+      - ./sql/license_schema.sql:/docker-entrypoint-initdb.d/02_license.sql:ro
+      - ./sql/billing_schema.sql:/docker-entrypoint-initdb.d/03_billing.sql:ro
+      - ./sql/invoice_schema.sql:/docker-entrypoint-initdb.d/04_invoice.sql:ro
+      - ./sql/invoice_manual.sql:/docker-entrypoint-initdb.d/05_invoice_manual.sql:ro
+      - ./sql/polar_schema.sql:/docker-entrypoint-initdb.d/06_polar.sql:ro
+      - ./sql/service_catalog.sql:/docker-entrypoint-initdb.d/07_services.sql:ro
+      - ./sql/services_receipts.sql:/docker-entrypoint-initdb.d/08_services_receipts.sql:ro
+      - ./sql/platform_schema.sql:/docker-entrypoint-initdb.d/09_platform.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-CHANGE_ME_root}"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 10

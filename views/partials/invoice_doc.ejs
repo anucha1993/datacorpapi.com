@@ -45,7 +45,7 @@
   <div class="doc-meta">
     <div><div class="k">Issue date</div><div class="v"><%= String(inv.issued_at || '').slice(0, 10) %></div></div>
     <div><div class="k">Due date</div><div class="v"><%= inv.due_at || '—' %></div></div>
-    <div><div class="k"><%= inv.kind === 'manual' ? 'Type' : 'Period' %></div><div class="v"><%= inv.kind === 'manual' ? 'Service' : inv.ym %></div></div>
+    <div><div class="k"><%= inv.kind === 'usage' ? 'Period' : 'Type' %></div><div class="v"><%= inv.kind === 'usage' ? inv.ym : inv.kind === 'subscription' ? 'Subscription' : 'Service' %></div></div>
     <div><div class="k">Status</div><div class="v"><span class="badge b-<%= overdue ? 'overdue' : inv.status %>"><%= overdue ? 'Overdue' : (STATUS_INV[inv.status] || inv.status) %></span></div></div>
   </div>
 
@@ -57,7 +57,7 @@
       <tr>
         <td><b><%= l.name %></b><% if (l.desc) { %><br><small class="muted"><%= l.desc %></small><% } %></td>
         <td class="r"><%= fmtNum(l.qty) %></td>
-        <td class="r"><%= l.unit != null ? fmtMoney(l.unit) : '—' %></td>
+        <td class="r"><%= l.unit != null ? (l.unitPrecise ? fmtUnit(l.unit) : fmtMoney(l.unit)) : '—' %></td>
         <td class="r strong"><%= fmtMoney(l.amount) %></td>
       </tr>
     <% } %>

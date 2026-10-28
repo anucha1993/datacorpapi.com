@@ -1,81 +1,63 @@
 <%- include('partials/header') %>
 <div class="pagehead">
-  <h1><%= pay.name %> <span class="muted">· payment provider · orders / webhooks<%= pay.testMode ? ' · TEST MODE' : '' %></span></h1>
-  <div class="tools">
-    <a class="btn" href="/admin/invoices">Go to invoices →</a>
+  <div class="titles">
+    <h1>Payments</h1>
+    <p class="subtitle"><%= pay.name %> · payment provider setup and webhook log<%= pay.testMode ? ' · TEST MODE' : '' %></p>
   </div>
+  <div class="tools"><a class="btn" href="/admin/invoices">Invoices →</a></div>
 </div>
 
 <% if (!lsReady || !webhookReady) { %>
 <p class="alert">
-  <% if (!lsReady) { %><code><%= pay.envApi %></code> is not set — payment links cannot be created<br><% } %>
-  <% if (!webhookReady) { %><code><%= pay.envSecret %></code> is not set — webhooks will be rejected (503)<% } %>
+  <% if (!lsReady) { %><code><%= pay.envApi %></code> is not set — checkouts cannot be created<br><% } %>
+  <% if (!webhookReady) { %><code><%= pay.envSecret %></code> is not set — webhooks will be rejected (503), so subscriptions never activate<% } %>
 </p>
 <% } %>
 
 <section class="card">
   <h2>Setup</h2>
-  <p>Provider: <b><%= pay.name %></b> (<code>PAYMENT_PROVIDER=<%= pay.key %></code>) · Webhook URL: <code><%= siteUrl %><%= pay.webhookPath %></code>
-  <% if (pay.key === 'polar') { %>· events: <code>order.paid</code>, <code>order.updated</code>, <code>order.refunded</code> · format: Raw<% } else { %>· events: <code>order_created</code>, <code>order_refunded</code><% } %></p>
-  <% if (pay.key === 'polar') { %><p class="muted small">Polar checkout: one-time product (any price type), invoice amount is passed as a fixed ad-hoc THB price, so the customer cannot change it. Receipt PDF with the customer's company details is generated through the Polar order invoice API and shown in the portal.</p><% } %>
-</section>
-
-<section class="card">
-  <h2>Subscriptions <span class="muted">(<%= subs.length %>)</span></h2>
-  <p class="muted">Only used if a subscription product is ever sold. The current model is invoice-based (see Invoices).</p>
-  <% if (!subs.length) { %><p class="muted">No subscriptions</p><% } else { %>
-  <div class="scroll"><table class="dense">
-    <thead><tr><th>ID</th><th>Customer</th><th>Product</th><th>Status</th><th>Operator</th><th>Renews</th><th></th></tr></thead>
-    <tbody>
-    <% for (const s of subs) { %>
-      <tr>
-        <td>#<%= s.subscription_id %></td>
-        <td><%= s.user_name %><br><small class="muted"><%= s.user_email %></small><% if (s.company) { %><br><small class="muted"><%= s.company %></small><% } %></td>
-        <td><%= s.product_name %><br><small class="muted"><%= s.variant_name %></small></td>
-        <td><span class="st st-<%= ['active','on_trial'].includes(s.status) ? 'ok' : (['cancelled','paused','past_due'].includes(s.status) ? 'cancelled' : 'error') %>"><%= s.status_formatted || s.status %></span></td>
-        <td>
-          <form method="post" action="/admin/billing/operator" class="inlineform">
-            <input type="hidden" name="customer_id" value="<%= s.customer_id %>">
-            <input name="operator" list="ops" value="<%= s.operator %>" placeholder="Operator" maxlength="100">
-            <button>Save</button>
-          </form>
-        </td>
-        <td class="nowrap muted"><%= s.renews_at || '' %><% if (s.ends_at) { %><br>ends <%= s.ends_at %><% } %></td>
-        <td class="nowrap"><% if (s.customer_portal_url) { %><a href="<%= s.customer_portal_url %>" target="_blank" rel="noopener">Portal</a><% } %></td>
-      </tr>
+  <dl class="kv">
+    <dt>Provider</dt><dd><b><%= pay.name %></b> (<code>PAYMENT_PROVIDER=<%= pay.key %></code>)<%= pay.testMode ? ' — sandbox' : '' %></dd>
+    <dt>Webhook URL</dt><dd><code><%= siteUrl %><%= pay.webhookPath %></code></dd>
+    <% if (pay.key === 'polar') { %>
+    <dt>Events</dt><dd><code>order.paid</code> <code>order.updated</code> <code>order.refunded</code> <code>subscription.created</code> <code>subscription.active</code> <code>subscription.updated</code> <code>subscription.canceled</code> <code>subscription.uncanceled</code> <code>subscription.revoked</code> · format: Raw</dd>
+    <% } else { %>
+    <dt>Events</dt><dd><code>order_created</code> <code>order_refunded</code> — subscriptions (plans) require Polar</dd>
     <% } %>
-    </tbody>
-  </table></div>
-  <datalist id="ops"><% for (const o of operators) { %><option value="<%= o.operator %>"><% } %></datalist>
+  </dl>
+  <% if (pay.key === 'polar') { %>
+  <ul class="small muted" style="margin:12px 0 0;padding-left:18px;line-height:1.7">
+    <li><b>Plans (monthly/yearly):</b> each paid plan points at a recurring Polar product. Checkout carries <code>subscription_ref</code> in metadata; <code>subscription.*</code> webhooks activate, renew, cancel and expire the plan here. Each renewal's <code>order.paid</code> is recorded as a paid invoice with Polar's receipt.</li>
+    <li><b>Invoices (usage over quota, services, custom):</b> fixed ad-hoc THB checkout per invoice; <code>order.paid</code> marks it paid.</li>
+  </ul>
   <% } %>
 </section>
 
-<section class="card">
-  <h2>Recent orders <span class="muted">(<%= orders.length %> · legacy Lemon Squeezy orders)</span></h2>
-  <% if (pay.key === 'polar') { %><p class="muted small">Polar orders are linked directly to invoices (see Invoices → Paid via / receipt).</p><% } %>
-  <% if (!orders.length) { %><p class="muted">No orders yet</p><% } else { %>
-  <div class="scroll"><table class="dense">
+<section class="card flush">
+  <div class="card-head"><h2>Recent webhooks</h2></div>
+  <% if (!events.length) { %><div class="empty"><p>No webhooks received yet.</p></div><% } else { %>
+  <table><thead><tr><th>Received</th><th>Event</th><th>Object</th></tr></thead><tbody>
+  <% for (const e of events) { %><tr><td class="nowrap muted"><%= e.received_at %></td><td><code><%= e.event_name %></code></td><td class="mono small"><%= e.object_id %></td></tr><% } %>
+  </tbody></table>
+  <% } %>
+</section>
+
+<% if (orders.length) { %>
+<section class="card flush">
+  <div class="card-head"><h2>Lemon Squeezy orders <span class="muted">(legacy)</span></h2></div>
+  <div class="scroll"><table>
     <thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>Product</th><th class="r">Total</th><th>Status</th><th></th></tr></thead>
     <tbody>
     <% for (const o of orders) { %>
       <tr><td>#<%= o.order_number || o.order_id %></td><td class="nowrap muted"><%= o.ordered_at || '' %></td>
         <td><%= o.user_name %> <small class="muted"><%= o.user_email %></small></td>
         <td><%= o.product_name %> <small class="muted"><%= o.variant_name %></small></td>
-        <td class="r"><%= fmtMoney(o.total) %> <%= o.currency %><% if (Number(o.refunded_total)) { %><br><small class="muted">refunded <%= fmtMoney(o.refunded_total) %></small><% } %></td>
-        <td><span class="st st-<%= o.status === 'paid' ? 'ok' : (o.status === 'pending' ? 'cancelled' : 'error') %>"><%= o.status %></span></td>
+        <td class="r"><%= fmtMoney(o.total) %> <%= o.currency %></td>
+        <td><span class="badge b-<%= o.status === 'paid' ? 'paid' : 'void' %>"><%= o.status %></span></td>
         <td><% if (o.receipt_url) { %><a href="<%= o.receipt_url %>" target="_blank" rel="noopener">Receipt</a><% } %></td></tr>
     <% } %>
     </tbody>
   </table></div>
-  <% } %>
 </section>
-
-<section class="card">
-  <h2>Recent webhooks</h2>
-  <% if (!events.length) { %><p class="muted">No webhooks received yet</p><% } else { %>
-  <table class="dense"><thead><tr><th>Received</th><th>Event</th><th>Type</th><th>ID</th></tr></thead><tbody>
-  <% for (const e of events) { %><tr><td class="nowrap muted"><%= e.received_at %></td><td><code><%= e.event_name %></code></td><td><%= e.object_type %></td><td><%= e.object_id %></td></tr><% } %>
-  </tbody></table>
-  <% } %>
-</section>
+<% } %>
 <%- include('partials/footer') %>

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ออกใบแจ้งหนี้รายเดือนจาก command line (สำหรับ cron)
+ * ออกใบแจ้งหนี้ค่าใช้งานเกินโควตา / จ่ายตามใช้งาน ของเดือนที่แล้ว จาก command line (สำหรับ cron)
  *   node invoices.js            → ออก/อัปเดตบิลของ "เดือนที่แล้ว" (รันทุกวันที่ 1 เวลา 06:00)
  *   node invoices.js 2026-10    → เดือนที่ระบุ
  * cron (Plesk Scheduled Task):  0 6 1 * *  /opt/plesk/node/22/bin/node /path/invoices.js >> invoices.log 2>&1

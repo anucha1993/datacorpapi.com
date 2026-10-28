@@ -1,0 +1,106 @@
+<%- include('partials/header') %>
+<% const here = '/admin/customers/' + encodeURIComponent(acct.operator); const allPlans = products.flatMap(p => p.plans.map(pl => ({ ...pl, product_name: p.name }))); %>
+<div class="pagehead">
+  <div class="titles">
+    <a href="/admin/customers" class="muted small">← Customers</a>
+    <h1><%= acct.company_name || acct.display_name || acct.operator %> <span class="badge b-<%= acct.is_active ? 'active' : 'void' %>" style="vertical-align:middle"><%= acct.is_active ? 'Active' : 'Disabled' %></span></h1>
+    <p class="subtitle mono"><%= acct.operator %><%= acct.billing_email || acct.email ? ' · ' + (acct.billing_email || acct.email) : '' %></p>
+  </div>
+  <div class="tools"><a class="btn" href="/admin/invoices?ym=all&operator=<%= encodeURIComponent(acct.operator) %>">Invoices</a><a class="btn primary" href="#grant" onclick="document.getElementById('grant').open=true">+ Grant plan</a></div>
+</div>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+
+<div class="layout-side wide">
+  <div>
+    <% if (!subs.length) { %><section class="card"><div class="empty"><h3>No subscriptions</h3><p>The customer can subscribe from the portal, or grant a plan.</p></div></section><% } %>
+    <% for (const s of subs) { const inc = s.included_units == null ? null : Number(s.included_units); const pct = inc ? Math.min(100, Math.round(s.used / inc * 100)) : 0; %>
+    <section class="card">
+      <div class="card-head">
+        <div><h2 style="margin:0"><%= s.product_name %> · <%= s.plan_name %></h2>
+          <span class="muted small">#<%= s.id %> · <%= BILLING_LABELS[s.billing] %><%= Number(s.price_thb) ? ' ฿' + fmtMoney(s.price_thb) : '' %> · <%= s.source %><%= s.provider_sub_id ? ' · ' + s.provider_sub_id : '' %></span></div>
+        <span class="badge b-<%= s.status %>"><%= SUB_STATUS[s.status] %></span>
+      </div>
+      <dl class="kv" style="font-size:13.5px">
+        <dt>Period</dt><dd><%= fmtDate(s.period_start) %> → <%= s.period_end ? fmtDate(s.period_end) : 'no end' %><%= s.cancel_at_period_end ? ' (cancels at end)' : '' %></dd>
+        <dt>Usage <%= ym %></dt><dd><%= fmtNum(s.used) %> <%= s.unit_label %><%= inc != null ? ' of ' + fmtNum(inc) + ' (' + pct + '%)' : ' (unlimited)' %></dd>
+        <% if (s.note) { %><dt>Note</dt><dd><%= s.note %></dd><% } %>
+      </dl>
+      <% if (inc) { %><div class="meter <%= pct >= 100 ? 'over' : pct >= 80 ? 'warn' : '' %>" style="margin-top:10px"><span style="width:<%= pct %>%"></span></div><% } %>
+      <% if (s.keys.length) { %>
+      <div class="section-title" style="margin-top:16px"><%= s.kind === 'license' ? 'License keys' : 'API keys' %></div>
+      <table class="dense">
+        <thead><tr><th>Name</th><th>Key</th><th>Last used</th><th>Status</th><th></th></tr></thead>
+        <tbody><% for (const k of s.keys) { %>
+          <tr>
+            <td><%= k.name %></td>
+            <td class="mono"><%= k.key_plain || k.key_prefix + '…' %></td>
+            <td class="muted nowrap"><%= k.last_used_at || 'never' %></td>
+            <td><span class="badge b-<%= k.revoked_at ? 'void' : 'active' %>"><%= k.revoked_at ? 'Revoked' : 'Active' %></span></td>
+            <td class="r"><% if (!k.revoked_at) { %><form method="post" action="/admin/keys/<%= k.id %>/revoke" class="inline" onsubmit="return confirm('Revoke this key?')"><input type="hidden" name="back" value="<%= here %>"><button class="btn small danger">Revoke</button></form><% } %></td>
+          </tr>
+          <% for (const d of k.devices || []) { %>
+          <tr><td></td><td colspan="3" class="small muted">↳ <%= d.device_name || d.device_id %> · v<%= d.app_version || '?' %> · last seen <%= d.last_seen %></td>
+            <td class="r"><form method="post" action="/admin/devices/<%= d.id %>/remove" class="inline"><input type="hidden" name="back" value="<%= here %>"><button class="btn small">Remove</button></form></td></tr>
+          <% } %>
+        <% } %></tbody>
+      </table>
+      <% } %>
+      <% if (['active', 'past_due', 'pending'].includes(s.status)) { %>
+      <hr class="divider">
+      <div class="btnrow">
+        <% if (s.source !== 'polar') { %><form method="post" action="/admin/subscriptions/<%= s.id %>/extend" class="btnrow"><input type="hidden" name="back" value="<%= here %>"><input name="months" type="number" min="1" max="60" value="1" style="width:80px" aria-label="Months"><button class="btn small">Extend (months)</button></form><% } %>
+        <form method="post" action="/admin/subscriptions/<%= s.id %>/cancel" class="inline" onsubmit="return confirm('Cancel now? Keys stop working immediately.')"><input type="hidden" name="back" value="<%= here %>"><button class="btn small danger">Cancel subscription</button></form>
+      </div>
+      <% } %>
+    </section>
+    <% } %>
+
+    <section class="card flush">
+      <div class="card-head"><h2>Invoices</h2></div>
+      <% if (!invoices.length) { %><div class="empty"><p>No invoices.</p></div><% } else { %>
+      <div class="scroll"><table>
+        <thead><tr><th>Invoice</th><th>Description</th><th class="r">Amount</th><th>Status</th><th>Issued</th></tr></thead>
+        <tbody><% for (const r of invoices) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; %>
+          <tr><td><a class="linkish mono" href="/admin/invoices/<%= r.id %>"><%= r.invoice_no %></a></td>
+            <td><%= r.title || (r.kind === 'usage' ? 'Usage ' + r.ym : r.kind) %></td>
+            <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
+            <td><span class="badge b-<%= overdue ? 'overdue' : r.status %>"><%= overdue ? 'Overdue' : STATUS_INV[r.status] %></span></td>
+            <td class="muted nowrap"><%= fmtDate(r.issued_at) %></td></tr>
+        <% } %></tbody>
+      </table></div>
+      <% } %>
+    </section>
+  </div>
+
+  <aside>
+    <details class="card" id="grant">
+      <summary class="section-title" style="cursor:pointer;margin:0">Grant a plan</summary>
+      <form method="post" action="/admin/subscriptions/grant" class="stack" style="margin-top:12px">
+        <input type="hidden" name="operator" value="<%= acct.operator %>"><input type="hidden" name="back" value="customer">
+        <label>Plan <select name="plan_id" required><option value="">— choose —</option><% for (const pl of allPlans) { %><option value="<%= pl.id %>"><%= pl.product_name %> · <%= pl.name %></option><% } %></select></label>
+        <label>Months <span class="hint">Blank = no end date</span><input name="months" type="number" min="0" max="60"></label>
+        <label>Note<input name="note" maxlength="255" placeholder="Trial / bank transfer"></label>
+        <button class="primary">Grant</button>
+      </form>
+    </details>
+    <section class="card">
+      <div class="section-title">Account</div>
+      <dl class="kv" style="grid-template-columns:100px 1fr;font-size:13px">
+        <dt>Company</dt><dd><%= acct.company_name || '—' %></dd>
+        <dt>Tax ID</dt><dd><%= acct.tax_id || '—' %></dd>
+        <dt>Address</dt><dd><%= acct.address ? acct.address + ' ' + (acct.zip || '') : '—' %></dd>
+        <dt>Last login</dt><dd><%= acct.last_login_at || 'never' %></dd>
+      </dl>
+    </section>
+    <section class="card">
+      <div class="section-title">Account serial (SN)</div>
+      <p class="mono" style="margin:0 0 6px;font-weight:600"><%= acct.serial_no || '—' %></p>
+      <p class="muted small" style="margin:0">Verified via <code>/api/license/verify</code><%= acct.last_verified_at ? ' · last ' + acct.last_verified_at : '' %> · max devices <%= Number(acct.max_devices) || 'unlimited' %></p>
+      <% if (devices.length) { %>
+      <ul class="filelist" style="margin-top:10px"><% for (const d of devices) { %><li class="small"><span class="fname"><%= d.machine || d.install_id %> <span class="muted">· <%= d.windows_user %> · v<%= d.app_version %></span></span><span class="muted"><%= fmtDate(d.last_seen) %></span></li><% } %></ul>
+      <% } %>
+    </section>
+  </aside>
+</div>
+<%- include('partials/footer') %>

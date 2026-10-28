@@ -350,6 +350,57 @@ body.center { display: grid; place-items: center; min-height: 100vh;
   .topbar { padding: 0 16px; }
 }
 
+/* ===================== platform: plans, subscriptions, keys ===================== */
+.b-pending { background: #f1f5f9; color: #475569; }
+.b-past_due { background: var(--danger-bg); color: var(--danger); }
+.b-cancelled { background: var(--warn-bg); color: var(--warn); }
+.b-expired { background: #f1f5f9; color: #94a3b8; }
+
+.meter { height: 8px; background: #e9edf5; border-radius: 999px; overflow: hidden; margin: 6px 0 4px; }
+.meter span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #818cf8); border-radius: 999px; transition: width .3s ease; }
+.meter.warn span { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.meter.over span { background: linear-gradient(90deg, #e11d48, #fb7185); }
+.meter.lg { height: 12px; }
+
+.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.sub-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px;
+  color: inherit; box-shadow: var(--shadow-sm); transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease; }
+.sub-card:hover { text-decoration: none; color: inherit; box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: #c7d2fe; }
+.sub-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.sub-product { font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+.sub-plan { font-size: 14px; margin-top: 2px; }
+.sub-foot { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; }
+.usage-big .num { font-size: 32px; font-weight: 800; letter-spacing: -.02em; }
+tr.revoked td { opacity: .55; }
+tr.sub-row td { border-top: 0; padding-top: 0; }
+
+.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.steps-grid > div { position: relative; padding-left: 40px; }
+.steps-grid .n { position: absolute; left: 0; top: -2px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-h); font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.steps-grid p { margin: 4px 0 0; }
+
+.product-block { margin-bottom: 30px; }
+.product-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.product-head h2 { font-size: 20px; margin: 0; }
+.plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.plan-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 22px 22px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow-sm); }
+.plan-card.featured { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-md); }
+.plan-card.current { border-color: var(--ok); box-shadow: 0 0 0 3px var(--ok-bg); }
+.plan-card .ribbon { position: absolute; top: -11px; left: 20px; background: var(--accent); color: #fff; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: .02em; }
+.plan-card.current .ribbon { background: var(--ok); }
+.plan-name { font-weight: 700; font-size: 16px; }
+.plan-price { font-size: 30px; font-weight: 800; letter-spacing: -.02em; margin: 2px 0 6px; }
+.plan-price small { font-size: 14px; font-weight: 500; color: var(--muted); }
+ul.feat { list-style: none; padding: 0; margin: 4px 0 16px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; flex: 1; }
+ul.feat li { padding-left: 24px; position: relative; }
+ul.feat li::before { content: ""; position: absolute; left: 2px; top: 5px; width: 12px; height: 7px; border-left: 2px solid var(--ok); border-bottom: 2px solid var(--ok); transform: rotate(-45deg); }
+ul.feat li.muted::before { border-color: #cbd5e1; }
+
+pre.code { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 14px 16px; font: 12.5px/1.6 "Cascadia Code", Consolas, monospace; white-space: pre; overflow-x: auto; margin: 0 0 10px; }
+.newkey { border-color: #a5b4fc; background: linear-gradient(180deg, #f5f7ff, #fff); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-md); }
+.newkey h2 { color: var(--accent-h); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+
 /* print: invoice document only */
 @media print {
   @page { margin: 14mm; }

@@ -1,9 +1,36 @@
 <%- include('partials/head') %>
 <section class="page">
-  <h1>Services &amp; Pricing</h1>
-  <p class="lead">All prices are in Thai Baht (THB) and exclude VAT/sales tax, which <%= co.PAY.name %> calculates at checkout based on the buyer's country. Pay by <%= co.PAY.paymentMethods %>.
-    Every project starts with a free discovery call and a written proposal; nothing is charged until you accept it.</p>
+  <h1>Pricing</h1>
+  <p class="lead">Simple plans for our APIs and software. All prices are in Thai Baht (THB); any applicable VAT/sales tax is calculated by <%= co.PAY.name %> at checkout based on your country. Pay by <%= co.PAY.paymentMethods %>.</p>
 
+  <% for (const p of products) { %>
+  <h2 id="<%= p.slug %>"><%= p.name %></h2>
+  <% if (p.tagline) { %><p class="muted"><%= p.tagline %></p><% } %>
+  <div class="plans">
+    <% for (const pl of p.plans) { const feats = String(pl.features || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean); %>
+    <div class="plan <%= pl.is_featured ? 'featured' : '' %>">
+      <div class="pname"><%= pl.name %></div>
+      <div class="pprice">
+        <% if (pl.billing === 'usage') { %>฿<%= fmtUnit(pl.unit_price_thb) %> <small>/ <%= p.unit_label.replace(/s$/, '') %></small>
+        <% } else if (!Number(pl.price_thb)) { %>Free
+        <% } else { %>฿<%= fmtMoney(pl.price_thb) %> <small>/ <%= pl.billing === 'year' ? 'year' : 'month' %></small><% } %>
+      </div>
+      <div class="punit muted"><%= BILLING_LABELS[pl.billing] %> · <%= p.kind === 'license' ? 'license key' : 'API key' %></div>
+      <ul>
+        <li><%= pl.included_units == null ? 'Unlimited ' + p.unit_label : Number(pl.included_units) === 0 ? 'Pay only for the ' + p.unit_label + ' you use' : fmtNum(pl.included_units) + ' ' + p.unit_label + ' per month' + (pl.billing === 'usage' ? ' free' : '') %></li>
+        <% if (Number(pl.unit_price_thb) && pl.billing !== 'usage') { %><li>Then ฿<%= fmtUnit(pl.unit_price_thb) %> per extra <%= p.unit_label.replace(/s$/, '') %></li><% } %>
+        <% for (const f of feats) { %><li><%= f %></li><% } %>
+      </ul>
+      <a href="/portal/plans/<%= pl.id %>" class="btn <%= pl.is_featured ? 'primary' : '' %>"><%= Number(pl.price_thb) && pl.billing !== 'usage' ? 'Subscribe' : 'Get started' %></a>
+    </div>
+    <% } %>
+  </div>
+  <% } %>
+  <% if (!products.length) { %><p class="muted">API and software plans are coming soon. <a href="/contact">Contact us</a> for early access.</p><% } %>
+  <p class="muted small center">Subscribing requires a customer account — <a href="/contact">contact us</a> to open one, or <a href="/portal/login">sign in</a>.</p>
+
+  <% if (plans.length) { %>
+  <h2>Projects &amp; consulting</h2>
   <div class="plans">
     <% for (const p of plans) { %>
     <div class="plan <%= p.featured ? 'featured' : '' %>" id="plan-<%= p.key %>">
@@ -11,33 +38,29 @@
       <div class="pprice"><%= p.price_label %></div>
       <div class="punit muted"><%= p.unit_label %></div>
       <ul><% for (const f of (p.features || [])) { %><li><%= f %></li><% } %></ul>
-      <a href="<%= p.cta_url || '/contact' %>" class="btn <%= p.featured ? 'primary' : '' %>"><%= p.cta || 'Request a quote' %></a>
+      <a href="<%= p.cta_url || '/contact' %>" class="btn"><%= p.cta || 'Request a quote' %></a>
     </div>
     <% } %>
   </div>
-  <p class="muted small center">Prices shown are indicative starting points; the exact figure is in your written proposal. Already a customer? <a href="/portal/login">Customer login</a></p>
+  <% } %>
 
   <h2>How billing works</h2>
-  <h3>Projects (consulting, development, websites, integrations)</h3>
+  <h3>Monthly and yearly plans</h3>
   <ul class="bullets">
-    <li><b>Written proposal</b> with scope, deliverables, timeline and price. Fixed price for defined scope; hourly for open-ended consulting.</li>
-    <li><b>Deposit of 50%</b> on acceptance, invoiced through a <%= co.PAY.name %> payment link; the balance on delivery. Larger projects are split into milestones, each invoiced on acceptance of that milestone.</li>
-    <li>Invoices are due within 15 days. The receipt is emailed immediately by <%= co.PAY.name %> and can carry your company name, address and tax ID.</li>
-    <li>Change requests outside the agreed scope are quoted separately before any work starts.</li>
-    <li>Source code and deliverables are handed over on full payment. 30-day defect-fix warranty after delivery.</li>
+    <li><b>Charged up front</b> when you subscribe, then automatically every month or year until you cancel. The receipt is issued by <%= co.PAY.name %> and can carry your company name, address and tax ID.</li>
+    <li><b>Monthly quota</b> resets on the 1st of every month. Plans without overage pricing pause at the quota; plans with overage pricing keep working and the extra usage is invoiced on the 1st of the next month.</li>
+    <li><b>Upgrade or switch</b> plans at any time from the customer portal — the price difference is prorated, and your existing keys keep working.</li>
+    <li><b>Cancel any time</b> in the customer portal. You keep access until the end of the period you paid for; there is no further charge.</li>
   </ul>
-  <h3>Pay-as-you-go automation tools</h3>
+  <h3>Pay-as-you-go plans</h3>
   <ul class="bullets">
-    <li><b>Free account, no card on file.</b> Unit prices per record (for example per document downloaded or per application processed) are agreed in your proposal and shown in your customer portal.</li>
-    <li><b>Invoice on the 1st of every month</b> for the records actually processed in the previous month, payable within 15 days via the payment link in the portal.</li>
-    <li>You can verify usage before paying: the portal lists every job, per task type and per machine, and you can export it to CSV.</li>
-    <li>Jobs cancelled or interrupted midway are billed only for the records completed. Months with usage below ฿17 are carried forward (payment-provider minimum).</li>
-    <li>No contract: stop using the tool and there is no further invoice. See the <a href="/refund">Refund &amp; Cancellation Policy</a>.</li>
+    <li>No monthly fee and no card on file. Usage beyond any free allowance is invoiced on the 1st of each month, payable within <%= DUE_DAYS %> days by the payment link in your portal.</li>
+    <li>Usage is visible in real time in the customer portal. Monthly amounts below ฿<%= MIN_THB %> are carried forward (payment-provider minimum).</li>
   </ul>
-  <h3>Maintenance &amp; support plans</h3>
+  <h3>Projects</h3>
   <ul class="bullets">
-    <li>Monthly plans covering hosting, monitoring, updates and a response-time commitment, invoiced monthly in advance and cancellable with 30 days' notice.</li>
-    <li>Price changes for any recurring service are announced by email at least 30 days in advance.</li>
+    <li>Written proposal with scope, deliverables, timeline and price; 50% deposit on acceptance and the balance on delivery, invoiced through a <%= co.PAY.name %> payment link.</li>
   </ul>
+  <p>Price changes for any recurring plan are announced by email at least 30 days in advance. See the <a href="/refund">Refund &amp; Cancellation Policy</a>.</p>
 </section>
 <%- include('partials/foot') %>

@@ -1,86 +1,106 @@
-# เว็บไซต์ + ระบบหลังบ้าน — DataCorp API (บริการออกแบบระบบด้วย AI, ระบบอัตโนมัติ, รับทำเว็บไซต์)
+# DataCorp API — แพลตฟอร์มขาย API Key / License Key (แบบ GitHub Copilot)
 
-Node.js (Express + EJS) + MySQL/MariaDB ทำ 3 หน้าที่ในแอปเดียว
+Node.js (Express + EJS) + MariaDB/MySQL ในแอปเดียว
 
 | ส่วน | URL | ใครเข้า |
 |---|---|---|
-| **หน้าเว็บสาธารณะ** สินค้า · ราคา · ข้อกำหนด · คืนเงิน · ความเป็นส่วนตัว · ติดต่อ | `/` `/pricing` `/terms` `/refund` `/privacy` `/contact` | ทุกคน (ผู้ตรวจของผู้ให้บริการรับชำระเงินด้วย) |
-| **Customer Portal** ลูกค้าดูยอดใช้งานของตัวเอง · ใบแจ้งหนี้ · ชำระเงินผ่าน Polar · ข้อมูลออกใบเสร็จ | `/portal` (บัญชีลูกค้า) | ลูกค้า |
-| **หลังบ้าน** ยอดการใช้งาน · ใบแจ้งหนี้รายเดือน · บัญชีลูกค้า · ตั้งราคา · ข้อความติดต่อ | `/admin` (รหัสผ่าน) | คุณ |
-| **Webhook** รับผลการชำระเงินจาก Polar → มาร์คบิลชำระแล้ว + ลิงก์ใบเสร็จ | `/webhooks/polar` (Lemon Squeezy เดิม: `/webhooks/lemonsqueezy`) | Polar |
+| **หน้าเว็บสาธารณะ** สินค้า · ราคา (ดึงแพ็กเกจจากฐานข้อมูล) · ข้อกำหนด · คืนเงิน · ความเป็นส่วนตัว · ติดต่อ | `/` `/pricing` `/terms` `/refund` `/privacy` `/contact` | ทุกคน (ผู้ตรวจของผู้ให้บริการรับชำระเงินด้วย) |
+| **Customer Portal** แพ็กเกจที่ใช้ · โควตาเดือนนี้ · สร้าง/ยกเลิก API key และ License key · เปลี่ยน/ยกเลิกแพ็กเกจ · ใบแจ้งหนี้ + ใบเสร็จ · ซื้อบริการครั้งเดียว | `/portal` | ลูกค้า |
+| **หลังบ้าน** ภาพรวม (MRR/รายได้/ค้างชำระ) · สินค้า + แพ็กเกจ · subscription · ลูกค้า · ใบแจ้งหนี้ · บริการครั้งเดียว | `/admin` (รหัสผ่าน) | คุณ |
+| **Platform API** ตรวจ key + นับโควตา · ตรวจ license + ผูกเครื่อง · ลูกค้าดูโควตาตัวเอง | `/api/v1/*` | backend ของบริการ / โปรแกรมของลูกค้า |
+| **SN ของบัญชี** (โปรแกรมเดิมยังใช้) | `POST /api/license/verify` | โปรแกรมเดิม |
+| **Webhook** Polar: order + subscription | `/webhooks/polar` | Polar |
 
-## 1. ฐานข้อมูล (ครั้งเดียว)
-สร้าง database + user ผ่านหน้าควบคุมของโฮสต์ แล้วรัน 4 ไฟล์นี้ตามลำดับใน database นั้น (phpMyAdmin → SQL หรือ):
+## 1. ฐานข้อมูล
+ติดตั้งใหม่: สร้าง database + user ผ่านหน้าควบคุมของโฮสต์ แล้วรันตามลำดับ (phpMyAdmin → SQL หรือ):
 ```bash
-mysql -h HOST -u USER -p DATABASE < sql/usage_schema.sql     # การใช้งาน + ราคา + view
-mysql -h HOST -u USER -p DATABASE < sql/billing_schema.sql   # ข้อมูลจาก Lemon Squeezy (ลูกค้า/คำสั่งซื้อ/webhook) + ข้อความติดต่อ
-mysql -h HOST -u USER -p DATABASE < sql/portal_schema.sql    # บัญชี login ของลูกค้า
-mysql -h HOST -u USER -p DATABASE < sql/invoice_schema.sql   # ใบแจ้งหนี้ + ข้อมูลออกใบเสร็จ
-mysql -h HOST -u USER -p DATABASE < sql/invoice_manual.sql   # บิลระบุยอดเอง
-mysql -h HOST -u USER -p DATABASE < sql/polar_schema.sql     # Polar order/receipt
-mysql -h HOST -u USER -p DATABASE < sql/service_catalog.sql  # แคตตาล็อกบริการที่ขายในพอร์ทัล
-mysql -h HOST -u USER -p DATABASE < sql/services_receipts.sql # ลิงก์ชำระเงิน Polar ของบริการ + ไฟล์แนบใบเสร็จ
+mysql -h HOST -u USER -p DATABASE < sql/portal_schema.sql      # บัญชีลูกค้า
+mysql -h HOST -u USER -p DATABASE < sql/license_schema.sql     # SN ของบัญชี + เครื่องที่ตรวจ
+mysql -h HOST -u USER -p DATABASE < sql/billing_schema.sql     # webhook/คำสั่งซื้อ + ข้อความติดต่อ
+mysql -h HOST -u USER -p DATABASE < sql/invoice_schema.sql     # ใบแจ้งหนี้ + ข้อมูลออกใบเสร็จ
+mysql -h HOST -u USER -p DATABASE < sql/invoice_manual.sql     # บิลระบุยอดเอง
+mysql -h HOST -u USER -p DATABASE < sql/polar_schema.sql       # Polar order/receipt
+mysql -h HOST -u USER -p DATABASE < sql/service_catalog.sql    # บริการครั้งเดียว
+mysql -h HOST -u USER -p DATABASE < sql/services_receipts.sql  # ลิงก์ Polar ของบริการ + ไฟล์แนบใบเสร็จ
+mysql -h HOST -u USER -p DATABASE < sql/platform_schema.sql    # สินค้า แพ็กเกจ subscription key โควตา
 ```
+อัปเกรดจากระบบเดิม (Ework): รัน `services_receipts.sql` (ถ้ายังไม่ได้รัน) และ `platform_schema.sql` แล้ว **สำรองข้อมูลก่อน** จึงรัน `sql/drop_ework.sql` เพื่อลบตารางการใช้งานของ Ework (`usage_runs`, `usage_prices`, view `v_usage_*`, `billing_usage_reports`) — SN, บัญชีลูกค้า และใบแจ้งหนี้เดิมยังอยู่ครบ
+
+user ของเว็บต้องมีสิทธิ์ `SELECT, INSERT, UPDATE, DELETE` ทุกตารางของแอป (ดู `sql/grants_optional.sql`)
 
 ## 2. ตั้งค่า `.env`
 ```bash
 cd webapp && npm install
 copy .env.example .env      # Linux/Mac: cp .env.example .env
 ```
-แก้ใน `.env`
-- `ADMIN_PASSWORD`, `SESSION_SECRET`
-- `DB_*` ของ database ข้อ 1
-- **ข้อมูลธุรกิจ** `COMPANY_NAME` `COMPANY_NAME_EN` `COMPANY_TAX_ID` `COMPANY_ADDRESS` `COMPANY_EMAIL` `COMPANY_PHONE` `SITE_URL` — แสดงบนทุกหน้า ผู้ตรวจของผู้ให้บริการรับชำระเงินต้องเห็น ถ้ายังเป็น `CHANGE_ME` จะเตือนตอนเริ่มและที่หน้า admin
-- Polar: `PAYMENT_PROVIDER=polar` `POLAR_ACCESS_TOKEN` `POLAR_WEBHOOK_SECRET` `POLAR_PRODUCT_ID` `POLAR_SERVER` (ข้อ 4) — Lemon Squeezy ยังเลือกได้ด้วย `PAYMENT_PROVIDER=lemonsqueezy` + `LS_*`
+- `ADMIN_PASSWORD`, `SESSION_SECRET`, `DB_*`
+- **ข้อมูลธุรกิจ** `COMPANY_NAME` `COMPANY_NAME_EN` `COMPANY_TAX_ID` `COMPANY_ADDRESS` `COMPANY_EMAIL` `COMPANY_PHONE` `SITE_URL`
+- Polar: `PAYMENT_PROVIDER=polar` `POLAR_ACCESS_TOKEN` `POLAR_WEBHOOK_SECRET` `POLAR_PRODUCT_ID` `POLAR_SERVER` (ข้อ 4) — แพ็กเกจรายเดือน/รายปีใช้ได้กับ Polar เท่านั้น
 
 ```bash
 npm start        # http://localhost:3000  (หลังบ้าน /admin)
-node seed.js     # (ทางเลือก) ใส่ข้อมูลตัวอย่างไว้ดูหน้าจอ — ลบออกด้วย node seed.js --clean
+node seed.js     # (ทางเลือก) สินค้า/แพ็กเกจ/ลูกค้าตัวอย่าง (demo-acme / demo1234) — ลบด้วย node seed.js --clean
 ```
 
 ## 3. เอาขึ้นออนไลน์
-- **Plesk:** ดูขั้นตอนละเอียดใน [DEPLOY-PLESK.md](DEPLOY-PLESK.md)
-- ต้องเป็น HTTPS บนโดเมนจริง (เช่น `https://datacorpapi.com`) เพราะ Lemon Squeezy ต้องยิง webhook มาหาและผู้ตรวจต้องเปิดดูได้
-- **VPS:** `docker compose up -d` (เว็บ + MariaDB/MySQL) แล้วตั้ง reverse proxy (Caddy/Nginx/Cloudflare Tunnel) ชี้พอร์ต 3000 หรือรันด้วย `pm2 start server.js --name ewp-web`
-- **โฮสต์ Node.js (cPanel "Setup Node.js App", Render, Railway):** ชี้ที่ `server.js` ตั้ง env ตาม `.env` และใช้ MySQL ของโฮสต์ (โปรแกรมบนเครื่องผู้ใช้ต้องต่อ MySQL ตัวเดียวกันได้ — เปิด Remote MySQL ให้ IP ของออฟฟิศ)
-- ตั้ง cron ออกใบแจ้งหนี้ทุกวันที่ 1: `0 6 1 * * cd /path/webapp && node invoices.js >> invoices.log 2>&1`
+- **Plesk:** [DEPLOY-PLESK.md](DEPLOY-PLESK.md)
+- ต้องเป็น HTTPS บนโดเมนจริง เพราะ Polar ต้องยิง webhook มาหา
+- **VPS:** `docker compose up -d` (เว็บ + MariaDB สร้างตารางให้เอง) แล้วตั้ง reverse proxy ชี้พอร์ต 3000
+- cron ทุกวันที่ 1 ออกบิลค่าใช้งานเกินโควตา/จ่ายตามใช้งานของเดือนก่อน: `0 6 1 * * cd /path/webapp && node invoices.js >> invoices.log 2>&1`
 
-## 4. ตั้งค่า Polar (polar.sh) — โมเดล: จ่ายตามบิลรายเดือน
-ลูกค้า**ไม่ได้สมัคร subscription** — ทุกวันที่ 1 ระบบออกใบแจ้งหนี้ของเดือนก่อนให้แต่ละลูกค้า แล้วสร้าง checkout ของ Polar ผ่าน API ที่ใส่ยอดจริงของบิลนั้นเป็นราคาคงที่ (ad-hoc fixed price, THB) ลูกค้ากดจ่ายในพอร์ทัล → webhook `order.paid` มาร์คชำระแล้ว → ระบบขอใบเสร็จ (order invoice) จาก Polar มาแสดงในพอร์ทัล
+## 4. สินค้า แพ็กเกจ และการเก็บเงิน
+**สินค้า** (Admin → Products) มี 2 แบบ:
+- **API key** — ลูกค้าสร้าง API key ได้ตามจำนวนที่แพ็กเกจกำหนด (แสดง key ครั้งเดียว เก็บแค่ hash) backend ของบริการเรียก `/api/v1/authorize` ทุก request
+- **License key** — ลูกค้าได้ license key ไปใส่ในโปรแกรม โปรแกรมเรียก `/api/v1/license/verify` จำกัดจำนวนเครื่องต่อ key
 
-**ไม่ต้องสร้าง Checkout Link ในหน้า Polar** (ลิงก์คงที่ใช้ไม่ได้กับยอดที่ต่างกันทุกบิล) สิ่งที่ต้องทำใน Polar มี 4 อย่าง:
-1. **Organization** ชื่อ/อีเมล/ที่อยู่ตรงกับที่แสดงบนเว็บ · Settings → General: เปิดรับ THB (ถ้ามีตัวเลือกสกุลเงิน)
-2. **Product 1 ตัว แบบ One-time** ชื่อเช่น `DataCorp API services` ราคาตั้ง Pay what you want (ขั้นต่ำ ฿17, หรือ Fixed ก็ได้ — ระบบส่งยอดจริงทับทุกครั้ง) → คัดลอก Product ID ใส่ `POLAR_PRODUCT_ID` (เว้นว่างได้ ระบบหยิบสินค้า one-time ตัวแรก)
-3. **Access token** Settings → API → New token (Organization) scopes: `checkouts:write` `products:read` `orders:read` `orders:write` `customers:write` → `POLAR_ACCESS_TOKEN`
-4. **Webhook** Settings → Webhooks → Add endpoint: URL `SITE_URL/webhooks/polar` · Format **Raw** · events `order.paid` `order.updated` `order.refunded` → คัดลอก secret ใส่ `POLAR_WEBHOOK_SECRET`
-5. **ทดสอบ** ทำข้อ 2–4 ซ้ำที่ **sandbox.polar.sh** (token/webhook คนละชุด) แล้วตั้ง `POLAR_SERVER=sandbox` → ลิงก์ชำระเงินเป็น sandbox (บัตร 4242 4242 4242 4242) เมื่อพร้อมเก็บเงินจริงใส่ token/secret ของ production และตั้ง `POLAR_SERVER=production`
+**แพ็กเกจ** ของแต่ละสินค้า:
+| billing | เก็บเงิน | โควตา/เดือน (รีเซ็ตวันที่ 1) |
+|---|---|---|
+| `month` / `year` ราคา > 0 | Polar subscription (สินค้า **recurring** ใน Polar ราคาเดียวกัน → ใส่ Polar product ID ในแพ็กเกจ) | `included_units` · เกินแล้ว: `unit_price_thb` = 0 → บล็อก, > 0 → ใช้ต่อได้และออกบิลเดือนถัดไป |
+| `month` / `year` ราคา 0 | ฟรี เปิดใช้ทันที | เหมือนข้างบน |
+| `usage` | ไม่มีค่ารายเดือน ออกบิลตามใช้จริงวันที่ 1 | `included_units` = ใช้ฟรีต่อเดือน (ว่าง = ไม่จำกัด) |
 
-### รอบการเรียกเก็บ
-โปรแกรมบนเครื่องลูกค้าส่งยอดเข้า `usage_runs` → วันที่ 1: `node invoices.js` (cron) หรือปุ่ม "ออกใบแจ้งหนี้" ใน `/admin/invoices` → บิล `open` + ลิงก์ชำระ (ยอด < ฿17 → `carried` ยกไปเดือนถัดไป) → ลูกค้าเห็นบิลใน `/portal/billing` กด "ชำระเงิน" (หน้าชำระเงินเติมชื่อบริษัท/เลขภาษี/ที่อยู่จาก `/portal/profile`) → webhook `order.paid` → บิล `paid` + ลิงก์ใบเสร็จ (Polar order invoice) · แอดมินแก้ยอด/ให้ส่วนลด/รับชำระเอง/ยกเลิกได้ · ครบกำหนด `INVOICE_DUE_DAYS` วัน
+Polar ต้องตั้ง: **Access token** scopes `checkouts:write products:read orders:read orders:write customers:write customer_sessions:write subscriptions:write` · **Webhook** `SITE_URL/webhooks/polar` Format **Raw** events `order.paid order.updated order.refunded subscription.created subscription.active subscription.updated subscription.canceled subscription.uncanceled subscription.revoked` · ทดสอบที่ **sandbox.polar.sh** กับ `POLAR_SERVER=sandbox` (บัตร 4242 4242 4242 4242)
 
-## 5. สิ่งที่หน้าเว็บมีตามข้อกำหนดของผู้ให้บริการรับชำระเงิน
-ชื่อธุรกิจ · คำอธิบายสินค้าที่ตรงกับที่แจ้ง (ซอฟต์แวร์ ไม่ใช่บริการ) · ราคาและวิธีคิดเงินทุกแพ็กเกจ · นโยบายคืนเงิน/ยกเลิก · ข้อกำหนดการใช้บริการ · นโยบายความเป็นส่วนตัว (PDPA) · ช่องทางติดต่อ (อีเมล โทร ที่อยู่ ฟอร์ม) · ระบุว่าผู้ให้บริการรับชำระเงิน (Polar) เป็น Merchant of Record · ทุกหน้าเปิดได้โดยไม่ต้อง login และมีสรุปภาษาอังกฤษ
+ลำดับเหตุการณ์: ลูกค้ากด Subscribe → checkout ของ Polar (metadata `subscription_ref`) → `subscription.active` เปิดแพ็กเกจ + ย้าย key จากแพ็กเกจเดิมของสินค้าเดียวกัน → `order.paid` ทุกรอบบันทึกเป็นใบแจ้งหนี้ paid พร้อมใบเสร็จของ Polar → ลูกค้ายกเลิก = ใช้ได้ถึงสิ้นรอบ · แอดมินเปิดแพ็กเกจให้เองได้ (ทดลองใช้/โอนเงิน) ที่ Admin → Subscriptions
 
-> ก่อนยื่นขอเปิดร้าน: กรอก `.env` ให้ครบ, ใส่ภาพหน้าจอโปรแกรมที่ `public/screenshot-app.png` (ไม่บังคับ), อ่านข้อความในหน้า `/terms` `/refund` `/privacy` แล้วแก้ให้ตรงกับที่คุณจะทำจริง (เช่น จำนวนวันคืนเงิน)
+## 5. Platform API
+**ตรวจ API key + นับการใช้งาน** (เรียกจาก backend ของบริการเท่านั้น — service secret สร้างที่หน้าสินค้า):
+```http
+POST /api/v1/authorize
+Authorization: Bearer dca_svc_…
+Content-Type: application/json
+
+{ "key": "dca_sk_…", "units": 1 }
+```
+`200 { ok, customer, plan, quota: { used, included, remaining, overage_units } }` · `401 invalid_key/revoked_key` · `402 payment_required` · `403 inactive/wrong_product/suspended` · `429 quota_exceeded/rate_limited` · `"dry_run": true` = ตรวจโดยไม่นับ
+
+**ลูกค้าดูโควตา:** `GET /api/v1/usage` + `Authorization: Bearer dca_sk_…`
+
+**ตรวจ license** (โปรแกรมเรียก ไม่ต้องใช้ secret):
+```http
+POST /api/v1/license/verify
+{ "license_key": "DCL-XXXX-XXXX-XXXX-XXXX", "product": "slug", "device_id": "…", "device_name": "PC-01", "app_version": "1.0" }
+```
+`200 { ok, plan, expires_at, features, max_devices }` · `403 device_limit` (ลูกค้าลบเครื่องเก่าได้ในพอร์ทัล)
+
+**SN ของบัญชี (เดิม):** `POST /api/license/verify { serial, install_id, machine, windows_user, app_version }` — ไม่เปลี่ยน
 
 ## 6. โครงสร้าง
 ```
 webapp/
-  server.js            เส้นทางทั้งหมด (public / admin / webhook / api)
-  lib/payments.js      เลือกผู้ให้บริการรับชำระเงิน (polar / lemonsqueezy) จาก env
-  lib/polar.js         Polar: สร้าง checkout ยอดคงที่ (THB), ตรวจลายเซ็น webhook (Standard Webhooks), ขอใบเสร็จของ order
-  lib/lemonsqueezy.js  Lemon Squeezy (ตัวเลือกสำรอง): ตรวจลายเซ็น webhook, สร้าง checkout ด้วยยอดบิล (custom_price)
-  lib/billing.js       บันทึก webhook → billing_*
-  lib/invoices.js      คำนวณ/ออกใบแจ้งหนี้, ปรับยอด, มาร์คชำระจาก webhook
-  lib/portal.js        บัญชีลูกค้า (scrypt)
-  lib/company.js       ข้อมูลธุรกิจจาก .env
-  plans.json           แพ็กเกจที่แสดง/ขาย
-  invoices.js          CLI ออกใบแจ้งหนี้รายเดือน (cron วันที่ 1)
+  server.js            เส้นทางทั้งหมด (public / portal / admin / api / webhook)
+  lib/platform.js      สินค้า แพ็กเกจ subscription key โควตา, authorize/verify, webhook subscription ของ Polar
+  lib/invoices.js      ใบแจ้งหนี้: ค่าใช้งานเกินโควตา, ค่าสมาชิก (จาก Polar), บริการ, ไฟล์แนบ
+  lib/polar.js         Polar: checkout (ยอดคงที่ / subscription), ยกเลิก/ต่ออายุ, customer portal, webhook, ใบเสร็จ
+  lib/payments.js      เลือกผู้ให้บริการรับชำระเงิน
+  lib/billing.js       บันทึก webhook
+  lib/services.js      บริการครั้งเดียว
+  lib/portal.js        บัญชีลูกค้า + SN
+  lib/lemonsqueezy.js  Lemon Squeezy (สำรอง: บิลครั้งเดียว)
+  invoices.js          CLI ออกบิลค่าใช้งานรายเดือน (cron วันที่ 1)
   portal_user.js       CLI สร้าง/รีเซ็ตบัญชีลูกค้า
   seed.js              ข้อมูลตัวอย่าง (--clean ลบออก)
   diag.js              ตรวจ env/DB/โมดูล จาก Plesk Run script
-  views/site/*.ejs     หน้าเว็บสาธารณะ   views/portal/*.ejs  พอร์ทัลลูกค้า   views/*.ejs  หน้า admin
-  public/style.css, site.css
-  Dockerfile, docker-compose.yml
+  views/site  views/portal  views (admin)   public/style.css site.css
 ```
-สูตรยอดเงิน (view `v_usage_monthly`): `รายการที่คิดเงิน × ราคา/รายการ + จำนวนครั้ง × ราคา/ครั้ง` โดยงานที่ยกเลิก/ผิดพลาดคิดจากจำนวนที่ทำไปแล้วจริง

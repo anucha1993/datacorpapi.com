@@ -9,7 +9,7 @@ ALTER TABLE portal_users ADD UNIQUE INDEX IF NOT EXISTS uq_serial (serial_no);
 CREATE TABLE IF NOT EXISTS license_devices (
   id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   operator       VARCHAR(100) NOT NULL,
-  install_id     CHAR(36)     NOT NULL,                 -- usage_runs.install_id ของเครื่องนั้น
+  install_id     CHAR(36)     NOT NULL,                 -- id เครื่องที่โปรแกรมส่งมา
   machine        VARCHAR(64)  NOT NULL DEFAULT '',
   windows_user   VARCHAR(64)  NOT NULL DEFAULT '',
   app_version    VARCHAR(20)  NOT NULL DEFAULT '',

@@ -4,7 +4,7 @@
 
 ## 0. สิ่งที่ต้องมีก่อน
 - โดเมน `datacorpapi.com` ชี้ A record มาที่ IP ของเซิร์ฟเวอร์ Plesk แล้ว
-- database `thaidata_ewp` + user สร้างแล้วและรัน `sql/usage_schema.sql`, `sql/billing_schema.sql`, `sql/portal_schema.sql`, `sql/invoice_schema.sql` แล้ว (ทำไปแล้ว)
+- database `thaidata_ewp` + user สร้างแล้วและรันไฟล์ใน `sql/` ตามลำดับใน README ข้อ 1 แล้ว (ล่าสุด: `sql/platform_schema.sql`)
 - โค้ดอยู่บน GitHub `anucha1993/datacorpapi.com` (ต้อง `git push` ก่อน) หรือจะอัปโหลดโฟลเดอร์ `webapp/` ผ่าน File Manager ก็ได้
 
 ## 1. เอาโค้ดขึ้นเซิร์ฟเวอร์
@@ -72,12 +72,15 @@ Tools & Settings → **Scheduled Tasks** → Add task → Run a command
 ```
 /opt/plesk/node/22/bin/node /var/www/vhosts/thaidatacorp.com/datacorpapi.com/invoices.js
 ```
-ตั้งเวลา วันที่ 1 ของทุกเดือน 06:00 (ออกบิลของเดือนก่อน) — รันซ้ำได้ ไม่ออกบิลซ้ำ
+ตั้งเวลา วันที่ 1 ของทุกเดือน 06:00 — ออกบิลค่าใช้งานเกินโควตา / แพ็กเกจจ่ายตามใช้งาน ของเดือนก่อน (ค่าสมาชิกรายเดือน/รายปี Polar ตัดบัตรเอง ไม่ต้องใช้ cron) — รันซ้ำได้ ไม่ออกบิลซ้ำ
 
-## 8. ให้โปรแกรมบนเครื่องผู้ใช้ส่งข้อมูลเข้า MariaDB ตัวนี้
-- Plesk → Databases → user ที่โปรแกรมใช้ → **Access control: Allow remote connections from any host** (หรือระบุ IP ออฟฟิศ) — user `thaidata_ewp_web` เปิดอยู่แล้ว (ทดสอบจากภายนอกผ่าน)
-- แนะนำสร้าง user แยกสำหรับโปรแกรม (Databases → Add database user → ติ๊กเฉพาะ **Insert** ที่ตาราง usage_runs ไม่ได้ใน UI ให้รันใน phpMyAdmin): `GRANT INSERT ON thaidata_ewp.usage_runs TO 'thaidata_ewp_app'@'%';`
-- ใน `.env` ของโปรแกรมแต่ละเครื่อง: `USAGE_DB_HOST=147.50.255.13` (หรือ `db.datacorpapi.com` ถ้าตั้ง DNS) และ user/รหัสของ user นั้น
+## 8. อัปเกรดจากระบบ Ework (ครั้งเดียว)
+1. phpMyAdmin → **Export** ตาราง `usage_runs`, `usage_prices`, `usage_prices_customer`, `billing_usage_reports` เก็บไว้ก่อน
+2. รัน `sql/services_receipts.sql` (ถ้ายังไม่ได้รัน) และ `sql/platform_schema.sql`
+3. รัน `sql/drop_ework.sql` — ลบตารางการใช้งานของ Ework (บัญชีลูกค้า, SN, เครื่องที่ผูก SN, ใบแจ้งหนี้เดิม ยังอยู่)
+4. Databases → user ของเว็บต้องมีสิทธิ์ SELECT/INSERT/UPDATE/DELETE ทุกตาราง · user `thaidata_ewp_app` (ที่โปรแกรม Ework ใช้ INSERT `usage_runs`) ลบทิ้งได้ และปิด **remote connections** ถ้าไม่มีอะไรต่อ MariaDB จากภายนอกแล้ว
+5. Node.js → **NPM install** (มีแพ็กเกจใหม่ `multer`) → **Restart App** → Run script `diag` ตรวจว่าตารางครบ
+6. Polar: เพิ่ม scope ของ token และ event `subscription.*` ใน webhook (README ข้อ 4)
 
 ## อัปเดตเวอร์ชันถัดไป
 Git → **Pull now** (หรืออัตโนมัติเมื่อ push) → Node.js → **NPM install** (ถ้า package.json เปลี่ยน) → **Restart App**

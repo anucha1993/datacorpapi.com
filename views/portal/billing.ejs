@@ -15,7 +15,7 @@
   <div>
     <div class="k"><%= sum.open_n ? 'Outstanding balance' : 'You are all paid up' %></div>
     <div class="v">฿<%= fmtMoney(sum.open) %> <small><%= sum.open_n %> unpaid invoice<%= sum.open_n === 1 ? '' : 's' %></small></div>
-    <div class="meta">Current month so far: ฿<%= fmtMoney(currentEstimate) %> (estimate — invoiced on the 1st of next month)</div>
+    <div class="meta">Usage over quota this month so far: ฿<%= fmtMoney(currentEstimate) %> (invoiced on the 1st)</div>
   </div>
   <% if (sum.open_n === 1 && firstOpen) { %><a class="btn lg" href="/portal/invoices/<%= encodeURIComponent(firstOpen.invoice_no) %>">Review &amp; pay</a>
   <% } else if (sum.open_n) { %><a class="btn lg" href="#invoices">View unpaid invoices</a><% } %>
@@ -24,7 +24,7 @@
 <section class="tiles">
   <div class="tile"><div class="k">Total paid</div><div class="v"><%= fmtMoney(sum.paid) %> <small>THB</small></div></div>
   <div class="tile"><div class="k">Invoices</div><div class="v"><%= fmtNum(invoices.length) %></div></div>
-  <div class="tile"><div class="k">Payment method</div><div class="v" style="font-size:16px;margin-top:8px"><%= co.PAY.name %> <small>· <%= co.PAY.paymentMethods %></small></div></div>
+  <div class="tile"><div class="k">Payment method</div><div class="v" style="font-size:16px;margin-top:8px"><%= co.PAY.name %> <small>· <%= co.PAY.paymentMethods %></small></div><% if (pay.key === 'polar' && pay.ready) { %><a class="small" href="/portal/payment-methods">Manage cards &amp; subscription receipts →</a><% } %></div>
 </section>
 
 <section class="card flush" id="invoices">
@@ -33,7 +33,7 @@
     <div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       <h3>No invoices yet</h3>
-      <p>Your first usage invoice is issued after the end of the month in which you start using the software.</p>
+      <p>Invoices appear here when a plan is billed, when usage goes over quota, or when you buy a one-time service.</p>
     </div>
   <% } else { %>
   <div class="scroll"><table>
@@ -42,7 +42,7 @@
     <% for (const r of invoices) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; const fl = files[r.id] || []; %>
       <tr class="<%= overdue ? 'hl' : '' %>">
         <td class="nowrap"><a class="linkish mono" href="/portal/invoices/<%= encodeURIComponent(r.invoice_no) %>"><%= r.invoice_no %></a></td>
-        <td><%= r.kind === 'manual' ? (r.title || 'Service') : 'Usage for ' + r.ym %><% if (r.kind !== 'manual' && r.records) { %><br><small class="muted"><%= fmtNum(r.records) %> records</small><% } %></td>
+        <td><%= r.title || (r.kind === 'manual' ? 'Service' : 'Usage for ' + r.ym) %><% if (r.kind === 'usage' && r.records) { %><br><small class="muted"><%= fmtNum(r.records) %> billable units</small><% } %></td>
         <td class="nowrap muted"><%= String(r.issued_at || '').slice(0, 10) %></td>
         <td class="nowrap muted"><%= r.status === 'open' ? (r.due_at || '—') : '—' %></td>
         <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>

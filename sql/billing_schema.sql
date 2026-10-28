@@ -1,5 +1,5 @@
 -- ตารางสำหรับการรับชำระเงินผ่าน Lemon Squeezy + ข้อความติดต่อจากหน้าเว็บ
--- รันหลัง usage_schema.sql ใน database เดียวกัน:
+-- รันหลัง portal_schema.sql ใน database เดียวกัน:
 --   mysql -h HOST -u USER -p DATABASE < sql/billing_schema.sql
 
 -- ลูกค้า (1 แถวต่อ customer ของ Lemon Squeezy) — operator = ชื่อผู้ใช้งานในโปรแกรมที่ผูกกับลูกค้านี้
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS billing_customers (
   email         VARCHAR(190) NOT NULL DEFAULT '',
   name          VARCHAR(190) NOT NULL DEFAULT '',
   company       VARCHAR(190) NOT NULL DEFAULT '',          -- จาก checkout[custom][company]
-  operator      VARCHAR(100) NOT NULL DEFAULT '',          -- ผูกกับ usage_runs.operator (แก้ได้จาก admin)
+  operator      VARCHAR(100) NOT NULL DEFAULT '',          -- ผูกกับ portal_users.operator
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY ix_operator (operator), KEY ix_email (email)
@@ -71,19 +71,7 @@ CREATE TABLE IF NOT EXISTS billing_events (
 ) ENGINE=InnoDB;
 
 -- ยอดการใช้งานที่ส่งไป Lemon Squeezy แล้ว (ต่อ subscription ต่อเดือน)
-CREATE TABLE IF NOT EXISTS billing_usage_reports (
-  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  subscription_id BIGINT UNSIGNED NOT NULL,
-  ym              CHAR(7) NOT NULL,
-  operator        VARCHAR(100) NOT NULL DEFAULT '',
-  quantity        INT UNSIGNED NOT NULL DEFAULT 0,
-  amount_thb      DECIMAL(12,2) NOT NULL DEFAULT 0,          -- ยอดเงินตามราคาของเรา (ไว้เทียบกับ LS)
-  action          VARCHAR(10) NOT NULL DEFAULT 'set',
-  ok              TINYINT(1) NOT NULL DEFAULT 0,
-  response        TEXT NULL,
-  sent_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  KEY ix_sub_ym (subscription_id, ym)
-) ENGINE=InnoDB;
+
 
 -- ข้อความจากฟอร์มติดต่อบนหน้าเว็บ
 CREATE TABLE IF NOT EXISTS contact_messages (

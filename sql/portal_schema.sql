@@ -4,7 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS portal_users (
   id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  operator      VARCHAR(100) NOT NULL,                 -- = usage_runs.operator / billing_customers.operator
+  operator      VARCHAR(100) NOT NULL,                 -- username ของลูกค้า (ใช้ทั้งระบบ)
   password_hash VARCHAR(255) NOT NULL,                 -- scrypt$N$salt$hash
   display_name  VARCHAR(190) NOT NULL DEFAULT '',
   email         VARCHAR(190) NOT NULL DEFAULT '',

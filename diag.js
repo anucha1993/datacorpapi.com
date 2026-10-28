@@ -23,10 +23,10 @@ const bad = (m) => console.log("✗ " + m);
   }
   for (const k of ["PAYMENT_PROVIDER", "POLAR_ACCESS_TOKEN", "POLAR_WEBHOOK_SECRET", "POLAR_PRODUCT_ID", "POLAR_SERVER", "LS_API_KEY", "LS_WEBHOOK_SECRET"]) console.log((process.env[k] ? "✓ " : "· ") + k + (process.env[k] ? " ตั้งแล้ว" : " ยังไม่ตั้ง (ไม่บังคับตอนนี้)"));
 
-  for (const m of ["express", "ejs", "mysql2/promise", "cookie-session", "dotenv"]) {
+  for (const m of ["express", "ejs", "mysql2/promise", "cookie-session", "dotenv", "multer"]) {
     try { require(m); ok("module " + m); } catch (e) { bad("module " + m + " โหลดไม่ได้ → กด NPM install (" + e.message.split("\n")[0] + ")"); }
   }
-  for (const f of ["server.js", "plans.json", "views/site/home.ejs", "views/dashboard.ejs", "public/style.css", "public/site.css", "lib/billing.js"]) {
+  for (const f of ["server.js", "plans.json", "views/site/home.ejs", "views/dashboard.ejs", "lib/platform.js", "public/style.css", "public/site.css", "lib/billing.js"]) {
     fs.existsSync(path.join(__dirname, f)) ? ok("file " + f) : bad("file " + f + " ไม่พบ → Git Pull ยังไม่ครบ?");
   }
 
@@ -36,11 +36,10 @@ const bad = (m) => console.log("✗ " + m);
       host: process.env.DB_HOST || "127.0.0.1", port: Number(process.env.DB_PORT || 3306), user: process.env.DB_USER,
       password: process.env.DB_PASSWORD, database: process.env.DB_NAME, connectTimeout: 8000,
     });
-    const [r] = await c.query("SELECT COUNT(*) n FROM usage_runs");
-    ok(`MySQL ต่อได้ (${process.env.DB_USER}@${process.env.DB_HOST}/${process.env.DB_NAME}) usage_runs = ${r[0].n} แถว`);
+    ok(`MySQL ต่อได้ (${process.env.DB_USER}@${process.env.DB_HOST}/${process.env.DB_NAME})`);
     const [t] = await c.query("SHOW TABLES");
     const names = t.map(x => Object.values(x)[0]);
-    for (const need of ["usage_prices", "billing_subscriptions", "contact_messages"]) names.includes(need) ? ok("table " + need) : bad("table " + need + " ไม่พบ → รัน sql/*.sql");
+    for (const need of ["portal_users", "billing_invoices", "service_catalog", "billing_attachments", "products", "product_plans", "subscriptions", "access_keys", "usage_counters", "contact_messages"]) names.includes(need) ? ok("table " + need) : bad("table " + need + " ไม่พบ → รัน sql/*.sql");
     await c.end();
   } catch (e) { bad("MySQL ต่อไม่ได้: " + (e.code || "") + " " + e.message); }
 

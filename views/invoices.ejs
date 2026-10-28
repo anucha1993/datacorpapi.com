@@ -7,9 +7,9 @@
   <div class="tools">
     <a class="btn primary" href="#new" onclick="document.getElementById('new').open=true">+ New invoice</a>
     <% if (ym !== 'all') { %>
-    <form method="post" action="/admin/invoices/generate" onsubmit="return confirm('Generate / refresh usage invoices for <%= ym %> for every customer with usage?')">
+    <form method="post" action="/admin/invoices/generate" onsubmit="return confirm('Create / refresh usage invoices for <%= ym %> (usage over quota and pay-as-you-go plans)?')">
       <input type="hidden" name="ym" value="<%= ym %>">
-      <button>Generate usage invoices for <%= ym %></button>
+      <button>Bill usage for <%= ym %></button>
     </form>
     <% } %>
   </div>
@@ -72,21 +72,21 @@
   <form method="get" action="/admin/invoices" class="filters" style="padding:16px 20px;border-bottom:1px solid var(--border)">
     <label>Month <select name="ym"><option value="all" <%= ym === 'all' ? 'selected' : '' %>>All months</option><% for (const m of months) { %><option value="<%= m %>" <%= m === ym ? 'selected' : '' %>><%= m %></option><% } %></select></label>
     <label>Status <select name="status">
-      <% for (const [k, v] of [['', 'Any'], ['open', 'Unpaid'], ['overdue', 'Overdue'], ['paid', 'Paid'], ['carried', 'Carried forward'], ['void', 'Void'], ['manual', 'Services / custom only']]) { %><option value="<%= k %>" <%= filters.status === k ? 'selected' : '' %>><%= v %></option><% } %>
+      <% for (const [k, v] of [['', 'Any'], ['open', 'Unpaid'], ['overdue', 'Overdue'], ['paid', 'Paid'], ['carried', 'Carried forward'], ['void', 'Void'], ['subscription', 'Subscription charges'], ['usage', 'Usage charges'], ['manual', 'Services / custom']]) { %><option value="<%= k %>" <%= filters.status === k ? 'selected' : '' %>><%= v %></option><% } %>
     </select></label>
     <label>Customer <input name="operator" list="ops" value="<%= filters.operator %>" placeholder="All customers"></label>
     <button>Filter</button>
     <% if (filters.status || filters.operator || ym === 'all') { %><a class="btn" href="/admin/invoices">Reset</a><% } %>
   </form>
-  <% if (!rows.length) { %><div class="empty"><h3>No invoices match</h3><p>Monthly usage invoices are created with "Generate usage invoices" (or the cron job on the 1st). Use "New invoice" for one-off charges.</p></div><% } else { %>
+  <% if (!rows.length) { %><div class="empty"><h3>No invoices match</h3><p>Subscription charges appear automatically when Polar bills a plan. Usage over quota is invoiced with "Bill usage" (or the cron job on the 1st). Use "New invoice" for one-off charges.</p></div><% } else { %>
   <div class="scroll"><table>
     <thead><tr><th>Invoice</th><th>Customer</th><th>Description</th><th class="r">Amount (THB)</th><th>Issued</th><th>Due</th><th>Status</th><th>Receipt</th><th class="r"></th></tr></thead>
     <tbody>
     <% for (const r of rows) { const overdue = r.status === 'open' && r.due_at && r.due_at < today; %>
       <tr class="<%= overdue ? 'hl' : '' %>">
         <td class="nowrap"><a class="linkish mono" href="/admin/invoices/<%= r.id %>"><%= r.invoice_no %></a><% if (r.checkout_test) { %> <span class="badge b-test">test</span><% } %></td>
-        <td><a href="/admin/operator/<%= encodeURIComponent(r.operator) %>?ym=<%= r.ym %>"><%= r.operator %></a><% if (r.company_name) { %><br><small class="muted"><%= r.company_name %></small><% } %></td>
-        <td><%= r.kind === 'manual' ? (r.title || 'Custom charge') : 'Usage ' + r.ym %><% if (r.kind !== 'manual') { %><br><small class="muted"><%= fmtNum(r.records) %> records<%= Number(r.carried_thb) ? ' · carried ' + fmtMoney(r.carried_thb) : '' %><%= Number(r.adjust_thb) ? ' · adj. ' + fmtMoney(r.adjust_thb) : '' %></small><% } %></td>
+        <td><a href="/admin/customers/<%= encodeURIComponent(r.operator) %>"><%= r.operator %></a><% if (r.company_name) { %><br><small class="muted"><%= r.company_name %></small><% } %></td>
+        <td><%= r.title || (r.kind === 'manual' ? 'Custom charge' : 'Usage ' + r.ym) %><% if (r.kind === 'usage') { %><br><small class="muted"><%= fmtNum(r.records) %> billable units<%= Number(r.carried_thb) ? ' · carried ' + fmtMoney(r.carried_thb) : '' %><%= Number(r.adjust_thb) ? ' · adj. ' + fmtMoney(r.adjust_thb) : '' %></small><% } %></td>
         <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
         <td class="nowrap muted"><%= String(r.issued_at || '').slice(0, 10) %></td>
         <td class="nowrap muted"><%= r.due_at || '' %></td>

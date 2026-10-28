@@ -2,16 +2,9 @@
 <div class="pagehead">
   <div class="titles">
     <h1>Welcome<%= user.company_name || user.display_name ? ', ' + (user.company_name || user.display_name) : '' %></h1>
-    <p class="subtitle">Usage for <b><%= ym %></b> · serial <code style="font-weight:600"><%= user.serial_no || '—' %></code></p>
+    <p class="subtitle">Your plans and this month's usage. Quotas reset on the 1st of every month.</p>
   </div>
-  <div class="tools">
-    <form method="get" class="monthpick" action="/portal">
-      <label>Month
-        <select name="ym" onchange="this.form.submit()"><% for (const m of months) { %><option value="<%= m %>" <%= m === ym ? 'selected' : '' %>><%= m %></option><% } %></select>
-      </label>
-    </form>
-    <a class="btn" href="/portal/export.csv?ym=<%= ym %>">Export CSV</a>
-  </div>
+  <div class="tools"><a class="btn primary" href="/portal/plans">Browse plans</a></div>
 </div>
 
 <% if (user.must_change) { %><p class="notice">Please <a href="/portal/password">change the temporary password</a> you were given.</p><% } %>
@@ -28,81 +21,51 @@
 </section>
 <% } %>
 
-<section class="tiles">
-  <div class="tile"><div class="k">Estimated charge this month</div><div class="v"><%= fmtMoney(totals.amount) %> <small>THB</small></div></div>
-  <div class="tile"><div class="k">Billable records</div><div class="v"><%= fmtNum(totals.records) %></div></div>
-  <div class="tile"><div class="k">Runs</div><div class="v"><%= fmtNum(totals.runs) %> <small class="muted">ok <%= fmtNum(totals.ok) %> · cancelled <%= fmtNum(totals.cancelled) %> · error <%= fmtNum(totals.error) %></small></div></div>
-  <div class="tile"><div class="k">Time the software worked for you</div><div class="v"><%= fmtDur(totals.total_sec) %></div></div>
-</section>
+<% const pastDue = subs.filter(s => s.status === 'past_due'); %>
+<% if (pastDue.length) { %><p class="alert">Payment for <b><%= pastDue.map(s => s.product_name).join(', ') %></b> failed — your keys are paused. <a href="/portal/payment-methods">Update your payment method</a> to restore access.</p><% } %>
 
-<div class="grid2">
-  <section class="card">
-    <h2>By task type</h2>
-    <% if (!byMode.length) { %><p class="muted">No usage this month</p><% } else { %>
-    <table>
-      <thead><tr><th>Task type</th><th class="r">Runs</th><th class="r">Records</th><th class="r">Price / record</th><th class="r">Amount (THB)</th></tr></thead>
-      <tbody>
-      <% for (const r of byMode) { %>
-        <tr>
-          <td><%= r.mode_label %> <span class="tag g-<%= r.mode_group %>"><%= GROUP_LABELS[r.mode_group] || '' %></span></td>
-          <td class="r"><%= fmtNum(r.runs) %></td>
-          <td class="r"><%= fmtNum(r.billable_records) %></td>
-          <td class="r muted"><%= r.price_per_record != null ? fmtMoney(r.price_per_record) : '—' %><% if (Number(r.custom_price)) { %> <small>(your rate)</small><% } %></td>
-          <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
-        </tr>
-      <% } %>
-      </tbody>
-      <tfoot><tr><th colspan="4">Total</th><th class="r"><%= fmtMoney(totals.amount) %></th></tr></tfoot>
-    </table>
-    <p class="muted small">Estimate based on current unit prices. The final amount is on the invoice issued on the 1st of next month. Cancelled or failed jobs are billed only for the records completed.</p>
-    <% } %>
-  </section>
-
-  <section class="card">
-    <h2>Last 12 months</h2>
-    <% if (!trend.length) { %><p class="muted">No data yet</p><% } else { %>
-    <table>
-      <thead><tr><th>Month</th><th class="r">Runs</th><th class="r">Records</th><th class="r">Amount (THB)</th><th>Invoiced</th></tr></thead>
-      <tbody>
-      <% for (const t of trend) { const rep = reports[t.ym]; %>
-        <tr class="<%= t.ym === ym ? 'hl' : '' %>">
-          <td><a href="/portal?ym=<%= t.ym %>"><%= t.ym %></a></td>
-          <td class="r"><%= fmtNum(t.runs) %></td>
-          <td class="r"><%= fmtNum(t.billable_records) %></td>
-          <td class="r strong"><%= fmtMoney(t.amount_thb) %></td>
-          <td><% if (rep) { %><span class="st st-<%= rep.ok ? 'ok' : 'cancelled' %>" title="Sent <%= rep.sent_at %>">Billed <%= fmtMoney(rep.amount_thb) %></span><% } else { %><span class="muted">—</span><% } %></td>
-        </tr>
-      <% } %>
-      </tbody>
-    </table>
-    <% } %>
-
-    <h2 style="margin-top:18px">Unpaid invoices</h2>
-    <% if (!openInvoices.length) { %><p class="muted">Nothing outstanding — you're all paid up.</p><% } else { for (const i of openInvoices) { %>
-      <p><a class="linkish mono" href="/portal/invoices/<%= encodeURIComponent(i.invoice_no) %>"><%= i.invoice_no %></a> · <b>฿<%= fmtMoney(i.amount_thb) %></b> · <span class="muted">due <%= i.due_at || '—' %></span></p>
-    <% } } %>
-  </section>
-</div>
-
-<section class="card">
-  <h2>Recent jobs this month <span class="muted">(<%= runs.length %><%= runs.length >= 200 ? ' shown' : '' %>)</span></h2>
-  <% if (!runs.length) { %><p class="muted">No jobs</p><% } else { %>
-  <div class="scroll"><table class="dense">
-    <thead><tr><th>Started</th><th>Task type</th><th>e-WP account</th><th class="r">Records</th><th class="r">Duration</th><th>Status</th><th>Machine</th></tr></thead>
-    <tbody>
-    <% for (const r of runs) { %>
-      <tr>
-        <td class="nowrap"><%= r.started_at %></td>
-        <td><%= MODE_LABELS[r.mode] || r.mode %></td>
-        <td class="muted"><%= r.ewp_username %></td>
-        <td class="r"><%= fmtNum(r.status === 'ok' ? r.record_count : Math.max(r.record_count, r.progress_done)) %></td>
-        <td class="r muted"><%= fmtDur(r.duration_sec) %></td>
-        <td><span class="st st-<%= r.status %>"><%= STATUS_LABELS[r.status] || r.status %></span></td>
-        <td class="muted nowrap"><%= r.machine %></td>
-      </tr>
-    <% } %>
-    </tbody>
-  </table></div>
+<% if (!subs.length) { %>
+<section class="card"><div class="empty">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+  <h3>You don't have a plan yet</h3>
+  <p>Pick a plan to get your API key or license key — free plans activate instantly.</p>
+  <a class="btn primary" href="/portal/plans">See plans</a>
+</div></section>
+<% } else { %>
+<section class="sub-grid">
+  <% for (const s of subs) { const over = s.included != null && s.used > s.included; %>
+  <a class="sub-card" href="/portal/subscriptions/<%= s.id %>">
+    <div class="sub-top">
+      <div>
+        <div class="sub-product"><%= s.product_name %></div>
+        <div class="sub-plan"><%= s.plan_name %> <span class="muted">· <%= BILLING_LABELS[s.billing] %></span></div>
+      </div>
+      <span class="badge b-<%= s.status %>"><%= SUB_STATUS[s.status] %></span>
+    </div>
+    <div class="sub-usage">
+      <div class="btnrow" style="justify-content:space-between">
+        <span class="muted small"><%= s.unit_label %> this month</span>
+        <span class="small"><b><%= fmtNum(s.used) %></b><span class="muted"> / <%= s.included == null ? 'unlimited' : fmtNum(s.included) %></span></span>
+      </div>
+      <% if (s.included) { %><div class="meter <%= s.pct >= 100 ? 'over' : s.pct >= 80 ? 'warn' : '' %>"><span style="width:<%= s.pct %>%"></span></div><% } %>
+      <% if (over && Number(s.unit_price_thb)) { %><div class="small" style="color:var(--warn)"><%= fmtNum(s.used - s.included) %> over quota · ฿<%= fmtMoney((s.used - s.included) * Number(s.unit_price_thb)) %> billed next month</div>
+      <% } else if (s.included != null && s.pct >= 100) { %><div class="small" style="color:var(--danger)">Quota reached — requests are blocked until the 1st. <u>Upgrade</u></div><% } %>
+    </div>
+    <div class="sub-foot">
+      <span><%= s.kind === 'license' ? 'License keys' : 'API keys' %>: <b><%= s.key_count %></b> / <%= s.max_keys %></span>
+      <span><% if (s.status === 'pending') { %>Awaiting payment<% } else if (s.cancel_at_period_end) { %>Ends <%= fmtDate(s.period_end) %><% } else if (s.period_end) { %>Renews <%= fmtDate(s.period_end) %><% } else { %>No end date<% } %></span>
+    </div>
+  </a>
   <% } %>
+</section>
+<% } %>
+
+<section class="card" style="margin-top:18px">
+  <div class="card-head"><h2>Quick start</h2><a class="small" href="/portal/plans">Plans &amp; keys →</a></div>
+  <div class="steps-grid">
+    <div><span class="n">1</span><b>Choose a plan</b><p class="muted small">Free plans start instantly; paid plans check out securely with <%= co.PAY.name %>.</p></div>
+    <div><span class="n">2</span><b>Create a key</b><p class="muted small">Open the plan and create an API key or license key. API keys are shown once — store them safely.</p></div>
+    <div><span class="n">3</span><b>Use it</b><p class="muted small">Send the key with your requests or enter the license in the app. Watch usage here in real time.</p></div>
+  </div>
 </section>
 <%- include('partials/footer') %>

@@ -1,0 +1,60 @@
+<%- include('partials/header') %>
+<% const allPlans = products.flatMap(p => p.plans.map(pl => ({ ...pl, product_name: p.name }))); %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>Subscriptions</h1>
+    <p class="subtitle"><%= rows.length %> shown · usage is for <%= new Date().toISOString().slice(0, 7) %></p>
+  </div>
+  <div class="tools"><a class="btn primary" href="#grant" onclick="document.getElementById('grant').open=true">+ Grant a plan</a></div>
+</div>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+
+<details class="card" id="grant">
+  <summary class="card-head" style="cursor:pointer;margin:0"><h2>Grant a plan manually</h2><span class="muted small">trial · paid by bank transfer · enterprise deal — no Polar checkout</span></summary>
+  <form method="post" action="/admin/subscriptions/grant" style="margin-top:16px">
+    <div class="form-grid stack" style="display:grid">
+      <label>Customer <input name="operator" list="ops" required maxlength="100" value="<%= filters.operator %>"><datalist id="ops"><% for (const o of operators) { %><option value="<%= o %>"><% } %></datalist></label>
+      <label>Plan <select name="plan_id" required><option value="">— choose —</option><% for (const pl of allPlans) { %><option value="<%= pl.id %>"><%= pl.product_name %> · <%= pl.name %> (<%= BILLING_LABELS[pl.billing] %>)</option><% } %></select></label>
+      <label>Duration (months) <span class="hint">Blank or 0 = no end date</span><input name="months" type="number" min="0" max="60" placeholder="1"></label>
+      <label>Note <span class="hint">Internal</span><input name="note" maxlength="255" placeholder="14-day trial / paid by transfer INV-…"></label>
+    </div>
+    <hr class="divider">
+    <div class="btnrow"><button class="primary">Grant plan</button><span class="muted small">Replaces the customer's current plan for the same product; existing keys keep working.</span></div>
+  </form>
+</details>
+
+<section class="card flush">
+  <form method="get" class="filters" style="padding:16px 20px;border-bottom:1px solid var(--border)">
+    <label>Status <select name="status"><option value="">Not expired</option><% for (const [k, v] of Object.entries(SUB_STATUS)) { %><option value="<%= k %>" <%= filters.status === k ? 'selected' : '' %>><%= v %></option><% } %></select></label>
+    <label>Product <select name="product"><option value="">All</option><% for (const p of products) { %><option value="<%= p.id %>" <%= filters.product === p.id ? 'selected' : '' %>><%= p.name %></option><% } %></select></label>
+    <label>Customer <input name="operator" list="ops" value="<%= filters.operator %>" placeholder="All"></label>
+    <button>Filter</button>
+    <% if (filters.status || filters.product || filters.operator) { %><a class="btn" href="/admin/subscriptions">Reset</a><% } %>
+  </form>
+  <% if (!rows.length) { %><div class="empty"><h3>No subscriptions</h3><p>Customers subscribe from the portal, or grant a plan above.</p></div><% } else { %>
+  <div class="scroll"><table>
+    <thead><tr><th>#</th><th>Customer</th><th>Product · plan</th><th>Status</th><th class="r">Usage</th><th>Period end</th><th>Source</th><th class="r"></th></tr></thead>
+    <tbody><% for (const s of rows) { const inc = s.included_units == null ? null : Number(s.included_units); %>
+      <tr>
+        <td class="muted">#<%= s.id %></td>
+        <td><a href="/admin/customers/<%= encodeURIComponent(s.operator) %>"><%= s.operator %></a></td>
+        <td><b><%= s.product_name %></b> · <%= s.plan_name %><br><small class="muted"><%= BILLING_LABELS[s.billing] %><%= Number(s.price_thb) ? ' · ฿' + fmtMoney(s.price_thb) : '' %></small></td>
+        <td><span class="badge b-<%= s.status %>"><%= SUB_STATUS[s.status] %></span><% if (s.cancel_at_period_end) { %><br><small class="muted">cancels at period end</small><% } %></td>
+        <td class="r nowrap"><%= fmtNum(s.used) %><small class="muted"><%= inc != null ? ' / ' + fmtNum(inc) : '' %> <%= s.unit_label %></small></td>
+        <td class="nowrap muted"><%= s.period_end ? fmtDate(s.period_end) : 'no end' %></td>
+        <td class="muted"><%= s.source %></td>
+        <td class="r nowrap">
+          <% if (s.status === 'active' && s.source !== 'polar') { %>
+          <form method="post" action="/admin/subscriptions/<%= s.id %>/extend" class="inline"><input type="hidden" name="months" value="1"><button class="btn small">+1 month</button></form>
+          <% } %>
+          <% if (['active', 'past_due', 'pending'].includes(s.status)) { %>
+          <form method="post" action="/admin/subscriptions/<%= s.id %>/cancel" class="inline" onsubmit="return confirm('Cancel subscription #<%= s.id %> now? Keys stop working immediately<%= s.source === 'polar' ? ' and Polar stops billing' : '' %>.')"><button class="btn small danger">Cancel</button></form>
+          <% } %>
+        </td>
+      </tr>
+    <% } %></tbody>
+  </table></div>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

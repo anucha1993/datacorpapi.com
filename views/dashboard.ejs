@@ -1,77 +1,69 @@
 <%- include('partials/header') %>
 <div class="pagehead">
-  <h1>Overview — <%= ym %></h1>
-  <div class="tools">
-    <%- include('partials/monthpicker', { action: '/admin' }) %>
-    <a class="btn" href="/admin/export.csv?ym=<%= ym %>">⬇ CSV</a>
+  <div class="titles">
+    <h1>Overview</h1>
+    <p class="subtitle"><%= ym %> · <%= pay.name %><%= pay.testMode ? ' (test mode)' : '' %></p>
   </div>
+  <div class="tools"><a class="btn" href="/admin/subscriptions">Subscriptions</a><a class="btn primary" href="/admin/products/new">+ New product</a></div>
 </div>
-
-<% if (typeof coMissing !== 'undefined' && coMissing.length) { %><p class="alert">Business details missing in .env: <%= coMissing.join(', ') %></p><% } %>
+<% if (coMissing && coMissing.length) { %><p class="notice">Business details missing in <code>.env</code> (required by the payment provider): <%= coMissing.join(', ') %></p><% } %>
+<% if (!pay.ready || !pay.webhookReady) { %><p class="alert"><% if (!pay.ready) { %><code><%= pay.envApi %></code> is not set — paid plans cannot be checked out. <% } %><% if (!pay.webhookReady) { %><code><%= pay.envSecret %></code> is not set — subscriptions will not activate.<% } %></p><% } %>
 
 <section class="tiles">
-  <div class="tile"><div class="k">Total amount</div><div class="v"><%= fmtMoney(totals.amount) %> <small>THB</small></div></div>
-  <div class="tile"><div class="k">Billable records</div><div class="v"><%= fmtNum(totals.records) %></div></div>
-  <div class="tile"><div class="k">Runs</div><div class="v"><%= fmtNum(totals.runs) %>
-    <small class="muted">ok <%= fmtNum(totals.ok) %> · cancelled <%= fmtNum(totals.cancelled) %> · error <%= fmtNum(totals.error) %></small></div></div>
-  <div class="tile"><div class="k">Operators / installs</div><div class="v"><%= fmtNum(totals.operators) %> <small>operators</small> / <%= fmtNum(totals.installs) %> <small>machines</small></div></div>
-  <div class="tile"><div class="k">Total runtime</div><div class="v"><%= fmtDur(totals.total_sec) %></div></div>
+  <div class="tile"><div class="k">Monthly recurring revenue</div><div class="v">฿<%= fmtMoney(mrr) %></div><div class="muted small">monthly + yearly ÷ 12, active paid plans</div></div>
+  <div class="tile"><div class="k">Active subscriptions</div><div class="v"><%= fmtNum(counts.active) %> <small><%= fmtNum(counts.customers) %> customers</small></div><div class="muted small">+<%= fmtNum(counts.new_this_month) %> this month<%= Number(counts.past_due) ? ' · ' + counts.past_due + ' payment failed' : '' %></div></div>
+  <div class="tile"><div class="k">Collected this month</div><div class="v">฿<%= fmtMoney(revenue.s) %></div><div class="muted small"><%= fmtNum(revenue.n) %> paid invoices</div></div>
+  <div class="tile"><div class="k">Outstanding</div><div class="v">฿<%= fmtMoney(outstanding.s) %></div><div class="muted small"><%= fmtNum(outstanding.n) %> unpaid<%= Number(outstanding.overdue) ? ' · ' + outstanding.overdue + ' overdue' : '' %> · <a href="/admin/invoices?ym=all&status=open">view</a></div></div>
 </section>
 
 <div class="grid2">
-  <section class="card">
-    <h2>By operator</h2>
-    <% if (!byOp.length) { %><p class="muted">No data for this month</p><% } else { %>
+  <section class="card flush">
+    <div class="card-head"><h2>Products</h2><a class="small" href="/admin/products">Manage →</a></div>
+    <% if (!perProduct.length) { %><div class="empty"><h3>No products yet</h3><p>Create a product (API or license), add its plans, and it appears in the customer portal and on /pricing.</p><a class="btn primary" href="/admin/products/new">Create product</a></div><% } else { %>
     <table>
-      <thead><tr><th>Operator</th><th class="r">Runs</th><th class="r">Records</th><th class="r">Time</th><th class="r">Amount (THB)</th></tr></thead>
-      <tbody>
-      <% for (const r of byOp) { %>
-        <tr>
-          <td><a href="/admin/operator/<%= encodeURIComponent(r.operator) %>?ym=<%= ym %>"><%= r.operator || '(none)' %></a></td>
-          <td class="r"><%= fmtNum(r.runs) %></td>
-          <td class="r"><%= fmtNum(r.billable_records) %></td>
-          <td class="r muted"><%= fmtDur(r.total_sec) %></td>
-          <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
-        </tr>
-      <% } %>
-      </tbody>
-      <tfoot><tr><th>Total</th><th class="r"><%= fmtNum(totals.runs) %></th><th class="r"><%= fmtNum(totals.records) %></th><th class="r"><%= fmtDur(totals.total_sec) %></th><th class="r"><%= fmtMoney(totals.amount) %></th></tr></tfoot>
+      <thead><tr><th>Product</th><th>Type</th><th class="r">Active subs</th><th class="r">Usage <%= ym %></th></tr></thead>
+      <tbody><% for (const p of perProduct) { %>
+        <tr><td><a href="/admin/products/<%= p.id %>"><b><%= p.name %></b></a></td><td><span class="tag"><%= p.kind === 'license' ? 'License key' : 'API key' %></span></td>
+          <td class="r"><%= fmtNum(p.active) %></td><td class="r"><%= fmtNum(p.units) %></td></tr>
+      <% } %></tbody>
     </table>
     <% } %>
   </section>
 
-  <section class="card">
-    <h2>By mode</h2>
-    <% if (!byMode.length) { %><p class="muted">No data for this month</p><% } else { %>
+  <section class="card flush">
+    <div class="card-head"><h2>Top usage this month</h2></div>
+    <% if (!topUsage.length) { %><div class="empty"><p>No metered usage yet this month.</p></div><% } else { %>
     <table>
-      <thead><tr><th>Mode</th><th>Group</th><th class="r">Runs</th><th class="r">Records</th><th class="r">Amount (THB)</th></tr></thead>
-      <tbody>
-      <% for (const r of byMode) { %>
+      <thead><tr><th>Customer</th><th>Plan</th><th class="r">Used</th><th style="width:120px">Quota</th></tr></thead>
+      <tbody><% for (const u of topUsage) { const inc = u.included_units == null ? null : Number(u.included_units); const pct = inc ? Math.min(100, Math.round(Number(u.units) / inc * 100)) : 0; %>
         <tr>
-          <td><a href="/admin/runs?ym=<%= ym %>&mode=<%= r.mode %>"><%= r.mode_label %></a></td>
-          <td><span class="tag g-<%= r.mode_group %>"><%= GROUP_LABELS[r.mode_group] || r.mode_group %></span></td>
-          <td class="r"><%= fmtNum(r.runs) %></td>
-          <td class="r"><%= fmtNum(r.billable_records) %></td>
-          <td class="r strong"><%= fmtMoney(r.amount_thb) %></td>
+          <td><a href="/admin/customers/<%= encodeURIComponent(u.operator) %>"><%= u.operator %></a></td>
+          <td><%= u.product_name %> <small class="muted">· <%= u.plan_name %></small></td>
+          <td class="r nowrap"><%= fmtNum(u.units) %> <small class="muted"><%= u.unit_label %></small></td>
+          <td><% if (inc) { %><div class="meter <%= pct >= 100 ? 'over' : pct >= 80 ? 'warn' : '' %>"><span style="width:<%= pct %>%"></span></div><small class="muted"><%= pct %>% of <%= fmtNum(inc) %></small><% } else { %><small class="muted"><%= inc === 0 ? 'metered' : 'unlimited' %></small><% } %></td>
         </tr>
-      <% } %>
-      </tbody>
+      <% } %></tbody>
     </table>
     <% } %>
   </section>
 </div>
 
-<% if (daily.length) { %>
-<section class="card">
-  <h2>Runs per day</h2>
-  <div class="bars">
-    <% for (const d of daily) { %>
-      <div class="bar" title="<%= d.d %> — <%= d.runs %> runs, <%= fmtNum(d.records) %> records">
-        <div class="fill" style="height:<%= Math.round(Number(d.runs) / maxDaily * 100) %>%"></div>
-        <div class="lbl"><%= String(d.d).slice(8, 10) %></div>
-      </div>
-    <% } %>
-  </div>
+<section class="card flush">
+  <div class="card-head"><h2>Recent subscriptions</h2><a class="small" href="/admin/subscriptions">All →</a></div>
+  <% if (!recent.length) { %><div class="empty"><p>No subscriptions yet.</p></div><% } else { %>
+  <div class="scroll"><table>
+    <thead><tr><th>Customer</th><th>Product · plan</th><th>Billing</th><th>Status</th><th>Renews / ends</th><th>Started</th></tr></thead>
+    <tbody><% for (const s of recent) { %>
+      <tr>
+        <td><a href="/admin/customers/<%= encodeURIComponent(s.operator) %>"><%= s.operator %></a></td>
+        <td><b><%= s.product_name %></b> · <%= s.plan_name %></td>
+        <td><%= BILLING_LABELS[s.billing] %><% if (Number(s.price_thb)) { %> <small class="muted">฿<%= fmtMoney(s.price_thb) %></small><% } %> <small class="muted">· <%= s.source %></small></td>
+        <td><span class="badge b-<%= s.status %>"><%= SUB_STATUS[s.status] %></span><% if (s.cancel_at_period_end) { %> <small class="muted">cancels at period end</small><% } %></td>
+        <td class="nowrap muted"><%= fmtDate(s.period_end) %></td>
+        <td class="nowrap muted"><%= fmtDate(s.created_at) %></td>
+      </tr>
+    <% } %></tbody>
+  </table></div>
+  <% } %>
 </section>
-<% } %>
 <%- include('partials/footer') %>

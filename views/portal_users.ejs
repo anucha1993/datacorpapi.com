@@ -1,47 +1,51 @@
 <%- include('partials/header') %>
-<div class="pagehead"><h1>Customer accounts <span class="muted">· <%= rows.length %></span></h1></div>
+<div class="pagehead">
+  <div class="titles">
+    <h1>Customers</h1>
+    <p class="subtitle"><%= rows.length %> accounts · login at <code><%= siteUrl %>/portal/login</code></p>
+  </div>
+  <div class="tools"><a class="btn primary" href="#new" onclick="document.getElementById('new').open=true">+ New customer</a></div>
+</div>
 <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
 <% if (error) { %><p class="alert"><%= error %></p><% } %>
 
-<div class="grid2">
-  <section class="card">
-    <h2>Create account / reset password</h2>
-    <p class="muted">Each account gets a <b>serial number</b> (DCA-XXXX-XXXX-XXXX). The customer enters it in the desktop app; the app verifies it with this server before every job and records usage under this operator. Disabling the account blocks the app. Submitting an existing name resets its password.</p>
-    <form method="post" action="/admin/portal-users" class="stack">
-      <input name="operator" list="ops" placeholder="Operator name" required maxlength="100">
-      <datalist id="ops"><% for (const o of operators) { %><option value="<%= o %>"><% } %></datalist>
-      <input name="password" placeholder="Password (at least 6 characters)" required minlength="6">
-      <input name="display_name" placeholder="Customer / company name (shown in the portal)" maxlength="190">
-      <input name="email" type="email" placeholder="Customer email (optional)" maxlength="190">
-      <label><input type="checkbox" name="must_change" value="1" checked> Require password change at first login</label>
-      <button class="primary">Save</button>
-    </form>
-    <p class="muted small">Customer login URL: <code><%= siteUrl %>/portal/login</code></p>
-  </section>
+<details class="card" id="new" <%= error ? 'open' : '' %>>
+  <summary class="card-head" style="cursor:pointer;margin:0"><h2>Create account / reset password</h2><span class="muted small">submitting an existing username resets its password</span></summary>
+  <form method="post" action="/admin/customers" style="margin-top:16px">
+    <div class="form-grid stack" style="display:grid">
+      <label>Username <span class="hint">Used to sign in to the portal</span><input name="operator" placeholder="acme" required maxlength="100"></label>
+      <label>Password <span class="hint">At least 6 characters</span><input name="password" required minlength="6"></label>
+      <label>Display name<input name="display_name" placeholder="Acme Co., Ltd." maxlength="190"></label>
+      <label>Email<input name="email" type="email" maxlength="190"></label>
+      <label class="check full"><input type="checkbox" name="must_change" value="1" checked> <span>Require password change at first login</span></label>
+    </div>
+    <hr class="divider">
+    <button class="primary">Save account</button>
+  </form>
+</details>
 
-  <section class="card">
-    <h2>All accounts</h2>
-    <% if (!rows.length) { %><p class="muted">No accounts yet</p><% } else { %>
-    <table class="dense">
-      <thead><tr><th>Operator</th><th>Serial number</th><th>Name / email</th><th>Last login</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-      <% for (const u of rows) { %>
-        <tr class="<%= u.is_active ? '' : 'hl' %>">
-          <td><a href="/admin/operator/<%= encodeURIComponent(u.operator) %>"><%= u.operator %></a></td>
-          <td class="nowrap"><code><%= u.serial_no || '—' %></code><% if (u.serial_no) { %> <button type="button" class="link" onclick="navigator.clipboard.writeText('<%= u.serial_no %>');this.textContent='Copied'">Copy</button><% } %><br><small class="muted"><%= u.devices %> device<%= u.devices === 1 ? '' : 's' %><% if (u.last_verified_at) { %> · verified <%= u.last_verified_at %><% } %></small></td>
-          <td><%= u.display_name %><% if (u.email) { %><br><small class="muted"><%= u.email %></small><% } %></td>
-          <td class="muted nowrap"><%= u.last_login_at || '—' %></td>
-          <td><span class="st st-<%= u.is_active ? 'ok' : 'error' %>"><%= u.is_active ? 'Active' : 'Disabled' %></span><% if (u.must_change) { %> <small class="muted">password change pending</small><% } %></td>
-          <td class="nowrap">
-            <a class="btn small" href="/admin/customers/<%= encodeURIComponent(u.operator) %>/prices">Prices</a>
-            <form method="post" action="/admin/portal-users/<%= u.id %>/serial" class="inline" onsubmit="return confirm('Issue a NEW serial number? The current one will stop working on all of this customer\'s machines.')"><button>New serial</button></form>
-            <form method="post" action="/admin/portal-users/<%= u.id %>/toggle" class="inline"><button><%= u.is_active ? 'Disable' : 'Enable' %></button></form>
-          </td>
-        </tr>
-      <% } %>
-      </tbody>
-    </table>
+<section class="card flush">
+  <% if (!rows.length) { %><div class="empty"><h3>No customers yet</h3></div><% } else { %>
+  <div class="scroll"><table>
+    <thead><tr><th>Customer</th><th>Plans</th><th class="r">Owed</th><th>Serial (SN)</th><th>Last login</th><th>Status</th><th class="r"></th></tr></thead>
+    <tbody>
+    <% for (const u of rows) { %>
+      <tr class="<%= u.is_active ? '' : 'hl' %>">
+        <td><a href="/admin/customers/<%= encodeURIComponent(u.operator) %>"><b><%= u.operator %></b></a><br><small class="muted"><%= u.company_name || u.display_name %><%= u.email ? ' · ' + u.email : '' %></small></td>
+        <td><%= Number(u.subs) ? u.subs + ' active' : '—' %></td>
+        <td class="r <%= Number(u.owed) ? 'strong' : 'muted' %>"><%= Number(u.owed) ? '฿' + fmtMoney(u.owed) : '—' %></td>
+        <td class="nowrap"><code><%= u.serial_no || '—' %></code><br><small class="muted"><%= u.devices %> device<%= Number(u.devices) === 1 ? '' : 's' %><% if (u.last_verified_at) { %> · verified <%= fmtDate(u.last_verified_at) %><% } %></small></td>
+        <td class="muted nowrap"><%= u.last_login_at ? fmtDate(u.last_login_at) : '—' %></td>
+        <td><span class="badge b-<%= u.is_active ? 'active' : 'void' %>"><%= u.is_active ? 'Active' : 'Disabled' %></span><% if (u.must_change) { %><br><small class="muted">password change pending</small><% } %></td>
+        <td class="r nowrap">
+          <a class="btn small" href="/admin/customers/<%= encodeURIComponent(u.operator) %>">Manage</a>
+          <form method="post" action="/admin/customers/<%= u.id %>/serial" class="inline" onsubmit="return confirm('Issue a NEW serial number? The current one stops working on all of this customer\'s machines.')"><button class="btn small">New SN</button></form>
+          <form method="post" action="/admin/customers/<%= u.id %>/toggle" class="inline"><button class="btn small <%= u.is_active ? 'danger' : '' %>"><%= u.is_active ? 'Disable' : 'Enable' %></button></form>
+        </td>
+      </tr>
     <% } %>
-  </section>
-</div>
+    </tbody>
+  </table></div>
+  <% } %>
+</section>
 <%- include('partials/footer') %>

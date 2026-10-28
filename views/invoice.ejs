@@ -3,7 +3,7 @@
   <div class="titles">
     <a href="/admin/invoices?ym=<%= inv.ym %>" class="muted small no-print">← Invoices <%= inv.ym %></a>
     <h1><%= inv.invoice_no %> <span class="badge b-<%= overdue ? 'overdue' : inv.status %>" style="vertical-align:middle"><%= overdue ? 'Overdue' : (STATUS_INV[inv.status] || inv.status) %></span></h1>
-    <p class="subtitle"><a href="/admin/operator/<%= encodeURIComponent(inv.operator) %>?ym=<%= inv.ym %>"><%= inv.operator %></a><%= buyer.company_name ? ' · ' + buyer.company_name : '' %> · ฿<%= fmtMoney(inv.amount_thb) %></p>
+    <p class="subtitle"><a href="/admin/customers/<%= encodeURIComponent(inv.operator) %>"><%= inv.operator %></a><%= buyer.company_name ? ' · ' + buyer.company_name : '' %> · ฿<%= fmtMoney(inv.amount_thb) %></p>
   </div>
   <div class="tools no-print"><button type="button" onclick="window.print()">Print / Save PDF</button></div>
 </div>

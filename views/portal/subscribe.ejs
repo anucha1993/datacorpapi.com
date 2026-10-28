@@ -1,0 +1,60 @@
+<%- include('partials/header') %>
+<% const paid = plan.billing !== 'usage' && Number(plan.price_thb) > 0; %>
+<div class="pagehead">
+  <div class="titles">
+    <a href="/portal/plans" class="muted small">← All plans</a>
+    <h1><%= existing ? 'Change plan' : 'Review your plan' %></h1>
+  </div>
+</div>
+
+<div class="steps" aria-label="Checkout steps">
+  <span class="s done"><span class="n">✓</span>Choose plan</span><span class="sep"></span>
+  <span class="s on"><span class="n">2</span>Review</span><span class="sep"></span>
+  <% if (paid) { %><span class="s"><span class="n">3</span>Secure payment</span><span class="sep"></span><% } %>
+  <span class="s"><span class="n"><%= paid ? 4 : 3 %></span>Create your key</span>
+</div>
+<% if (error) { %><p class="alert" role="alert"><%= error %></p><% } %>
+
+<form method="post" action="/portal/plans/<%= plan.id %>/subscribe" class="layout-side">
+  <div>
+    <section class="card">
+      <div class="section-title"><%= plan.product_name %></div>
+      <h2 style="font-size:20px;margin:0 0 4px"><%= plan.name %></h2>
+      <p class="muted" style="margin:0 0 14px"><%= BILLING_LABELS[plan.billing] %> · <%= plan.kind === 'license' ? 'License key' : 'API key' %></p>
+      <ul class="feat">
+        <li><%= plan.included_units == null ? 'Unlimited ' + plan.unit_label : Number(plan.included_units) === 0 ? 'Pay only for the ' + plan.unit_label + ' you use' : fmtNum(plan.included_units) + ' ' + plan.unit_label + ' per month' %></li>
+        <% if (Number(plan.unit_price_thb)) { %><li>฿<%= fmtUnit(plan.unit_price_thb) %> per <%= plan.unit_label.replace(/s$/, '') %><%= plan.included_units != null && plan.billing !== 'usage' ? ' over quota' : plan.included_units ? ' after the free allowance' : '' %>, invoiced monthly</li><% } %>
+        <% for (const f of String(plan.features || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean)) { %><li><%= f %></li><% } %>
+      </ul>
+    </section>
+    <% if (existing) { %>
+    <section class="card">
+      <div class="section-title">Your current plan</div>
+      <p style="margin:0"><b><%= existing.plan_name %></b> · <%= BILLING_LABELS[existing.billing] %> · <%= fmtNum(existing.used) %> <%= existing.unit_label %> used this month</p>
+      <p class="muted small" style="margin:8px 0 0"><%= existing.source === 'polar' && existing.provider_sub_id ? pay.name + ' will prorate the difference on your next bill.' : 'Your current plan ends when the new one starts.' %> Your existing keys move to the new plan automatically.</p>
+    </section>
+    <% } %>
+    <section class="card">
+      <div class="card-head" style="margin-bottom:10px"><div class="section-title" style="margin:0">Billed to</div><a href="/portal/profile" class="small">Edit details</a></div>
+      <% if (!profileComplete && paid) { %><p class="notice small">Your company details are incomplete — <a href="/portal/profile">add them</a> so receipts show your company name, address and tax ID.</p><% } %>
+      <dl class="kv">
+        <dt>Company</dt><dd><%= user.company_name || '—' %></dd>
+        <dt>Tax ID</dt><dd><%= user.tax_id || '—' %></dd>
+        <dt>Receipt email</dt><dd><%= user.billing_email || user.email || '—' %></dd>
+      </dl>
+    </section>
+  </div>
+
+  <aside class="card summary sticky">
+    <div class="section-title">Summary</div>
+    <div class="line"><span><%= plan.product_name %> · <%= plan.name %></span><span><%= paid ? '฿' + fmtMoney(plan.price_thb) : plan.billing === 'usage' ? 'Pay as you go' : 'Free' %></span></div>
+    <% if (paid) { %><div class="line muted"><span>Billing</span><span>every <%= plan.billing === 'year' ? 'year' : 'month' %></span></div><% } %>
+    <div class="line total"><span>Due today</span><span>฿<%= fmtMoney(paid ? plan.price_thb : 0) %></span></div>
+    <p class="muted small" style="margin:4px 0 16px"><%= paid ? 'Renews automatically. Cancel any time — you keep access until the end of the paid period.' : 'No card needed. ' + (Number(plan.unit_price_thb) ? 'Usage is invoiced on the 1st of each month.' : 'Usage pauses at the monthly quota.') %></p>
+    <label class="check" style="margin-bottom:14px"><input type="checkbox" name="agree" value="1" required>
+      <span>I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/refund" target="_blank">Refund Policy</a>.</span></label>
+    <button class="primary lg block"><% if (paid) { %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Continue to secure payment<% } else { %>Activate plan<% } %></button>
+    <% if (paid) { %><p class="muted small" style="margin:12px 0 0;text-align:center">You'll pay on <%= pay.name %>'s secure checkout (<%= pay.paymentMethods %>). We never see your card details.</p><% } %>
+  </aside>
+</form>
+<%- include('partials/footer') %>

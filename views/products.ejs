@@ -1,0 +1,41 @@
+<%- include('partials/header') %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>Products &amp; plans</h1>
+    <p class="subtitle">What customers can subscribe to. API products issue API keys; license products issue license keys for your apps.</p>
+  </div>
+  <div class="tools"><a class="btn primary" href="/admin/products/new">+ New product</a></div>
+</div>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+
+<% if (!products.length) { %>
+<section class="card"><div class="empty">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+  <h3>No products yet</h3>
+  <p>Example: "OCR API" (API key, metered per page) or "Desktop Pro" (license key, monthly/yearly).</p>
+  <a class="btn primary" href="/admin/products/new">Create your first product</a>
+</div></section>
+<% } else { %>
+<div class="svc-grid">
+  <% for (const p of products) { %>
+  <a class="svc" href="/admin/products/<%= p.id %>" style="text-decoration:none;color:inherit">
+    <div class="btnrow" style="justify-content:space-between">
+      <span class="tag" style="margin:0"><%= p.kind === 'license' ? 'License key' : 'API key' %></span>
+      <span class="badge b-<%= p.is_active ? 'active' : 'hidden' %>"><%= p.is_active ? 'Live' : 'Hidden' %></span>
+    </div>
+    <h3><%= p.name %></h3>
+    <p class="desc"><%= p.tagline || 'No tagline' %></p>
+    <div class="foot">
+      <% if (!p.plans.length) { %><span class="muted small">No plans yet — add one</span><% } else { for (const pl of p.plans) { %>
+        <div class="btnrow" style="justify-content:space-between;font-size:13.5px">
+          <span><%= pl.name %> <small class="muted">· <%= BILLING_LABELS[pl.billing] %></small><%= pl.is_active ? '' : ' (hidden)' %></span>
+          <b><%= pl.billing === 'usage' ? '฿' + fmtUnit(pl.unit_price_thb) + '/' + p.unit_label.replace(/s$/, '') : Number(pl.price_thb) ? '฿' + fmtMoney(pl.price_thb) : 'Free' %></b>
+        </div>
+      <% } } %>
+      <span class="muted small mono"><%= p.slug %><%= p.service_secret_hash ? '' : ' · no service secret' %></span>
+    </div>
+  </a>
+  <% } %>
+</div>
+<% } %>
+<%- include('partials/footer') %>

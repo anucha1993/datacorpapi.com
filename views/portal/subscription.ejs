@@ -1,0 +1,123 @@
+<%- include('partials/header') %>
+<% const isLic = sub.kind === 'license'; const activeKeys = keys.filter(k => !k.revoked_at); const maxH = Math.max(1, ...history.map(h => Number(h.units))); %>
+<div class="pagehead">
+  <div class="titles">
+    <a href="/portal" class="muted small">← Overview</a>
+    <h1><%= sub.product_name %> <span class="badge b-<%= sub.status %>" style="vertical-align:middle"><%= SUB_STATUS[sub.status] %></span></h1>
+    <p class="subtitle"><b><%= sub.plan_name %></b> · <%= BILLING_LABELS[sub.billing] %><%= Number(sub.price_thb) && sub.billing !== 'usage' ? ' · ฿' + fmtMoney(sub.price_thb) + '/' + (sub.billing === 'year' ? 'year' : 'month') : '' %>
+      <% if (sub.status === 'active') { %> · <%= sub.cancel_at_period_end ? 'ends' : sub.period_end ? 'renews' : 'no end date' %> <%= sub.period_end ? fmtDate(sub.period_end) : '' %><% } %></p>
+  </div>
+  <div class="tools">
+    <a class="btn" href="/portal/plans"><%= sub.status === 'active' ? 'Change plan' : 'Choose a plan' %></a>
+    <% if (sub.source === 'polar' && co.PAY.key === 'polar') { %><a class="btn" href="/portal/payment-methods">Payment method</a><% } %>
+  </div>
+</div>
+
+<% if (welcome && sub.status === 'pending') { %><p class="info">Thanks! We're confirming your payment with <%= co.PAY.name %> — this page updates within a minute. <a href="">Refresh</a></p>
+<% } else if (welcome) { %><p class="ok">Your plan is active. Create your first <%= isLic ? 'license key' : 'API key' %> below.</p><% } %>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+<% if (sub.status === 'past_due') { %><p class="alert">Your last payment failed, so your keys are paused. <a href="/portal/payment-methods">Update your payment method</a> to restore access.</p><% } %>
+
+<% if (newKey) { %>
+<section class="card newkey">
+  <h2><%= isLic ? 'Your new license key' : 'Your new API key' %></h2>
+  <p class="small" style="margin-top:0"><%= isLic ? 'Enter this in the app to activate it. You can see it again on this page.' : 'Copy it now — for your security it will not be shown again. If you lose it, revoke it and create a new one.' %></p>
+  <div class="inputgroup"><input value="<%= newKey %>" readonly class="mono" aria-label="New key" onclick="this.select()"><button type="button" class="primary" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied ✓'">Copy</button></div>
+</section>
+<% } %>
+
+<div class="layout-side">
+  <div>
+    <section class="card">
+      <div class="card-head"><h2>Usage this month</h2><span class="muted small">resets on the 1st</span></div>
+      <div class="usage-big">
+        <div><span class="num"><%= fmtNum(sub.used) %></span> <span class="muted">/ <%= sub.included == null ? 'unlimited' : fmtNum(sub.included) %> <%= sub.unit_label %></span></div>
+        <% if (sub.included != null) { %><div class="muted small"><%= sub.included ? Math.max(0, sub.included - sub.used).toLocaleString('en-US') + ' remaining' : 'metered' %></div><% } %>
+      </div>
+      <% if (sub.included) { %><div class="meter lg <%= sub.pct >= 100 ? 'over' : sub.pct >= 80 ? 'warn' : '' %>"><span style="width:<%= sub.pct %>%"></span></div><% } %>
+      <% if (sub.included != null && sub.used > sub.included && Number(sub.unit_price_thb)) { %>
+        <p class="small" style="margin:10px 0 0;color:var(--warn)"><%= fmtNum(sub.used - sub.included) %> <%= sub.unit_label %> over quota × ฿<%= fmtUnit(sub.unit_price_thb) %> = <b>฿<%= fmtMoney((sub.used - sub.included) * Number(sub.unit_price_thb)) %></b>, invoiced on the 1st.</p>
+      <% } else if (sub.included != null && sub.pct >= 100) { %>
+        <p class="small" style="margin:10px 0 0;color:var(--danger)">Quota reached — requests are blocked until the 1st. <a href="/portal/plans">Upgrade</a> for more.</p>
+      <% } %>
+      <% if (history.length > 1) { %>
+      <div class="section-title" style="margin-top:20px">Last <%= history.length %> months</div>
+      <div class="bars">
+        <% for (const h of history.slice().reverse()) { %><div class="bar" title="<%= h.ym %>: <%= fmtNum(h.units) %> <%= sub.unit_label %>"><div class="fill" style="height:<%= Math.round(Number(h.units) / maxH * 100) %>%"></div><div class="lbl"><%= h.ym.slice(5) %></div></div><% } %>
+      </div>
+      <% } %>
+    </section>
+
+    <section class="card flush">
+      <div class="card-head"><h2><%= isLic ? 'License keys' : 'API keys' %> <span class="muted">· <%= activeKeys.length %> / <%= sub.max_keys %></span></h2></div>
+      <% if (!keys.length) { %><div class="empty" style="padding:24px"><p>No keys yet — create one below.</p></div><% } else { %>
+      <div class="scroll"><table>
+        <thead><tr><th>Name</th><th>Key</th><th>Created</th><th>Last used</th><th class="r"></th></tr></thead>
+        <tbody><% for (const k of keys) { %>
+          <tr class="<%= k.revoked_at ? 'revoked' : '' %>">
+            <td><b><%= k.name %></b><% if (k.revoked_at) { %> <span class="badge b-void">Revoked</span><% } %></td>
+            <td class="mono nowrap"><% if (k.key_plain && !k.revoked_at) { %><%= k.key_plain %> <button type="button" class="btn small" onclick="navigator.clipboard.writeText('<%= k.key_plain %>');this.textContent='Copied'">Copy</button><% } else { %><%= k.key_prefix %>…<% } %></td>
+            <td class="muted nowrap"><%= fmtDate(k.created_at) %></td>
+            <td class="muted nowrap"><%= k.last_used_at || 'never' %></td>
+            <td class="r"><% if (!k.revoked_at) { %><form method="post" action="/portal/keys/<%= k.id %>/revoke" class="inline" onsubmit="return confirm('Revoke &quot;<%= k.name %>&quot;? Anything using it stops working immediately.')"><button class="btn small danger">Revoke</button></form><% } %></td>
+          </tr>
+          <% if (isLic && k.devices.length) { for (const d of k.devices) { %>
+          <tr class="sub-row"><td></td><td colspan="3" class="small muted">↳ <b><%= d.device_name || 'Device' %></b> <span class="mono"><%= d.device_id.slice(0, 12) %></span> · v<%= d.app_version || '?' %> · last seen <%= d.last_seen %></td>
+            <td class="r"><form method="post" action="/portal/devices/<%= d.id %>/remove" class="inline"><button class="btn small">Remove</button></form></td></tr>
+          <% } } %>
+        <% } %></tbody>
+      </table></div>
+      <% } %>
+      <% if (sub.live) { %>
+      <form method="post" action="/portal/subscriptions/<%= sub.id %>/keys" class="btnrow" style="padding:16px 20px;border-top:1px solid var(--border)">
+        <input name="name" maxlength="100" placeholder="<%= isLic ? 'e.g. Office PC' : 'Key name, e.g. Production server' %>" style="flex:1;min-width:200px" aria-label="Key name">
+        <button class="primary" <%= activeKeys.length >= sub.max_keys ? 'disabled title="Key limit reached"' : '' %>>+ Create <%= isLic ? 'license key' : 'API key' %></button>
+      </form>
+      <% } %>
+    </section>
+
+    <% if (invoices.length) { %>
+    <section class="card flush">
+      <div class="card-head"><h2>Billing history</h2><a class="small" href="/portal/billing">All invoices →</a></div>
+      <table><tbody><% for (const i of invoices) { %>
+        <tr><td><a class="linkish mono" href="/portal/invoices/<%= encodeURIComponent(i.invoice_no) %>"><%= i.invoice_no %></a></td><td><%= i.title %></td><td class="muted nowrap"><%= fmtDate(i.issued_at) %></td>
+          <td class="r strong">฿<%= fmtMoney(i.amount_thb) %></td><td><span class="badge b-<%= i.status %>"><%= STATUS_INV[i.status] %></span></td></tr>
+      <% } %></tbody></table>
+    </section>
+    <% } %>
+  </div>
+
+  <aside>
+    <section class="card">
+      <div class="section-title"><%= isLic ? 'Activate in your app' : 'Use your key' %></div>
+      <% if (isLic) { %>
+        <p class="small" style="margin-top:0">Open the app → Settings → License, paste your license key and sign in. Each key works on up to <b><%= Number(sub.max_devices) || 'unlimited' %></b> device<%= Number(sub.max_devices) === 1 ? '' : 's' %>; remove an old device above to move it.</p>
+      <% } else { %>
+        <p class="small" style="margin-top:0">Send your key in the <code>Authorization</code> header. Check your quota any time:</p>
+        <pre class="code">curl <%= base || '' %>/api/v1/usage \
+  -H "Authorization: Bearer YOUR_API_KEY"</pre>
+        <% if (sub.docs_url) { %><a class="btn small" href="<%= sub.docs_url %>" target="_blank" rel="noopener">API documentation ↗</a><% } %>
+        <p class="muted small">Keep keys secret — never put them in a browser or mobile app. Revoke a key immediately if it leaks.</p>
+      <% } %>
+    </section>
+    <section class="card">
+      <div class="section-title">Plan</div>
+      <dl class="kv" style="grid-template-columns:110px 1fr;font-size:13.5px">
+        <dt>Plan</dt><dd><%= sub.plan_name %></dd>
+        <dt>Started</dt><dd><%= fmtDate(sub.period_start || sub.created_at) %></dd>
+        <dt><%= sub.cancel_at_period_end ? 'Ends' : 'Renews' %></dt><dd><%= sub.period_end ? fmtDate(sub.period_end) : '—' %></dd>
+        <% if (Number(sub.rate_limit_per_min)) { %><dt>Rate limit</dt><dd><%= sub.rate_limit_per_min %> / min per key</dd><% } %>
+      </dl>
+      <% if (sub.status === 'active' || sub.status === 'past_due') { %>
+      <hr class="divider">
+      <% if (sub.cancel_at_period_end) { %>
+        <form method="post" action="/portal/subscriptions/<%= sub.id %>/resume"><button class="primary block">Resume auto-renewal</button></form>
+      <% } else if (sub.source !== 'manual') { %>
+        <form method="post" action="/portal/subscriptions/<%= sub.id %>/cancel" onsubmit="return confirm('<%= sub.source === 'polar' ? 'Cancel at the end of the current period? You keep access until ' + fmtDate(sub.period_end) + '.' : 'Cancel this plan now? Your keys stop working immediately.' %>')"><button class="danger block">Cancel plan</button></form>
+      <% } else { %><p class="muted small" style="margin:0">Managed by our team — contact <%= co.COMPANY_EMAIL || 'support' %> to change it.</p><% } %>
+      <% } %>
+    </section>
+  </aside>
+</div>
+<%- include('partials/footer') %>

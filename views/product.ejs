@@ -1,0 +1,148 @@
+<%- include('partials/header') %>
+<% const f = form || product || {}; const isNew = !product; const pf = planForm || editPlan || {}; %>
+<div class="pagehead">
+  <div class="titles">
+    <a href="/admin/products" class="muted small">← Products</a>
+    <h1><%= isNew ? 'New product' : product.name %> <% if (!isNew) { %><span class="badge b-<%= product.is_active ? 'active' : 'hidden' %>" style="vertical-align:middle"><%= product.is_active ? 'Live' : 'Hidden' %></span><% } %></h1>
+  </div>
+  <% if (!isNew) { %><div class="tools">
+    <form method="post" action="/admin/products/<%= product.id %>/toggle"><button><%= product.is_active ? 'Hide from customers' : 'Publish' %></button></form>
+  </div><% } %>
+</div>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+<% if (secret) { %>
+<section class="card" style="border-color:#c7d2fe;background:#f8f9ff">
+  <h2>New service secret — copy it now</h2>
+  <p class="muted small" style="margin-top:0">It is shown only once. Put it in your service's server config (never in client apps). The previous secret stopped working.</p>
+  <div class="inputgroup"><input value="<%= secret %>" readonly class="mono" aria-label="Service secret"><button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied'">Copy</button></div>
+</section>
+<% } %>
+
+<div class="layout-side wider">
+  <div>
+    <% if (!isNew) { %>
+    <section class="card flush">
+      <div class="card-head"><h2>Plans</h2><span class="muted small">Quota resets on the 1st of every month</span></div>
+      <% if (!product.plans.length) { %><div class="empty"><p>No plans yet — add Free / Pro / Business with the form below.</p></div><% } else { %>
+      <div class="scroll"><table>
+        <thead><tr><th>Plan</th><th>Billing</th><th class="r">Price</th><th class="r">Included / month</th><th class="r">Over quota</th><th class="r">Subs</th><th></th></tr></thead>
+        <tbody><% for (const pl of product.plans) { %>
+          <tr class="<%= editPlan && editPlan.id === pl.id ? 'hl' : '' %>">
+            <td><b><%= pl.name %></b><%= pl.is_featured ? ' ★' : '' %><br><small class="muted"><%= product.kind === 'license' ? pl.max_keys + ' license(s) · ' + (Number(pl.max_devices) ? pl.max_devices + ' device(s) each' : 'unlimited devices') : pl.max_keys + ' keys' + (Number(pl.rate_limit_per_min) ? ' · ' + pl.rate_limit_per_min + '/min' : '') %><%= pl.polar_product_id ? ' · Polar ✓' : '' %></small></td>
+            <td><%= BILLING_LABELS[pl.billing] %></td>
+            <td class="r strong"><%= pl.billing === 'usage' ? '—' : Number(pl.price_thb) ? '฿' + fmtMoney(pl.price_thb) : 'Free' %></td>
+            <td class="r"><%= pl.included_units == null ? 'Unlimited' : fmtNum(pl.included_units) %></td>
+            <td class="r"><%= Number(pl.unit_price_thb) ? '฿' + fmtUnit(pl.unit_price_thb) + ' / unit' : 'Blocked' %></td>
+            <td class="r"><%= fmtNum(subsByPlan[pl.id] || 0) %></td>
+            <td class="r nowrap">
+              <a class="btn small" href="/admin/products/<%= product.id %>?plan=<%= pl.id %>#planform">Edit</a>
+              <form method="post" action="/admin/plans/<%= pl.id %>/toggle" class="inline"><button class="btn small"><%= pl.is_active ? 'Hide' : 'Show' %></button></form>
+            </td>
+          </tr>
+        <% } %></tbody>
+      </table></div>
+      <% } %>
+    </section>
+
+    <section class="card" id="planform">
+      <h2><%= editPlan ? 'Edit plan: ' + editPlan.name : 'Add a plan' %></h2>
+      <form method="post" action="<%= editPlan ? '/admin/plans/' + editPlan.id : '/admin/products/' + product.id + '/plans' %>">
+        <div class="form-grid stack" style="display:grid">
+          <label>Plan name <input name="name" value="<%= pf.name || '' %>" required maxlength="120" placeholder="Pro"></label>
+          <label>Billing
+            <select name="billing" id="billing">
+              <% for (const [k, v] of Object.entries(BILLING_LABELS)) { %><option value="<%= k %>" <%= (pf.billing || 'month') === k ? 'selected' : '' %>><%= v %></option><% } %>
+            </select></label>
+          <label data-when="month,year">Price (THB) <span class="hint">0 = free plan (no checkout)</span><input name="price_thb" type="number" step="0.01" min="0" value="<%= pf.price_thb ?? '' %>" placeholder="390.00"></label>
+          <label data-when="month,year">Polar product ID <span class="hint">Recurring product in Polar with the same price &amp; interval</span><input name="polar_product_id" value="<%= pf.polar_product_id || '' %>" maxlength="64" placeholder="e.g. 8f3c…" class="mono"></label>
+          <label>Included per month (<%= product.unit_label %>) <span class="hint">Blank = unlimited · 0 = none</span><input name="included_units" type="number" min="0" step="1" value="<%= pf.included_units ?? '' %>" placeholder="10000"></label>
+          <label>Price per extra unit (THB) <span class="hint">0 = block at quota (like Copilot Free)</span><input name="unit_price_thb" type="number" min="0" step="0.0001" value="<%= pf.unit_price_thb ?? 0 %>"></label>
+          <label><%= product.kind === 'license' ? 'License keys per subscription' : 'API keys per subscription' %><input name="max_keys" type="number" min="1" value="<%= pf.max_keys ?? (product.kind === 'license' ? 1 : 5) %>"></label>
+          <% if (product.kind === 'license') { %>
+          <label>Devices per license <span class="hint">0 = unlimited</span><input name="max_devices" type="number" min="0" value="<%= pf.max_devices ?? 1 %>"></label>
+          <% } else { %>
+          <label>Rate limit per key (requests/min) <span class="hint">0 = no limit</span><input name="rate_limit_per_min" type="number" min="0" value="<%= pf.rate_limit_per_min ?? 0 %>"></label>
+          <% } %>
+          <label class="full">Features <span class="hint">One per line — shown on the plan card</span><textarea name="features" rows="4" maxlength="3000" placeholder="10,000 requests / month&#10;Email support"><%= pf.features || '' %></textarea></label>
+          <label>Sort order<input name="sort_order" type="number" value="<%= pf.sort_order ?? 0 %>"></label>
+          <label class="check" style="align-self:end"><input type="checkbox" name="is_featured" value="1" <%= Number(pf.is_featured) ? 'checked' : '' %>> <span>Highlight as "Most popular"</span></label>
+        </div>
+        <hr class="divider">
+        <div class="btnrow"><button class="primary"><%= editPlan ? 'Save plan' : 'Add plan' %></button><% if (editPlan) { %><a class="btn" href="/admin/products/<%= product.id %>">Cancel</a><% } %></div>
+      </form>
+      <script>
+        (function () {
+          const sel = document.getElementById('billing');
+          const sync = () => document.querySelectorAll('[data-when]').forEach(el => { el.style.display = el.dataset.when.split(',').includes(sel.value) ? '' : 'none'; });
+          sel.addEventListener('change', sync); sync();
+        })();
+      </script>
+    </section>
+    <% } %>
+
+    <section class="card">
+      <h2><%= isNew ? 'Product details' : 'Edit product' %></h2>
+      <form method="post" action="<%= isNew ? '/admin/products' : '/admin/products/' + product.id %>">
+        <div class="form-grid stack" style="display:grid">
+          <label>Name <input name="name" value="<%= f.name || '' %>" required maxlength="190" placeholder="OCR API"></label>
+          <label>Slug <span class="hint">Stable ID your apps send (letters, numbers, dashes)</span><input name="slug" value="<%= f.slug || '' %>" maxlength="60" placeholder="ocr-api" class="mono"></label>
+          <label>Type
+            <select name="kind" <%= isNew ? '' : 'disabled' %>>
+              <option value="api" <%= f.kind !== 'license' ? 'selected' : '' %>>API key — customers call your API</option>
+              <option value="license" <%= f.kind === 'license' ? 'selected' : '' %>>License key — unlocks your app on devices</option>
+            </select><% if (!isNew) { %><input type="hidden" name="kind" value="<%= f.kind %>"><% } %></label>
+          <label>Metered unit <span class="hint">Shown with quotas: requests, tokens, pages, credits…</span><input name="unit_label" value="<%= f.unit_label || '' %>" maxlength="40" placeholder="requests"></label>
+          <label class="full">Tagline<input name="tagline" value="<%= f.tagline || '' %>" maxlength="255" placeholder="Extract text from Thai &amp; English documents"></label>
+          <label class="full">Description<textarea name="description" rows="3" maxlength="5000"><%= f.description || '' %></textarea></label>
+          <label>Docs URL <span class="hint">Optional</span><input name="docs_url" type="url" value="<%= f.docs_url || '' %>" maxlength="500" placeholder="https://docs.example.com"></label>
+          <label>Sort order<input name="sort_order" type="number" value="<%= f.sort_order ?? 0 %>"></label>
+        </div>
+        <hr class="divider">
+        <button class="primary"><%= isNew ? 'Create product' : 'Save product' %></button>
+      </form>
+    </section>
+  </div>
+
+  <% if (!isNew) { %>
+  <aside>
+    <section class="card">
+      <div class="section-title">Integration</div>
+      <% if (product.kind === 'api') { %>
+        <p class="small" style="margin-top:0">Your API server checks each customer request (and counts usage) with one call:</p>
+        <pre class="code">POST <%= base || '' %>/api/v1/authorize
+Authorization: Bearer &lt;service secret&gt;
+Content-Type: application/json
+
+{ "key": "&lt;customer API key&gt;", "units": 1 }</pre>
+        <p class="small muted">200 → allow. 401/402/403/429 → reject and return the <code>message</code>. Use <code>"dry_run": true</code> to check without counting. Customers can see their quota at <code>GET /api/v1/usage</code> with their key.</p>
+        <hr class="divider">
+        <div class="section-title">Service secret</div>
+        <p class="small muted" style="margin-top:0"><%= product.service_secret_hash ? 'A secret is set. Rotating it immediately invalidates the old one.' : 'No secret yet — generate one before going live.' %></p>
+        <form method="post" action="/admin/products/<%= product.id %>/secret" onsubmit="return <%= product.service_secret_hash ? "confirm('Generate a new secret? The current one stops working immediately.')" : 'true' %>"><button class="<%= product.service_secret_hash ? '' : 'primary' %> block"><%= product.service_secret_hash ? 'Rotate secret' : 'Generate secret' %></button></form>
+      <% } else { %>
+        <p class="small" style="margin-top:0">Your app verifies the license at start-up (no secret needed):</p>
+        <pre class="code">POST <%= base || '' %>/api/v1/license/verify
+Content-Type: application/json
+
+{ "license_key": "DCL-XXXX-…",
+  "product": "<%= product.slug %>",
+  "device_id": "&lt;stable machine id&gt;",
+  "device_name": "PC-01",
+  "app_version": "1.2.0" }</pre>
+        <p class="small muted">200 → <code>{ ok, plan, expires_at, features }</code>. 403 <code>device_limit</code> → ask the user to free a device in the portal. Cache the result and re-check daily.</p>
+      <% } %>
+    </section>
+    <section class="card">
+      <div class="section-title">Polar setup for paid plans</div>
+      <ol class="small" style="padding-left:18px;margin:0;line-height:1.7">
+        <li>In Polar create a <b>recurring</b> product per paid plan (monthly or yearly, same THB price).</li>
+        <li>Copy its product ID into the plan.</li>
+        <li>Webhook <code><%= base %>/webhooks/polar</code> must include <code>subscription.*</code> and <code>order.paid</code> events.</li>
+      </ol>
+      <% if (!pay.ready) { %><p class="alert small" style="margin:10px 0 0"><code><%= pay.envApi %></code> is not set.</p><% } %>
+    </section>
+  </aside>
+  <% } %>
+</div>
+<%- include('partials/footer') %>
