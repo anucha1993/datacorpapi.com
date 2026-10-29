@@ -15,7 +15,7 @@
   <div>
     <div class="k"><%= sum.open_n ? 'Outstanding balance' : 'You are all paid up' %></div>
     <div class="v">฿<%= fmtMoney(sum.open) %> <small><%= sum.open_n %> unpaid invoice<%= sum.open_n === 1 ? '' : 's' %></small></div>
-    <div class="meta">Usage over quota this month so far: ฿<%= fmtMoney(currentEstimate) %> (invoiced on the 1st)</div>
+    <div class="meta">Usage over quota this month so far: ฿<%= fmtMoney(currentEstimate) %> (invoiced on the <%= CYCLE.label %>)</div>
   </div>
   <% if (sum.open_n === 1 && firstOpen) { %><a class="btn lg" href="/portal/invoices/<%= encodeURIComponent(firstOpen.invoice_no) %>">Review &amp; pay</a>
   <% } else if (sum.open_n) { %><a class="btn lg" href="#invoices">View unpaid invoices</a><% } %>

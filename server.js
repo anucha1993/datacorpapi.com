@@ -99,9 +99,9 @@ async function qSafe(sql, params = [], fallback = []) {
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
+/** รอบบิลปัจจุบัน (key = เดือนที่รอบเริ่ม — ดู BILLING_CYCLE_DAY ใน lib/platform.js) */
 function thisMonth() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return platform.ymNow();
 }
 const validYm = (s) => (/^\d{4}-(0[1-9]|1[0-2])$/.test(s || "") ? s : thisMonth());
 const fmtNum = (n) => Number(n || 0).toLocaleString("en-US");
@@ -187,6 +187,7 @@ app.use((req, res, next) => {
 Object.assign(app.locals, {
   fmtNum, fmtMoney, fmtUnit, fmtDate, STATUS_INV, MIN_THB: invoices.MIN_THB, DUE_DAYS: invoices.DUE_DAYS,
   BILLING_LABELS: platform.BILLING_LABELS, SUB_STATUS: platform.SUB_STATUS,
+  CYCLE: { day: platform.CYCLE_DAY, label: platform.cycleLabel(), range: platform.periodRange },
 });
 
 // ---- Webhook (ต้องอ่าน raw body ก่อน body parser อื่น) ----
@@ -291,6 +292,28 @@ app.post("/api/v1/ework/usage", express.json({ limit: "1mb" }), async (req, res)
   }
 });
 app.use("/api/v1", api);
+// ตัดรอบอัตโนมัติ: ตั้งแต่วันตัดรอบเป็นต้นไป ออก/อัปเดตบิลส่วนเกินของ "รอบที่แล้ว" (ทำซ้ำได้ ไม่สร้างบิลซ้ำ) — ปิดด้วย AUTO_INVOICE=false
+const AUTO_INVOICE = !/^(0|false|no|off)$/i.test(String(process.env.AUTO_INVOICE || "true"));
+const AUTO_INVOICE_FROM = String(process.env.AUTO_INVOICE_FROM || "2026-10"); // ไม่ย้อนไปออกบิลรอบก่อนเริ่มใช้ระบบนี้
+let autoInvoiceDone = "";
+async function autoInvoice() {
+  const ym = invoices.prevMonth(platform.ymNow());
+  if (!AUTO_INVOICE || ym < AUTO_INVOICE_FROM || autoInvoiceDone === ym) return;
+  const conn = await pool.getConnection();
+  try {
+    const [[l]] = await conn.query("SELECT GET_LOCK('datacorp_auto_invoice', 0) ok");
+    if (!l.ok) return;
+    try {
+      const done = (await q("SELECT COUNT(*) n FROM billing_invoices WHERE kind = 'usage' AND ym = ? AND subscription_id IS NOT NULL", [ym]))[0].n;
+      const r = await invoices.generateInvoices(q, ym, { ...payOpts(), log: console.log });
+      console.log(`[auto-invoice] period ${ym}: ${r.length} subscription(s) checked (${done} invoice(s) existed)`);
+      autoInvoiceDone = ym;
+    } finally { await conn.query("SELECT RELEASE_LOCK('datacorp_auto_invoice')"); }
+  } finally { conn.release(); }
+}
+setTimeout(() => autoInvoice().catch(e => console.error("[auto-invoice]", e.message)), 60000).unref();
+setInterval(() => autoInvoice().catch(e => console.error("[auto-invoice]", e.message)), 60 * 60 * 1000).unref();
+
 // โปรแกรม E-work รุ่นเก่ายังเขียนลง usage_runs ตรง → คิด token ให้ทุก 5 นาที
 const chargeEwork = () => ework.chargePending(q).then(r => { if (r.charged) console.log(`[ework] charged ${r.charged} job(s)`); }).catch(e => { if (e.code !== "ER_NO_SUCH_TABLE" && e.code !== "ER_BAD_FIELD_ERROR") console.error("[ework charge]", e.message); });
 setTimeout(chargeEwork, 15000).unref();
@@ -413,7 +436,10 @@ app.get("/portal", requirePortal, async (req, res, next) => {
       platform.listSubscriptions(q, op),
       q("SELECT invoice_no, ym, title, amount_thb, due_at FROM billing_invoices WHERE operator = ? AND status = 'open' ORDER BY due_at, id", [op]),
     ]);
-    for (const s of subs) if (s.product_slug === ework.SLUG()) s.ework = await ework.summary(q, op);
+    for (const s of subs) {
+      if (s.product_slug === ework.SLUG()) s.ework = await ework.summary(q, op);
+      s.charges = periodCharges(s);
+    }
     pview(req, res, "dashboard", { title: "Overview", subs, openInvoices, ym: thisMonth() });
   } catch (e) { next(e); }
 });
@@ -489,6 +515,16 @@ app.post("/portal/plans/:id/subscribe", requirePortal, async (req, res, next) =>
   }
 });
 
+/** ค่าใช้จ่ายรอบบิลปัจจุบันของ subscription: ค่าแพ็กเกจรายเดือน + ส่วนเกินโควตาที่สะสมถึงตอนนี้ */
+function periodCharges(s) {
+  const pr = platform.periodRange();
+  const fee = s.billing === "month" ? Number(s.price_thb) : 0;
+  const overUnits = s.ework ? s.ework.month_billable_tokens : s.included != null ? Math.max(0, s.used - s.included) : 0;
+  const overage = s.ework ? s.ework.month_overage_thb : Math.round(overUnits * Number(s.unit_price_thb) * 100) / 100;
+  return { ...pr, fee, overUnits, overage, total: Math.round((fee + overage) * 100) / 100,
+    price: Number(s.price_thb), priceLabel: s.billing === "usage" ? "Pay as you go" : Number(s.price_thb) ? `฿${fmtMoney(s.price_thb)} / ${s.billing === "year" ? "year" : "month"}` : "Included" };
+}
+
 /** จัดการ subscription: โควตา, key, เครื่องที่ผูก license, ยกเลิก/ต่ออายุ */
 async function renderSubscription(req, res, sub, extra = {}) {
   const [keys, history, inv] = await Promise.all([
@@ -504,7 +540,8 @@ async function renderSubscription(req, res, sub, extra = {}) {
     runs: await q("SELECT mode, status, record_count, tokens, billable_tokens, started_at, IF(mode = 'manual_adjustment', error_msg, '') error_msg FROM usage_runs WHERE operator = ? ORDER BY id DESC LIMIT 15", [sub.operator]),
   } : null;
   const aiModels = isAi ? (await ai.modelsForPlan(q, sub)).map(m => ({ ...m, rates: ai.rates(m) })) : [];
-  pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null, isAi, aiModels, isEwork, eworkInfo,
+  if (eworkInfo) sub.ework = eworkInfo.summary;
+  pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null, isAi, aiModels, isEwork, eworkInfo, charges: periodCharges(sub),
     msg: req.query.msg || null, error: req.query.error || null, welcome: req.query.welcome === "1", base: siteUrl(), ...extra });
 }
 const loadMySub = async (req, res) => {

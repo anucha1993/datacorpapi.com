@@ -78,7 +78,7 @@
     <button>Filter</button>
     <% if (filters.status || filters.operator || ym === 'all') { %><a class="btn" href="/admin/invoices">Reset</a><% } %>
   </form>
-  <% if (!rows.length) { %><div class="empty"><h3>No invoices match</h3><p>Subscription charges appear automatically when Polar bills a plan. Usage over quota is invoiced with "Bill usage" (or the cron job on the 1st). Use "New invoice" for one-off charges.</p></div><% } else { %>
+  <% if (!rows.length) { %><div class="empty"><h3>No invoices match</h3><p>Subscription charges appear automatically when Polar bills a plan. Usage over quota is invoiced with "Bill usage" (issued automatically on the <%= CYCLE.label %>). Use "New invoice" for one-off charges.</p></div><% } else { %>
   <div class="scroll"><table>
     <thead><tr><th>Invoice</th><th>Customer</th><th>Description</th><th class="r">Amount (THB)</th><th>Issued</th><th>Due</th><th>Status</th><th>Receipt</th><th class="r"></th></tr></thead>
     <tbody>
@@ -102,5 +102,5 @@
   </table></div>
   <% } %>
 </section>
-<p class="muted small">Minimum per invoice ฿<%= MIN_THB %> (payment-provider minimum) — smaller usage amounts are carried forward automatically · due <%= DUE_DAYS %> days after issue · cron: <code>node invoices.js</code> on the 1st of each month</p>
+<p class="muted small">Minimum per invoice ฿<%= MIN_THB %> (payment-provider minimum) — smaller usage amounts are carried forward automatically · due <%= DUE_DAYS %> days after issue · billing period starts on the <%= CYCLE.label %> · overage invoices are issued automatically that day</p>
 <%- include('partials/footer') %>

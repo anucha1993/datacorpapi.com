@@ -4,7 +4,7 @@
 <div class="pagehead">
   <div class="titles">
     <h1>AI Web Tools license</h1>
-    <p class="subtitle">Each job of the desktop program is converted to tokens: records × tokens per task × multiplier. <%= monthly ? 'The plan includes a monthly token quota (resets on the 1st)' : 'Every customer gets a one-time free allowance' %>; tokens beyond it are invoiced monthly.</p>
+    <p class="subtitle">Each job of the desktop program is converted to tokens: records × tokens per task × multiplier. <%= monthly ? 'The plan includes a monthly token quota (resets on the ' + CYCLE.label + ')' : 'Every customer gets a one-time free allowance' %>; tokens beyond it are invoiced monthly.</p>
   </div>
   <% if (prod) { %><div class="tools"><a class="btn" href="/admin/products/<%= prod.id %><%= plan ? '?plan=' + plan.id + '#planform' : '' %>">Edit plan (price &amp; quota)</a></div><% } %>
 </div>
@@ -16,7 +16,7 @@
 <div class="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px">
   <section class="card" style="margin:0"><div class="muted small">Monthly fee</div><div class="strong" style="font-size:22px"><%= Number(plan.price_thb) ? '฿' + fmtMoney(plan.price_thb) : '—' %></div><div class="muted small"><%= Number(plan.price_thb) ? (plan.polar_product_id ? 'Polar ✓' : 'needs Polar product') : 'not set' %></div></section>
   <section class="card" style="margin:0"><div class="muted small"><%= monthly ? 'Included every month' : 'Free allowance (one-time)' %></div><div class="strong" style="font-size:22px"><%= fmtNum(monthly ? plan.included_units : plan.lifetime_free_units) %></div><div class="muted small">tokens per customer</div></section>
-  <section class="card" style="margin:0"><div class="muted small">After that</div><div class="strong" style="font-size:22px">฿<%= fmtUnit(plan.unit_price_thb) %></div><div class="muted small">per token, invoiced on the 1st</div></section>
+  <section class="card" style="margin:0"><div class="muted small">After that</div><div class="strong" style="font-size:22px">฿<%= fmtUnit(plan.unit_price_thb) %></div><div class="muted small">per token, invoiced on the <%= CYCLE.label %></div></section>
   <section class="card" style="margin:0"><div class="muted small">Token multiplier</div>
     <form method="post" action="/admin/ework/multiplier" style="display:flex;gap:6px;margin-top:6px">
       <input name="token_multiplier" type="number" min="0.01" max="100" step="0.01" value="<%= tryMult || mult %>" style="width:90px" aria-label="Token multiplier">
@@ -84,9 +84,9 @@
     <div class="card-head"><h2>Manual token adjustments</h2><span class="muted small">usage before the website, corrections</span></div>
     <% if (!manual.length) { %><div class="empty" style="padding:20px"><p>None yet.</p></div><% } else { %>
     <div class="scroll"><table>
-      <thead><tr><th>Added</th><th>Customer</th><th>Month</th><th class="r">Tokens</th><th>Note</th><th></th></tr></thead>
+      <thead><tr><th>Added</th><th>Customer</th><th>Period from</th><th class="r">Tokens</th><th>Note</th><th></th></tr></thead>
       <tbody><% for (const a of manual) { %>
-        <tr><td class="muted nowrap"><%= String(a.received_at).slice(0, 16) %><br><small><%= a.by_admin %></small></td><td><%= a.operator %></td><td><%= a.ym %></td>
+        <tr><td class="muted nowrap"><%= String(a.received_at).slice(0, 16) %><br><small><%= a.by_admin %></small></td><td><%= a.operator %></td><td class="nowrap"><%= String(a.charged_at).slice(0, 10) %></td>
           <td class="r strong"><%= fmtNum(a.tokens) %></td><td class="small"><%= a.note %></td>
           <td class="r"><form method="post" action="/admin/ework/manual/<%= a.id %>/undo" class="inline" onsubmit="return confirm('Remove these <%= fmtNum(a.tokens) %> tokens from <%= a.operator %>?')"><button class="btn small danger">Undo</button></form></td></tr>
       <% } %></tbody>
@@ -103,7 +103,7 @@
         </select></label>
       <div class="form-grid">
         <label>Tokens<input name="tokens" type="number" min="1" step="1" required placeholder="12000"></label>
-        <label>Month <span class="hint">Counts toward this month's quota/bill</span><input name="ym" type="month" value="<%= ym %>" max="<%= ym %>" required></label>
+        <label>Billing period <span class="hint">Starts on the <%= CYCLE.label %> · counts toward that period's quota/bill</span><input name="ym" type="month" value="<%= ym %>" max="<%= ym %>" required></label>
       </div>
       <label>Note <span class="hint">Shown to the customer</span><input name="note" maxlength="300" placeholder="Usage before the online system (Sep 2026)"></label>
       <p class="muted small" style="margin:0">Added as one entry in the customer's job list. Monthly plans: counts toward that month's quota; anything over it is billed on that month's overage invoice.</p>

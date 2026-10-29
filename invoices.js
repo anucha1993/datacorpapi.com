@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * ออกใบแจ้งหนี้ค่าใช้งานเกินโควตา / จ่ายตามใช้งาน ของเดือนที่แล้ว จาก command line (สำหรับ cron)
- *   node invoices.js            → ออก/อัปเดตบิลของ "เดือนที่แล้ว" (รันทุกวันที่ 1 เวลา 06:00)
- *   node invoices.js 2026-10    → เดือนที่ระบุ
- * cron (Plesk Scheduled Task):  0 6 1 * *  /opt/plesk/node/22/bin/node /path/invoices.js >> invoices.log 2>&1
+ * ออกใบแจ้งหนี้ค่าใช้งานเกินโควตา / จ่ายตามใช้งาน ของรอบที่แล้ว จาก command line (ไม่จำเป็นถ้าเปิด AUTO_INVOICE — เว็บออกให้เองทุกวันตัดรอบ)
+ *   node invoices.js            → ออก/อัปเดตบิลของ "รอบที่แล้ว" (รอบเริ่มวันที่ BILLING_CYCLE_DAY)
+ *   node invoices.js 2026-10    → รอบที่ระบุ (key = เดือนที่รอบเริ่ม)
+ * cron (Plesk Scheduled Task):  0 6 23 * *  /opt/plesk/node/22/bin/node /path/invoices.js >> invoices.log 2>&1
  */
 "use strict";
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
@@ -11,7 +11,7 @@ const mysql = require("mysql2/promise");
 const invoices = require("./lib/invoices");
 
 const argYm = process.argv[2];
-const ym = /^\d{4}-\d{2}$/.test(argYm || "") ? argYm : invoices.prevMonth(new Date().toISOString().slice(0, 7));
+const ym = /^\d{4}-\d{2}$/.test(argYm || "") ? argYm : invoices.prevMonth(require("./lib/platform").ymNow());
 
 (async () => {
   const pool = mysql.createPool({

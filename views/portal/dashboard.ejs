@@ -2,7 +2,7 @@
 <div class="pagehead">
   <div class="titles">
     <h1>Welcome<%= user.company_name || user.display_name ? ', ' + (user.company_name || user.display_name) : '' %></h1>
-    <p class="subtitle">Your plans and this month's usage. Quotas reset on the 1st of every month.</p>
+    <p class="subtitle">Your plans and usage this billing period: <%= CYCLE.range().start %> to <%= CYCLE.range().end %> · quotas reset and bills are issued on the <%= CYCLE.label %> of every month.</p>
   </div>
   <div class="tools"><a class="btn primary" href="/portal/plans">Browse plans</a></div>
 </div>
@@ -38,7 +38,7 @@
     <div class="sub-top">
       <div>
         <div class="sub-product"><%= s.product_name %></div>
-        <div class="sub-plan"><%= s.plan_name %> <span class="muted">· <%= BILLING_LABELS[s.billing] %></span></div>
+        <div class="sub-plan"><%= s.plan_name %> <span class="muted">· <%= s.charges.priceLabel %></span></div>
       </div>
       <span class="badge b-<%= s.status %>"><%= SUB_STATUS[s.status] %></span>
     </div>
@@ -63,11 +63,17 @@
       </div>
       <% if (s.included) { %><div class="meter <%= s.pct >= 100 ? 'over' : s.pct >= 80 ? 'warn' : '' %>"><span style="width:<%= s.pct %>%"></span></div><% } %>
       <% if (over && Number(s.unit_price_thb)) { %><div class="small" style="color:var(--warn)"><%= fmtNum(s.used - s.included) %> over quota · ฿<%= fmtMoney((s.used - s.included) * Number(s.unit_price_thb)) %> billed next month</div>
-      <% } else if (s.included != null && s.pct >= 100) { %><div class="small" style="color:var(--danger)">Quota reached — requests are blocked until the 1st. <u>Upgrade</u></div><% } %>
+      <% } else if (s.included != null && s.pct >= 100) { %><div class="small" style="color:var(--danger)">Quota reached — requests are blocked until the <%= CYCLE.label %>. <u>Upgrade</u></div><% } %>
     </div>
     <div class="sub-foot">
       <span><%= s.kind === 'license' ? 'License keys' : 'API keys' %>: <b><%= s.key_count %></b> / <%= s.max_keys %></span>
       <span><% if (s.status === 'pending') { %>Awaiting payment<% } else if (s.cancel_at_period_end) { %>Ends <%= fmtDate(s.period_end) %><% } else if (s.period_end) { %>Renews <%= fmtDate(s.period_end) %><% } else { %>No end date<% } %></span>
+    </div>
+    <% } %>
+    <% if (s.status === 'active' && (s.charges.fee || s.charges.overage)) { %>
+    <div class="sub-charges">
+      <div><span class="muted small">This period (<%= s.charges.start %> – <%= s.charges.end %>)</span><b>฿<%= fmtMoney(s.charges.total) %></b></div>
+      <div class="muted small"><%= s.charges.fee ? 'Plan ฿' + fmtMoney(s.charges.fee) : '' %><%= s.charges.fee && s.charges.overage ? ' + ' : '' %><%= s.charges.overage ? 'over quota ฿' + fmtMoney(s.charges.overage) : '' %> · billed <%= s.charges.next %></div>
     </div>
     <% } %>
   </a>
