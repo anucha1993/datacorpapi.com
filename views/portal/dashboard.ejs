@@ -42,6 +42,20 @@
       </div>
       <span class="badge b-<%= s.status %>"><%= SUB_STATUS[s.status] %></span>
     </div>
+    <% if (s.ework) { const t = s.ework, pf = t.free_tokens ? Math.min(100, Math.round(t.tokens_used_total / t.free_tokens * 100)) : 100; %>
+    <div class="sub-usage">
+      <div class="btnrow" style="justify-content:space-between">
+        <span class="muted small">free tokens left</span>
+        <span class="small"><b><%= fmtNum(t.free_remaining) %></b><span class="muted"> / <%= fmtNum(t.free_tokens) %></span></span>
+      </div>
+      <div class="meter <%= pf >= 100 ? 'over' : pf >= 80 ? 'warn' : '' %>"><span style="width:<%= pf %>%"></span></div>
+      <div class="small muted"><%= fmtNum(t.month_tokens) %> tokens this month<%= t.month_overage_thb ? ' · ฿' + fmtMoney(t.month_overage_thb) + ' over the free allowance' : '' %></div>
+    </div>
+    <div class="sub-foot">
+      <span><%= fmtNum(t.month_runs) %> jobs this month</span>
+      <span><% if (s.period_end) { %>Renews <%= fmtDate(s.period_end) %><% } else { %>No end date<% } %></span>
+    </div>
+    <% } else { %>
     <div class="sub-usage">
       <div class="btnrow" style="justify-content:space-between">
         <span class="muted small"><%= s.unit_label %> this month</span>
@@ -55,6 +69,7 @@
       <span><%= s.kind === 'license' ? 'License keys' : 'API keys' %>: <b><%= s.key_count %></b> / <%= s.max_keys %></span>
       <span><% if (s.status === 'pending') { %>Awaiting payment<% } else if (s.cancel_at_period_end) { %>Ends <%= fmtDate(s.period_end) %><% } else if (s.period_end) { %>Renews <%= fmtDate(s.period_end) %><% } else { %>No end date<% } %></span>
     </div>
+    <% } %>
   </a>
   <% } %>
 </section>

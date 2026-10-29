@@ -2,7 +2,7 @@
 <% const plan = plans.find(p => p.is_active) || plans[0]; const editing = rates.find(r => r.mode === editMode); %>
 <div class="pagehead">
   <div class="titles">
-    <h1>E-work license</h1>
+    <h1>AI Web Tools license</h1>
     <p class="subtitle">Each job of the desktop program is converted to tokens by task. Every customer gets a one-time free allowance; tokens beyond it are invoiced monthly at the plan's price.</p>
   </div>
   <% if (prod) { %><div class="tools"><a class="btn" href="/admin/products/<%= prod.id %><%= plan ? '?plan=' + plan.id + '#planform' : '' %>">Edit price &amp; free allowance</a></div><% } %>

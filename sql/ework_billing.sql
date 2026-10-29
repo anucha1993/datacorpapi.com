@@ -34,12 +34,12 @@ ALTER TABLE usage_runs ADD COLUMN IF NOT EXISTS subscription_id BIGINT UNSIGNED 
 ALTER TABLE usage_runs ADD COLUMN IF NOT EXISTS charged_at      DATETIME        NULL;
 ALTER TABLE usage_runs ADD INDEX IF NOT EXISTS ix_charged (charged_at);
 
--- product + plan (edit price / overage / free allowance in Admin → Products → E-WorkPermit Tools)
+-- product + plan (edit price / overage / free allowance in Admin → Products → AI Web Tools)
 INSERT IGNORE INTO products (slug, name, tagline, description, kind, unit_label, sort_order)
-  VALUES ('e-work', 'E-WorkPermit Tools', 'Automate e-WorkPermit reports, downloads and submissions',
+  VALUES ('e-work', 'AI Web Tools', 'Automate e-WorkPermit reports, downloads and submissions',
           'Desktop tool for recruitment agencies: e-Tracking reports, receipts and forms, worker registration and booking — activated with your account Serial Number.',
           'license', 'tokens', 90);
 INSERT INTO product_plans (product_id, name, billing, price_thb, included_units, lifetime_free_units, unit_price_thb, max_keys, max_devices, features, is_active, sort_order)
-  SELECT p.id, 'E-work License', 'month', 0, 0, 50000, 1.0000, 1, 0,
+  SELECT p.id, 'License', 'month', 0, 0, 50000, 1.0000, 1, 0,
          '50,000 free tokens (one-time)\nThen ฿1 per token, invoiced monthly\nTokens per job depend on the task (see rates)', 0, 10
   FROM products p WHERE p.slug = 'e-work' AND NOT EXISTS (SELECT 1 FROM product_plans x WHERE x.product_id = p.id);

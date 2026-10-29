@@ -405,6 +405,7 @@ app.get("/portal", requirePortal, async (req, res, next) => {
       platform.listSubscriptions(q, op),
       q("SELECT invoice_no, ym, title, amount_thb, due_at FROM billing_invoices WHERE operator = ? AND status = 'open' ORDER BY due_at, id", [op]),
     ]);
+    for (const s of subs) if (s.product_slug === ework.SLUG()) s.ework = await ework.summary(q, op);
     pview(req, res, "dashboard", { title: "Overview", subs, openInvoices, ym: thisMonth() });
   } catch (e) { next(e); }
 });
