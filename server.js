@@ -1243,16 +1243,29 @@ async function renderEwork(req, res, extra = {}) {
   const plans = prod ? await q("SELECT * FROM product_plans WHERE product_id = ? ORDER BY sort_order, id", [prod.id]) : [];
   const users = await q(`SELECT u.operator, u.display_name, u.serial_no, u.is_active FROM portal_users u
                          WHERE u.serial_no IS NOT NULL OR EXISTS (SELECT 1 FROM usage_runs r WHERE r.operator = u.operator) ORDER BY u.operator`);
+  const plan = plans.find(p => p.is_active) || plans[0];
+  const tryMult = Number(req.query.try) > 0 ? Math.min(100, Number(req.query.try)) : null;
+  const rateBy = Object.fromEntries((await ework.rates(q)).map(r => [r.mode, r]));
   const customers = [];
-  for (const u of users) customers.push({ ...u, ...(await ework.summary(q, u.operator)) });
+  for (const u of users) customers.push({ ...u, ...(await ework.summary(q, u.operator)), proj: await ework.projection(q, u.operator, tryMult || (plan ? Number(plan.token_multiplier) : 1), rateBy) });
   const recent = await q("SELECT operator, mode, status, record_count, tokens, billable_tokens, started_at, app_version FROM usage_runs ORDER BY id DESC LIMIT 30");
   res.render("ework", { title: "E-work", prod, plans, rates: await ework.rates(q), customers, recent, editMode: String(req.query.mode || ""),
-    ym: thisMonth(), msg: req.query.msg || null, error: req.query.error || null, ...extra });
+    tryMult, ym: thisMonth(), msg: req.query.msg || null, error: req.query.error || null, ...extra });
 }
 admin.get("/ework", (req, res, next) => renderEwork(req, res).catch(next));
 admin.post("/ework/rates", async (req, res, next) => {
   try { await ework.saveRate(q, req.body); back(res, "/admin/ework", `Rate for ${req.body.mode} saved — applies to new jobs`); }
   catch (e) { if (isDbError(e)) return next(e); back(res, "/admin/ework", e.message, true); }
+});
+admin.post("/ework/multiplier", async (req, res, next) => {
+  try {
+    const v = Number(req.body.token_multiplier);
+    if (!(v >= 0.01 && v <= 100)) return back(res, "/admin/ework", "Multiplier must be between 0.01 and 100", true);
+    const prod = await ework.product(q);
+    if (!prod) return back(res, "/admin/ework", "Product e-work not found", true);
+    await q("UPDATE product_plans SET token_multiplier = ? WHERE product_id = ?", [Math.round(v * 1000) / 1000, prod.id]);
+    back(res, "/admin/ework", `Token multiplier set to ×${v} — applies to new jobs`);
+  } catch (e) { next(e); }
 });
 admin.post("/ework/customers/:operator/free", async (req, res, next) => {
   try { await ework.setFreeOverride(q, req.params.operator, req.body.free_tokens); back(res, "/admin/ework", `Free allowance updated for ${req.params.operator}`); } catch (e) { next(e); }

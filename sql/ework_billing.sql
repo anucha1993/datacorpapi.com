@@ -43,3 +43,6 @@ INSERT INTO product_plans (product_id, name, billing, price_thb, included_units,
   SELECT p.id, 'License', 'month', 0, 0, 50000, 1.0000, 1, 0,
          '50,000 free tokens (one-time)\nThen ฿1 per token, invoiced monthly\nTokens per job depend on the task (see rates)', 0, 10
   FROM products p WHERE p.slug = 'e-work' AND NOT EXISTS (SELECT 1 FROM product_plans x WHERE x.product_id = p.id);
+
+-- multiplies every job's tokens for this plan (tune burn rate without editing each task) — added 2026-10-29
+ALTER TABLE product_plans ADD COLUMN IF NOT EXISTS token_multiplier DECIMAL(6,3) NOT NULL DEFAULT 1.000 AFTER lifetime_free_units;

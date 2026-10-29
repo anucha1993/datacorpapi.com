@@ -29,17 +29,23 @@
 
 <div class="layout-side">
   <div>
-    <% if (isEwork) { const t = eworkInfo.summary; const pctFree = t.free_tokens ? Math.min(100, Math.round(t.tokens_used_total / t.free_tokens * 100)) : 100; %>
+    <% if (isEwork) { const t = eworkInfo.summary; const mo = t.quota_type === 'monthly';
+       const pctFree = t.free_tokens ? Math.min(100, Math.round((mo ? t.month_tokens : t.tokens_used_total) / t.free_tokens * 100)) : 100; %>
     <section class="card">
-      <div class="card-head"><h2>Tokens</h2><span class="muted small">free allowance is one-time</span></div>
+      <div class="card-head"><h2>Tokens</h2><span class="muted small"><%= mo ? 'quota resets on the 1st' : 'free allowance is one-time' %></span></div>
       <div class="usage-big">
+        <% if (mo) { %>
+        <div><span class="num"><%= fmtNum(t.month_tokens) %></span> <span class="muted">/ <%= fmtNum(t.month_included) %> tokens this month</span></div>
+        <div class="muted small"><%= fmtNum(t.month_remaining) %> remaining</div>
+        <% } else { %>
         <div><span class="num"><%= fmtNum(t.free_remaining) %></span> <span class="muted">free tokens left of <%= fmtNum(t.free_tokens) %></span></div>
         <div class="muted small"><%= fmtNum(t.tokens_used_total) %> used in total</div>
+        <% } %>
       </div>
       <div class="meter lg <%= pctFree >= 100 ? 'over' : pctFree >= 80 ? 'warn' : '' %>"><span style="width:<%= pctFree %>%"></span></div>
       <dl class="kv" style="grid-template-columns:200px 1fr;font-size:13.5px;margin-top:16px">
         <dt>This month (<%= t.month %>)</dt><dd><%= fmtNum(t.month_tokens) %> tokens · <%= t.month_runs %> jobs</dd>
-        <dt>Beyond the free allowance</dt><dd><%= fmtNum(t.month_billable_tokens) %> tokens × ฿<%= fmtUnit(t.price_per_token_thb) %> = <b>฿<%= fmtMoney(t.month_overage_thb) %></b><% if (t.month_overage_thb) { %> <span class="muted">· invoiced on the 1st</span><% } %></dd>
+        <dt><%= mo ? 'Beyond the monthly quota' : 'Beyond the free allowance' %></dt><dd><%= fmtNum(t.month_billable_tokens) %> tokens × ฿<%= fmtUnit(t.price_per_token_thb) %> = <b>฿<%= fmtMoney(t.month_overage_thb) %></b><% if (t.month_overage_thb) { %> <span class="muted">· invoiced on the 1st</span><% } %></dd>
       </dl>
     </section>
     <section class="card flush">

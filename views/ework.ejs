@@ -1,11 +1,12 @@
 <%- include('partials/header') %>
-<% const plan = plans.find(p => p.is_active) || plans[0]; const editing = rates.find(r => r.mode === editMode); %>
+<% const plan = plans.find(p => p.is_active) || plans[0]; const editing = rates.find(r => r.mode === editMode);
+   const monthly = plan && !Number(plan.lifetime_free_units) && Number(plan.included_units) > 0; const mult = plan ? Number(plan.token_multiplier) : 1; %>
 <div class="pagehead">
   <div class="titles">
     <h1>AI Web Tools license</h1>
-    <p class="subtitle">Each job of the desktop program is converted to tokens by task. Every customer gets a one-time free allowance; tokens beyond it are invoiced monthly at the plan's price.</p>
+    <p class="subtitle">Each job of the desktop program is converted to tokens: records × tokens per task × multiplier. <%= monthly ? 'The plan includes a monthly token quota (resets on the 1st)' : 'Every customer gets a one-time free allowance' %>; tokens beyond it are invoiced monthly.</p>
   </div>
-  <% if (prod) { %><div class="tools"><a class="btn" href="/admin/products/<%= prod.id %><%= plan ? '?plan=' + plan.id + '#planform' : '' %>">Edit price &amp; free allowance</a></div><% } %>
+  <% if (prod) { %><div class="tools"><a class="btn" href="/admin/products/<%= prod.id %><%= plan ? '?plan=' + plan.id + '#planform' : '' %>">Edit plan (price &amp; quota)</a></div><% } %>
 </div>
 <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
 <% if (error) { %><p class="alert"><%= error %></p><% } %>
@@ -14,33 +15,40 @@
 <% if (plan) { %>
 <div class="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px">
   <section class="card" style="margin:0"><div class="muted small">Monthly fee</div><div class="strong" style="font-size:22px"><%= Number(plan.price_thb) ? '฿' + fmtMoney(plan.price_thb) : '—' %></div><div class="muted small"><%= Number(plan.price_thb) ? (plan.polar_product_id ? 'Polar ✓' : 'needs Polar product') : 'not set' %></div></section>
-  <section class="card" style="margin:0"><div class="muted small">Free allowance (one-time)</div><div class="strong" style="font-size:22px"><%= fmtNum(plan.lifetime_free_units) %></div><div class="muted small">tokens per customer</div></section>
+  <section class="card" style="margin:0"><div class="muted small"><%= monthly ? 'Included every month' : 'Free allowance (one-time)' %></div><div class="strong" style="font-size:22px"><%= fmtNum(monthly ? plan.included_units : plan.lifetime_free_units) %></div><div class="muted small">tokens per customer</div></section>
   <section class="card" style="margin:0"><div class="muted small">After that</div><div class="strong" style="font-size:22px">฿<%= fmtUnit(plan.unit_price_thb) %></div><div class="muted small">per token, invoiced on the 1st</div></section>
+  <section class="card" style="margin:0"><div class="muted small">Token multiplier</div>
+    <form method="post" action="/admin/ework/multiplier" style="display:flex;gap:6px;margin-top:6px">
+      <input name="token_multiplier" type="number" min="0.01" max="100" step="0.01" value="<%= tryMult || mult %>" style="width:90px" aria-label="Token multiplier">
+      <button class="btn small primary">Save</button>
+      <button class="btn small" formmethod="get" formaction="/admin/ework" name="try" value="" onclick="this.value=this.form.token_multiplier.value">Preview</button>
+    </form>
+    <div class="muted small" style="margin-top:6px">× every task rate · new jobs only<%= tryMult ? ' · previewing ×' + tryMult + ' (not saved)' : '' %></div></section>
 </div>
 <% } %>
 
 <section class="card flush">
-  <div class="card-head"><h2>Customers <span class="muted">· <%= customers.length %></span></h2><span class="muted small">this month = <%= ym %></span></div>
+  <div class="card-head"><h2>Customers <span class="muted">· <%= customers.length %></span></h2><span class="muted small">this month = <%= ym %> · projected = last 30 days of jobs at ×<%= tryMult || mult %></span></div>
   <div class="scroll"><table>
-    <thead><tr><th>Customer</th><th>License</th><th class="r">Used (total)</th><th class="r">Free left</th><th class="r">This month</th><th class="r">Billable</th><th class="r">Est. overage</th><th>Free allowance</th></tr></thead>
-    <tbody><% for (const c of customers) { %>
+    <thead><tr><th>Customer</th><th>License</th><th class="r">This month</th><th class="r"><%= monthly ? 'Left this month' : 'Free left' %></th><th class="r">Over quota</th><th class="r">Est. overage</th><th class="r">Projected / month</th><% if (!monthly) { %><th>Free allowance</th><% } %></tr></thead>
+    <tbody><% for (const c of customers) { const quota = monthly ? Number(plan.included_units) : 0; %>
       <tr>
         <td><a href="/admin/customers/<%= encodeURIComponent(c.operator) %>"><b><%= c.operator %></b></a><br><small class="muted mono"><%= c.serial_no || 'no SN' %></small></td>
         <td><% if (c.status === 'none') { %>
               <form method="post" action="/admin/ework/customers/<%= encodeURIComponent(c.operator) %>/license" class="inline"><button class="btn small primary">Grant license</button></form>
             <% } else { %><span class="badge b-<%= c.status %>"><%= SUB_STATUS[c.status] || c.status %></span><br><small class="muted"><%= c.plan %></small><% } %></td>
-        <td class="r"><%= fmtNum(c.tokens_used_total) %></td>
+        <td class="r"><%= fmtNum(c.month_tokens) %><%= c.quota_type === 'monthly' ? ' / ' + fmtNum(c.month_included) : '' %><br><small class="muted"><%= c.month_runs %> jobs</small></td>
         <td class="r <%= c.free_remaining ? '' : 'strong' %>"><%= fmtNum(c.free_remaining) %></td>
-        <td class="r"><%= fmtNum(c.month_tokens) %><br><small class="muted"><%= c.month_runs %> jobs</small></td>
         <td class="r"><%= fmtNum(c.month_billable_tokens) %></td>
         <td class="r strong"><%= c.month_overage_thb ? '฿' + fmtMoney(c.month_overage_thb) : '—' %></td>
-        <td><form method="post" action="/admin/ework/customers/<%= encodeURIComponent(c.operator) %>/free" class="inline" style="display:flex;gap:6px">
+        <td class="r"><b><%= fmtNum(c.proj.per_month) %></b><% if (quota && c.proj.per_month > quota) { %><br><small style="color:var(--warn)">+<%= fmtNum(c.proj.per_month - quota) %> over · ≈฿<%= fmtMoney((c.proj.per_month - quota) * Number(plan.unit_price_thb)) %></small><% } else if (c.proj.days) { %><br><small class="muted">from <%= c.proj.days %> days</small><% } %></td>
+        <% if (!monthly) { %><td><form method="post" action="/admin/ework/customers/<%= encodeURIComponent(c.operator) %>/free" class="inline" style="display:flex;gap:6px">
           <input name="free_tokens" type="number" min="0" step="1" value="<%= c.free_override ? c.free_tokens : '' %>" placeholder="<%= fmtNum(c.free_tokens) %> (plan)" style="width:130px" aria-label="Free tokens for <%= c.operator %>">
-          <button class="btn small">Save</button></form></td>
+          <button class="btn small">Save</button></form></td><% } %>
       </tr>
     <% } %></tbody>
   </table></div>
-  <p class="muted small" style="padding:0 20px 14px;margin:0">Leave the allowance blank to use the plan's. Raising it later does not refund tokens already billed. Overage invoices are created with <a href="/admin/invoices">Invoices → Generate</a> like other plans.</p>
+  <p class="muted small" style="padding:0 20px 14px;margin:0">Use <b>Preview</b> to see projected monthly tokens for a multiplier before saving. Rate and multiplier changes apply to new jobs only. Overage invoices are created with <a href="/admin/invoices">Invoices → Generate</a> like other plans.</p>
 </section>
 
 <div class="layout-side wider">
