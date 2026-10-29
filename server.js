@@ -3,6 +3,7 @@
  *   /            หน้าเว็บสาธารณะ: บริการ ราคา นโยบาย ติดต่อ
  *   /portal      พอร์ทัลลูกค้า: แพ็กเกจ โควตา API key / license key ใบแจ้งหนี้ ชำระเงินผ่าน Polar
  *   /admin       หน้าหลังบ้าน (รหัสผ่าน): สินค้า/แพ็กเกจ subscription ลูกค้า ใบแจ้งหนี้
+ *   /v1/*        AI gateway แบบ OpenAI (chat/completions, models) — ลูกค้าใช้ key ของ DataCorp
  *   /api/v1/*    API ของแพลตฟอร์ม: authorize + นับโควตา (backend ของบริการเรียก), ตรวจ license (โปรแกรมเรียก)
  *   /api/license/verify      ตรวจ SN ของบัญชี (โปรแกรมเดิมยังใช้)
  *   /webhooks/polar          รับเหตุการณ์ order/subscription จาก Polar
@@ -31,6 +32,7 @@ const services = require("./lib/services");
 const polar = require("./lib/polar");
 const platform = require("./lib/platform");
 const admins = require("./lib/admins");
+const ai = require("./lib/aigateway");
 const QRCode = require("qrcode");
 
 const PORT = Number(process.env.PORT || 3000);
@@ -258,6 +260,28 @@ api.use((err, req, res, _next) => {
 });
 app.use("/api/v1", api);
 
+// =========================== AI gateway (/v1, รูปแบบเดียวกับ OpenAI) ===========================
+// ลูกค้า: OpenAI(base_url="SITE_URL/v1", api_key="dca_sk_…") — ดู lib/aigateway.js
+const v1 = express.Router();
+v1.use((req, res, next) => { res.set("Access-Control-Allow-Origin", "*"); next(); });
+v1.use(express.json({ limit: "12mb" }));
+const v1wrap = (fn) => async (req, res) => {
+  try { await fn(q, req, res); } catch (e) {
+    console.error("[ai]", e);
+    if (!res.headersSent) res.status(500).json({ error: { message: "Server error", type: "server_error", code: "server_error", param: null } });
+    else if (!res.writableEnded) res.end();
+  }
+};
+v1.get("/models", v1wrap(ai.listModels));
+v1.post("/chat/completions", v1wrap(ai.chatCompletions));
+v1.use((req, res) => res.status(404).json({ error: { message: `Unknown endpoint ${req.method} /v1${req.path} — supported: POST /v1/chat/completions, GET /v1/models`, type: "invalid_request_error", code: "not_found", param: null } }));
+// eslint-disable-next-line no-unused-vars
+v1.use((err, req, res, _next) => {
+  const parse = err && err.type === "entity.parse.failed", big = err && err.type === "entity.too.large";
+  res.status(big ? 413 : parse ? 400 : 500).json({ error: { message: big ? "Request body is too large (max 12 MB)" : parse ? "Request body must be valid JSON" : "Server error", type: "invalid_request_error", code: big ? "too_large" : parse ? "invalid_json" : "server_error", param: null } });
+});
+app.use("/v1", v1);
+
 app.use(express.urlencoded({ extended: false, limit: "64kb" }));
 app.use(express.static(path.join(__dirname, "public"), { maxAge: "1h" }));
 app.use(cookieSession({ name: "ewpusage", secret: SESSION_SECRET, httpOnly: true, sameSite: "lax", maxAge: 12 * 60 * 60 * 1000 }));
@@ -432,7 +456,9 @@ async function renderSubscription(req, res, sub, extra = {}) {
     platform.usageHistory(q, sub.id, 12),
     q("SELECT invoice_no, kind, title, amount_thb, status, issued_at FROM billing_invoices WHERE subscription_id = ? ORDER BY id DESC LIMIT 12", [sub.id]),
   ]);
-  pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null,
+  const isAi = sub.product_slug === ai.cfg().slug;
+  const aiModels = isAi ? (await ai.modelsForPlan(q, sub)).map(m => ({ ...m, rates: ai.rates(m) })) : [];
+  pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null, isAi, aiModels,
     msg: req.query.msg || null, error: req.query.error || null, welcome: req.query.welcome === "1", base: siteUrl(), ...extra });
 }
 const loadMySub = async (req, res) => {
@@ -739,8 +765,9 @@ async function renderProduct(req, res, id, extra = {}) {
   if (id && !product) return res.status(404).render("error", { title: "Product not found", message: "No product with this id.", detail: "" });
   const subs = id ? (await q("SELECT plan_id, COUNT(*) n FROM subscriptions WHERE product_id = ? AND status = 'active' GROUP BY plan_id", [id])) : [];
   const editPlan = product && req.query.plan ? product.plans.find(p => p.id === Number(req.query.plan)) : null;
+  const isAi = !!product && product.slug === ai.cfg().slug;
   res.render("product", { title: "Products", product, form: null, editPlan, planForm: null, subsByPlan: Object.fromEntries(subs.map(s => [s.plan_id, s.n])),
-    pay: payments.info(), base: siteUrl(), secret: null, msg: req.query.msg || null, error: req.query.error || null, ...extra });
+    pay: payments.info(), base: siteUrl(), secret: null, isAi, aiModels: isAi ? await ai.models(q, { fresh: true }) : [], aiKeySet: !!ai.cfg().key, msg: req.query.msg || null, error: req.query.error || null, ...extra });
 }
 admin.get("/products/new", (req, res, next) => renderProduct(req, res, null).catch(next));
 admin.get("/products/:id(\\d+)", (req, res, next) => renderProduct(req, res, req.params.id).catch(next));
@@ -1161,6 +1188,29 @@ admin.post("/admins/:id(\\d+)/reset-2fa", ...adminAction(async (req, id) => {
   await admins.signOutEverywhere(q, id);
   return "Two-factor authentication removed — they can set it up again from My account";
 }));
+
+// ---- AI models (ราคาต้นทุน OpenAI → credits ที่คิดลูกค้า) ----
+async function renderAiModels(req, res, extra = {}) {
+  const c = ai.cfg();
+  const [list, status] = await Promise.all([ai.models(q, { fresh: true }), req.query.check ? ai.upstreamStatus() : Promise.resolve(null)]);
+  const ym = thisMonth();
+  const spend = (await q(`SELECT COALESCE(SUM(c.units), 0) credits, COALESCE(SUM(c.requests), 0) requests FROM usage_counters c JOIN subscriptions s ON s.id = c.subscription_id
+                          JOIN products p ON p.id = s.product_id WHERE p.slug = ? AND c.ym = ?`, [c.slug, ym]))[0];
+  res.render("ai_models", { title: "AI models", models: list.map(m => ({ ...m, rates: ai.rates(m) })), cfg: { slug: c.slug, fx: c.fx, base: c.base, keySet: !!c.key },
+    status, spend, ym, editId: Number(req.query.edit) || 0, form: null, siteBase: siteUrl(), msg: req.query.msg || null, error: req.query.error || null, ...extra });
+}
+admin.get("/ai-models", (req, res, next) => renderAiModels(req, res).catch(next));
+admin.post("/ai-models", async (req, res, next) => {
+  try { await ai.saveModel(q, null, req.body); back(res, "/admin/ai-models", "Model added"); }
+  catch (e) { if (isDbError(e)) return next(e); renderAiModels(req, res, { error: e.message, form: req.body }).catch(next); }
+});
+admin.post("/ai-models/:id(\\d+)", async (req, res, next) => {
+  try { await ai.saveModel(q, Number(req.params.id), req.body); back(res, "/admin/ai-models", "Model saved"); }
+  catch (e) { if (isDbError(e)) return next(e); back(res, `/admin/ai-models?edit=${req.params.id}`, e.message, true); }
+});
+admin.post("/ai-models/:id(\\d+)/toggle", async (req, res, next) => {
+  try { await q("UPDATE ai_models SET is_active = 1 - is_active WHERE id = ?", [Number(req.params.id)]); ai.clearCache(); back(res, "/admin/ai-models", "Model visibility updated"); } catch (e) { next(e); }
+});
 
 app.use("/admin", admin);
 

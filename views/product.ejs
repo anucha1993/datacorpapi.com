@@ -29,7 +29,7 @@
         <thead><tr><th>Plan</th><th>Billing</th><th class="r">Price</th><th class="r">Included / month</th><th class="r">Over quota</th><th class="r">Subs</th><th></th></tr></thead>
         <tbody><% for (const pl of product.plans) { %>
           <tr class="<%= editPlan && editPlan.id === pl.id ? 'hl' : '' %>">
-            <td><b><%= pl.name %></b><%= pl.is_featured ? ' ★' : '' %><br><small class="muted"><%= product.kind === 'license' ? pl.max_keys + ' license(s) · ' + (Number(pl.max_devices) ? pl.max_devices + ' device(s) each' : 'unlimited devices') : pl.max_keys + ' keys' + (Number(pl.rate_limit_per_min) ? ' · ' + pl.rate_limit_per_min + '/min' : '') %><%= pl.polar_product_id ? ' · Polar ✓' : '' %></small></td>
+            <td><b><%= pl.name %></b><%= pl.is_featured ? ' ★' : '' %><br><small class="muted"><% if (isAi) { %><%= pl.allowed_models ? pl.allowed_models.split(',').length + ' models' : 'all models' %><%= Number(pl.max_output_tokens) ? ' · ≤' + fmtNum(pl.max_output_tokens) + ' out' : '' %> · <% } %><%= product.kind === 'license' ? pl.max_keys + ' license(s) · ' + (Number(pl.max_devices) ? pl.max_devices + ' device(s) each' : 'unlimited devices') : pl.max_keys + ' keys' + (Number(pl.rate_limit_per_min) ? ' · ' + pl.rate_limit_per_min + '/min' : '') %><%= pl.polar_product_id ? ' · Polar ✓' : '' %></small></td>
             <td><%= BILLING_LABELS[pl.billing] %></td>
             <td class="r strong"><%= pl.billing === 'usage' ? '—' : Number(pl.price_thb) ? '฿' + fmtMoney(pl.price_thb) : 'Free' %></td>
             <td class="r"><%= pl.included_units == null ? 'Unlimited' : fmtNum(pl.included_units) %></td>
@@ -63,6 +63,15 @@
           <label>Devices per license <span class="hint">0 = unlimited</span><input name="max_devices" type="number" min="0" value="<%= pf.max_devices ?? 1 %>"></label>
           <% } else { %>
           <label>Rate limit per key (requests/min) <span class="hint">0 = no limit</span><input name="rate_limit_per_min" type="number" min="0" value="<%= pf.rate_limit_per_min ?? 0 %>"></label>
+          <% } %>
+          <% if (isAi) { const chosen = String(pf.allowed_models || '').split(',').filter(Boolean); %>
+          <fieldset class="full" style="border:1px solid var(--border);border-radius:10px;padding:10px 14px">
+            <legend class="small strong">AI models allowed <span class="hint">none ticked = every active model · prices in <a href="/admin/ai-models">AI models</a></span></legend>
+            <div style="display:flex;flex-wrap:wrap;gap:6px 18px">
+              <% for (const m of aiModels) { %><label class="check"><input type="checkbox" name="allowed_models" value="<%= m.model %>" <%= chosen.includes(m.model) ? 'checked' : '' %>> <span class="mono"><%= m.model %></span><%= m.is_active ? '' : ' (off)' %></label><% } %>
+            </div>
+          </fieldset>
+          <label>Max output tokens per request <span class="hint">0 = no cap</span><input name="max_output_tokens" type="number" min="0" step="1" value="<%= pf.max_output_tokens ?? 4096 %>"></label>
           <% } %>
           <label class="full">Features <span class="hint">One per line — shown on the plan card</span><textarea name="features" rows="4" maxlength="3000" placeholder="10,000 requests / month&#10;Email support"><%= pf.features || '' %></textarea></label>
           <label>Sort order<input name="sort_order" type="number" value="<%= pf.sort_order ?? 0 %>"></label>
@@ -108,6 +117,14 @@
   <aside>
     <section class="card">
       <div class="section-title">Integration</div>
+      <% if (isAi) { %>
+        <p class="small" style="margin-top:0"><b>AI gateway</b> — customers call it directly with their key (OpenAI-compatible):</p>
+        <pre class="code">POST <%= base || '' %>/v1/chat/completions
+GET  <%= base || '' %>/v1/models
+Authorization: Bearer dca_sk_…</pre>
+        <p class="small muted">Usage is metered in credits (1 credit = ฿0.001 of OpenAI cost). OpenAI key: <%= aiKeySet ? '✓ set' : '✗ OPENAI_API_KEY missing' %>. <a href="/admin/ai-models">Manage models &amp; prices →</a></p>
+        <hr class="divider">
+      <% } %>
       <% if (product.kind === 'api') { %>
         <p class="small" style="margin-top:0">Your API server checks each customer request (and counts usage) with one call:</p>
         <pre class="code">POST <%= base || '' %>/api/v1/authorize

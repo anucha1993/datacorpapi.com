@@ -39,7 +39,7 @@ const bad = (m) => console.log("✗ " + m);
     ok(`MySQL ต่อได้ (${process.env.DB_USER}@${process.env.DB_HOST}/${process.env.DB_NAME})`);
     const [t] = await c.query("SHOW TABLES");
     const names = t.map(x => Object.values(x)[0]);
-    for (const need of ["portal_users", "billing_invoices", "service_catalog", "billing_attachments", "admin_users", "products", "product_plans", "subscriptions", "access_keys", "usage_counters", "contact_messages"]) names.includes(need) ? ok("table " + need) : bad("table " + need + " ไม่พบ → รัน sql/*.sql");
+    for (const need of ["portal_users", "billing_invoices", "service_catalog", "billing_attachments", "admin_users", "ai_models", "products", "product_plans", "subscriptions", "access_keys", "usage_counters", "contact_messages"]) names.includes(need) ? ok("table " + need) : bad("table " + need + " ไม่พบ → รัน sql/*.sql");
     await c.end();
   } catch (e) { bad("MySQL ต่อไม่ได้: " + (e.code || "") + " " + e.message); }
 
@@ -59,6 +59,12 @@ const bad = (m) => console.log("✗ " + m);
       const r = await fetch(base + "/v1/products/?limit=1", { headers: { Authorization: "Bearer " + process.env.POLAR_ACCESS_TOKEN.trim() }, signal: AbortSignal.timeout(15000) });
       r.ok ? ok("Polar API ต่อได้ (" + base + ")") : bad("Polar API ตอบ " + r.status + (r.status === 401 ? " → token ผิด หรือ POLAR_SERVER ไม่ตรงกับที่สร้าง token" : ""));
     } catch (e) { const c = e.cause || e; bad("ต่อ " + base + " ไม่ได้: " + (c.code || c.name) + " " + c.message + " → เซิร์ฟเวอร์ออกอินเทอร์เน็ต/DNS/SSL ไม่ได้"); }
+  }
+
+  // AI gateway: ต่อ OpenAI ได้ไหม (อ่านอย่างเดียว)
+  {
+    const r = await require("./lib/aigateway").upstreamStatus();
+    r.ok ? ok("OpenAI " + r.message) : (process.env.OPENAI_API_KEY ? bad("OpenAI: " + r.message) : console.log("· OPENAI_API_KEY ยังไม่ตั้ง (AI gateway /v1 ยังใช้ไม่ได้)"));
   }
 
   // โหลดแอปจริงแบบไม่เปิดพอร์ต (ตรวจ syntax/require ทั้งไฟล์)

@@ -1,0 +1,78 @@
+<%- include('partials/header') %>
+<% const editing = editId ? models.find(m => m.id === editId) : null; const f = form || editing || {}; %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>AI models</h1>
+    <p class="subtitle">Models customers can call through <code>/v1/chat/completions</code>. Enter OpenAI's price; customers are charged in credits (1 credit = ฿0.001 of OpenAI cost at ฿<%= cfg.fx %>/USD).</p>
+  </div>
+  <div class="tools"><a class="btn" href="/admin/ai-models?check=1">Test OpenAI connection</a></div>
+</div>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+<% if (!cfg.keySet) { %><p class="alert"><code>OPENAI_API_KEY</code> is not set in <code>.env</code> — customer requests answer "AI service is temporarily unavailable" until you add it and restart.</p><% } %>
+<% if (status) { %><p class="<%= status.ok ? 'ok' : 'alert' %>">OpenAI: <%= status.message %><% if (status.ok) { const missing = models.filter(m => m.is_active && !status.ids.includes(m.model)); if (missing.length) { %> · <b>Not on your OpenAI account:</b> <%= missing.map(m => m.model).join(', ') %> — hide them or customers get errors<% } } %></p><% } %>
+
+<div class="layout-side wider">
+  <div>
+    <section class="card flush">
+      <div class="card-head"><h2>Price list <span class="muted">· <%= models.length %></span></h2><span class="muted small">credits per 1K tokens</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Model</th><th class="r">OpenAI $/1M in · out</th><th class="r">Credits / 1K in</th><th class="r">Credits / 1K out</th><th>Status</th><th class="r"></th></tr></thead>
+        <tbody><% for (const m of models) { %>
+          <tr class="<%= editing && editing.id === m.id ? 'hl' : '' %>">
+            <td class="nowrap"><b class="mono"><%= m.model %></b><% if (m.label && m.label !== m.model) { %><br><small class="muted"><%= m.label %></small><% } %></td>
+            <td class="r nowrap">$<%= Number(m.input_usd_per_1m) %> · $<%= Number(m.output_usd_per_1m) %></td>
+            <td class="r"><%= m.rates.input %></td>
+            <td class="r"><%= m.rates.output %></td>
+            <td><span class="badge b-<%= m.is_active ? 'active' : 'hidden' %>"><%= m.is_active ? 'On' : 'Off' %></span></td>
+            <td class="r nowrap">
+              <a class="btn small" href="/admin/ai-models?edit=<%= m.id %>">Edit</a>
+              <form method="post" action="/admin/ai-models/<%= m.id %>/toggle" class="inline"><button class="btn small"><%= m.is_active ? 'Turn off' : 'Turn on' %></button></form>
+            </td>
+          </tr>
+        <% } %></tbody>
+      </table></div>
+    </section>
+
+    <section class="card">
+      <h2><%= editing ? 'Edit ' + editing.model : 'Add a model' %></h2>
+      <form method="post" action="<%= editing ? '/admin/ai-models/' + editing.id : '/admin/ai-models' %>" class="stack">
+        <div class="form-grid">
+          <label>OpenAI model ID <span class="hint">Exact name, e.g. gpt-4o-mini</span><input name="model" value="<%= f.model || '' %>" required maxlength="100" class="mono" placeholder="gpt-4o-mini"></label>
+          <label>Label<input name="label" value="<%= f.label || '' %>" maxlength="120" placeholder="GPT-4o mini"></label>
+          <label>Input price (USD / 1M tokens)<input name="input_usd_per_1m" type="number" min="0" step="0.0001" value="<%= f.input_usd_per_1m ?? '' %>" required placeholder="0.15"></label>
+          <label>Output price (USD / 1M tokens)<input name="output_usd_per_1m" type="number" min="0" step="0.0001" value="<%= f.output_usd_per_1m ?? '' %>" required placeholder="0.60"></label>
+          <label>Sort order<input name="sort_order" type="number" value="<%= f.sort_order ?? 0 %>"></label>
+        </div>
+        <p class="muted small" style="margin:0">Prices: <a href="https://openai.com/api/pricing" target="_blank" rel="noopener">openai.com/api/pricing</a>. Which plans may use a model is set per plan in Products → <%= cfg.slug %>.</p>
+        <div class="btnrow"><button class="primary"><%= editing ? 'Save model' : 'Add model' %></button><% if (editing) { %><a class="btn" href="/admin/ai-models">Cancel</a><% } %></div>
+      </form>
+    </section>
+  </div>
+
+  <aside>
+    <section class="card">
+      <div class="section-title">This month (<%= ym %>)</div>
+      <dl class="kv" style="grid-template-columns:120px 1fr;font-size:13.5px">
+        <dt>Requests</dt><dd><%= fmtNum(spend.requests) %></dd>
+        <dt>Credits used</dt><dd><%= fmtNum(spend.credits) %></dd>
+        <dt>≈ OpenAI cost</dt><dd>฿<%= fmtMoney(Number(spend.credits) / 1000) %> <span class="muted">(≈ $<%= fmtMoney(Number(spend.credits) / 1000 / cfg.fx) %>)</span></dd>
+      </dl>
+      <p class="muted small" style="margin-bottom:0">Set a monthly budget on the OpenAI project too (platform.openai.com → Limits) so a bug can never run up a large bill.</p>
+    </section>
+    <section class="card">
+      <div class="section-title">Setup</div>
+      <ol class="small" style="padding-left:18px;margin:0;line-height:1.7">
+        <li>At platform.openai.com create a <b>Project</b> for DataCorp → API keys → create a key.</li>
+        <li>Put it in <code>.env</code> as <code>OPENAI_API_KEY=</code> and restart the app.</li>
+        <li>Set <code>AI_USD_THB</code> (now <%= cfg.fx %>) to the exchange rate you pay.</li>
+        <li>Customers buy a plan of product <code><%= cfg.slug %></code>, create an API key and call:</li>
+      </ol>
+      <pre class="code" style="margin-top:10px">from openai import OpenAI
+client = OpenAI(
+  base_url="<%= siteBase || 'https://your-site' %>/v1",
+  api_key="dca_sk_…")</pre>
+    </section>
+  </aside>
+</div>
+<%- include('partials/footer') %>

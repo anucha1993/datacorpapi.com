@@ -23,6 +23,8 @@ mysql -h HOST -u USER -p DATABASE < sql/polar_schema.sql       # Polar order/rec
 mysql -h HOST -u USER -p DATABASE < sql/service_catalog.sql    # บริการครั้งเดียว
 mysql -h HOST -u USER -p DATABASE < sql/services_receipts.sql  # ลิงก์ Polar ของบริการ + ไฟล์แนบใบเสร็จ
 mysql -h HOST -u USER -p DATABASE < sql/platform_schema.sql    # สินค้า แพ็กเกจ subscription key โควตา
+mysql -h HOST -u USER -p DATABASE < sql/admin_users.sql        # บัญชีแอดมิน
+mysql -h HOST -u USER -p DATABASE < sql/ai_gateway.sql         # AI gateway: ราคาโมเดล + จำกัดโมเดลต่อแพ็กเกจ
 ```
 อัปเกรดจากระบบเดิม (Ework): รัน `services_receipts.sql` (ถ้ายังไม่ได้รัน) และ `platform_schema.sql` แล้ว **สำรองข้อมูลก่อน** จึงรัน `sql/drop_ework.sql` เพื่อลบตารางการใช้งานของ Ework (`usage_runs`, `usage_prices`, view `v_usage_*`, `billing_usage_reports`) — SN, บัญชีลูกค้า และใบแจ้งหนี้เดิมยังอยู่ครบ
 
@@ -36,6 +38,7 @@ copy .env.example .env      # Linux/Mac: cp .env.example .env
 - `SESSION_SECRET` (สุ่ม 64 ตัว: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), `DB_*`
 - `ADMIN_PASSWORD` = **รหัสตั้งค่าใช้ครั้งเดียว** (10+ ตัว) สำหรับสร้างบัญชี owner คนแรกที่ `/login` — หลังจากนั้นแอดมินใช้บัญชีในตาราง `admin_users` (รัน `sql/admin_users.sql`) เพิ่มคนอื่น/รีเซ็ตรหัส/2FA ได้ที่ **Admin users** และ **My account**
 - **ข้อมูลธุรกิจ** `COMPANY_NAME` `COMPANY_NAME_EN` `COMPANY_TAX_ID` `COMPANY_ADDRESS` `COMPANY_EMAIL` `COMPANY_PHONE` `SITE_URL`
+- AI gateway: `OPENAI_API_KEY` (key ของ Project ใน platform.openai.com — อยู่บนเซิร์ฟเวอร์เท่านั้น) `AI_USD_THB` `AI_PRODUCT_SLUG` (ข้อ 5)
 - Polar: `PAYMENT_PROVIDER=polar` `POLAR_ACCESS_TOKEN` `POLAR_WEBHOOK_SECRET` `POLAR_PRODUCT_ID` `POLAR_SERVER` (ข้อ 4) — แพ็กเกจรายเดือน/รายปีใช้ได้กับ Polar เท่านั้น
 
 ```bash
@@ -84,6 +87,18 @@ POST /api/v1/license/verify
 { "license_key": "DCL-XXXX-XXXX-XXXX-XXXX", "product": "slug", "device_id": "…", "device_name": "PC-01", "app_version": "1.0" }
 ```
 `200 { ok, plan, expires_at, features, max_devices }` · `403 device_limit` (ลูกค้าลบเครื่องเก่าได้ในพอร์ทัล)
+
+**AI gateway** (ลูกค้าเรียกตรง รูปแบบเดียวกับ OpenAI — ใช้ OpenAI SDK ได้ แค่เปลี่ยน `base_url`):
+```python
+from openai import OpenAI
+client = OpenAI(base_url="https://datacorpapi.com/v1", api_key="dca_sk_…")
+client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": "สวัสดี"}])
+```
+- `POST /v1/chat/completions` (รองรับ `stream: true`) · `GET /v1/models` (เฉพาะโมเดลที่แพ็กเกจใช้ได้)
+- ใช้ key ของสินค้า `AI_PRODUCT_SLUG` (ai-api) ระบบตรวจ key/แพ็กเกจ/โควตา → จำกัดโมเดล (`allowed_models`) และ `max_output_tokens` ตามแพ็กเกจ → ส่งต่อ OpenAI ด้วย `OPENAI_API_KEY` → นับ **credits** จาก usage จริง
+- 1 credit = ฿0.001 ของต้นทุน OpenAI = (prompt × ราคา input + completion × ราคา output) ÷ 1M × `AI_USD_THB` × 1000 — แก้ราคา/เปิดปิดโมเดลที่ **Admin → AI models** (มีปุ่มทดสอบการเชื่อมต่อ OpenAI)
+- error จาก OpenAI ที่เป็นเรื่องบัญชีเรา (401/403/429) ลูกค้าเห็นแค่ `503 service_unavailable/upstream_busy` — ดูรายละเอียดใน log `[ai]`
+- ตั้ง **monthly budget** ของ Project ใน OpenAI ด้วยเสมอ
 
 **SN ของบัญชี (เดิม):** `POST /api/license/verify { serial, install_id, machine, windows_user, app_version }` — ไม่เปลี่ยน
 
