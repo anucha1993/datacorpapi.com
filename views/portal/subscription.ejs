@@ -53,7 +53,7 @@
       <% if (!eworkInfo.runs.length) { %><div class="empty" style="padding:24px"><p>No jobs yet — they appear here after the program finishes a task.</p></div><% } else { %>
       <div class="scroll"><table>
         <thead><tr><th>When</th><th>Task</th><th>Status</th><th class="r">Records</th><th class="r">Tokens</th></tr></thead>
-        <tbody><% for (const r of eworkInfo.runs) { %><tr><td class="muted nowrap"><%= String(r.started_at).slice(0, 16) %></td><td><%= (eworkInfo.rates.find(x => x.mode === r.mode) || {}).label || r.mode %></td>
+        <tbody><% for (const r of eworkInfo.runs) { %><tr><td class="muted nowrap"><%= String(r.started_at).slice(0, 16) %></td><td><%= r.mode === 'manual_adjustment' ? 'Adjustment' + (r.error_msg ? ' — ' + r.error_msg : '') : (eworkInfo.rates.find(x => x.mode === r.mode) || {}).label || r.mode %></td>
           <td><%= r.status === 'ok' ? 'Done' : r.status === 'cancelled' ? 'Cancelled' : 'Error' %></td><td class="r"><%= fmtNum(r.record_count) %></td><td class="r"><%= r.tokens == null ? '…' : fmtNum(r.tokens) %></td></tr><% } %></tbody>
       </table></div>
       <% } %>

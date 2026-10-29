@@ -79,12 +79,45 @@
   </section>
 </div>
 
+<div class="layout-side wider">
+  <section class="card flush">
+    <div class="card-head"><h2>Manual token adjustments</h2><span class="muted small">usage before the website, corrections</span></div>
+    <% if (!manual.length) { %><div class="empty" style="padding:20px"><p>None yet.</p></div><% } else { %>
+    <div class="scroll"><table>
+      <thead><tr><th>Added</th><th>Customer</th><th>Month</th><th class="r">Tokens</th><th>Note</th><th></th></tr></thead>
+      <tbody><% for (const a of manual) { %>
+        <tr><td class="muted nowrap"><%= String(a.received_at).slice(0, 16) %><br><small><%= a.by_admin %></small></td><td><%= a.operator %></td><td><%= a.ym %></td>
+          <td class="r strong"><%= fmtNum(a.tokens) %></td><td class="small"><%= a.note %></td>
+          <td class="r"><form method="post" action="/admin/ework/manual/<%= a.id %>/undo" class="inline" onsubmit="return confirm('Remove these <%= fmtNum(a.tokens) %> tokens from <%= a.operator %>?')"><button class="btn small danger">Undo</button></form></td></tr>
+      <% } %></tbody>
+    </table></div>
+    <% } %>
+  </section>
+
+  <section class="card" id="manualform">
+    <h2>Add tokens manually</h2>
+    <form method="post" action="/admin/ework/manual" class="stack">
+      <label>Customer
+        <select name="operator" required>
+          <% for (const c of customers.filter(c => c.status !== 'none')) { %><option value="<%= c.operator %>"><%= c.operator %><%= c.display_name ? ' — ' + c.display_name : '' %></option><% } %>
+        </select></label>
+      <div class="form-grid">
+        <label>Tokens<input name="tokens" type="number" min="1" step="1" required placeholder="12000"></label>
+        <label>Month <span class="hint">Counts toward this month's quota/bill</span><input name="ym" type="month" value="<%= ym %>" max="<%= ym %>" required></label>
+      </div>
+      <label>Note <span class="hint">Shown to the customer</span><input name="note" maxlength="300" placeholder="Usage before the online system (Sep 2026)"></label>
+      <p class="muted small" style="margin:0">Added as one entry in the customer's job list. Monthly plans: counts toward that month's quota; anything over it is billed on that month's overage invoice.</p>
+      <div class="btnrow"><button class="primary">Add tokens</button></div>
+    </form>
+  </section>
+</div>
+
 <section class="card flush">
   <div class="card-head"><h2>Latest jobs</h2></div>
   <div class="scroll"><table>
     <thead><tr><th>When</th><th>Customer</th><th>Task</th><th>Status</th><th class="r">Records</th><th class="r">Tokens</th><th class="r">Billable</th><th>Version</th></tr></thead>
     <tbody><% for (const r of recent) { %>
-      <tr><td class="nowrap muted"><%= String(r.started_at).slice(0, 16) %></td><td><%= r.operator %></td><td><%= (rates.find(x => x.mode === r.mode) || {}).label || r.mode %></td>
+      <tr><td class="nowrap muted"><%= String(r.started_at).slice(0, 16) %></td><td><%= r.operator %></td><td><%= r.mode === 'manual_adjustment' ? 'Manual adjustment' : (rates.find(x => x.mode === r.mode) || {}).label || r.mode %></td>
         <td><span class="badge b-<%= r.status === 'ok' ? 'paid' : r.status === 'error' ? 'void' : 'open' %>"><%= r.status %></span></td>
         <td class="r"><%= fmtNum(r.record_count) %></td><td class="r"><%= r.tokens == null ? '…' : fmtNum(r.tokens) %></td><td class="r"><%= fmtNum(r.billable_tokens) %></td><td class="muted"><%= r.app_version %></td></tr>
     <% } %></tbody>

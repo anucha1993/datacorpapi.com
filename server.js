@@ -501,7 +501,7 @@ async function renderSubscription(req, res, sub, extra = {}) {
   const eworkInfo = isEwork ? {
     summary: await ework.summary(q, sub.operator), rates: await ework.rates(q),
     serial: ((await q("SELECT serial_no FROM portal_users WHERE operator = ?", [sub.operator]))[0] || {}).serial_no || "",
-    runs: await q("SELECT mode, status, record_count, tokens, billable_tokens, started_at FROM usage_runs WHERE operator = ? ORDER BY id DESC LIMIT 15", [sub.operator]),
+    runs: await q("SELECT mode, status, record_count, tokens, billable_tokens, started_at, IF(mode = 'manual_adjustment', error_msg, '') error_msg FROM usage_runs WHERE operator = ? ORDER BY id DESC LIMIT 15", [sub.operator]),
   } : null;
   const aiModels = isAi ? (await ai.modelsForPlan(q, sub)).map(m => ({ ...m, rates: ai.rates(m) })) : [];
   pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null, isAi, aiModels, isEwork, eworkInfo,
@@ -1249,12 +1249,22 @@ async function renderEwork(req, res, extra = {}) {
   const customers = [];
   for (const u of users) customers.push({ ...u, ...(await ework.summary(q, u.operator)), proj: await ework.projection(q, u.operator, tryMult || (plan ? Number(plan.token_multiplier) : 1), rateBy) });
   const recent = await q("SELECT operator, mode, status, record_count, tokens, billable_tokens, started_at, app_version FROM usage_runs ORDER BY id DESC LIMIT 30");
-  res.render("ework", { title: "E-work", prod, plans, rates: await ework.rates(q), customers, recent, editMode: String(req.query.mode || ""),
+  res.render("ework", { title: "E-work", prod, plans, rates: await ework.rates(q), customers, recent, editMode: String(req.query.mode || ""), manual: await ework.manualList(q),
     tryMult, ym: thisMonth(), msg: req.query.msg || null, error: req.query.error || null, ...extra });
 }
 admin.get("/ework", (req, res, next) => renderEwork(req, res).catch(next));
 admin.post("/ework/rates", async (req, res, next) => {
   try { await ework.saveRate(q, req.body); back(res, "/admin/ework", `Rate for ${req.body.mode} saved — applies to new jobs`); }
+  catch (e) { if (isDbError(e)) return next(e); back(res, "/admin/ework", e.message, true); }
+});
+admin.post("/ework/manual", async (req, res, next) => {
+  try {
+    const r = await ework.addManual(q, String(req.body.operator || ""), { tokens: req.body.tokens, ym: req.body.ym, note: req.body.note, by: req.admin ? req.admin.username : "" });
+    back(res, "/admin/ework", `Added ${r.tokens.toLocaleString("en-US")} tokens to ${req.body.operator} for ${r.month} (${r.billable.toLocaleString("en-US")} count toward quota/overage)`);
+  } catch (e) { if (isDbError(e)) return next(e); back(res, "/admin/ework", e.message, true); }
+});
+admin.post("/ework/manual/:id(\\d+)/undo", async (req, res, next) => {
+  try { const r = await ework.undoManual(q, req.params.id); back(res, "/admin/ework", `Removed ${r.tokens.toLocaleString("en-US")} tokens from ${r.operator} (${r.month})`); }
   catch (e) { if (isDbError(e)) return next(e); back(res, "/admin/ework", e.message, true); }
 });
 admin.post("/ework/multiplier", async (req, res, next) => {
