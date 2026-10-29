@@ -40,10 +40,18 @@ const PORT = Number(process.env.PORT || 3000);
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 // ค่าที่เคยอยู่ใน .env.example (repo สาธารณะ) — ใครก็ปลอม cookie ได้ จึงไม่ยอมใช้ (เก็บเป็น sha256 ไม่ใช่ค่าจริง)
 const LEAKED_SESSION_SECRETS = ["0bbb10203aa32ec7d632e1964ff5e2fe24a33f012ac70c9ca98d1c6270c02fd6"];
+// ค่าใน .env ใช้ไม่ได้ → ใช้ค่าสุ่มที่เก็บในไฟล์ .session-secret (ทุก process ของ Plesk/Passenger ใช้ค่าเดียวกัน และไม่หลุดตอน restart)
+const SESSION_SECRET_FILE = path.join(__dirname, ".session-secret");
+let SESSION_SECRET_SOURCE = "env";
 const SESSION_SECRET = (() => {
   const s = (process.env.SESSION_SECRET || "").trim();
   if (s.length >= 32 && !LEAKED_SESSION_SECRETS.includes(crypto.createHash("sha256").update(s).digest("hex"))) return s;
-  if (s) console.error("⚠ SESSION_SECRET is too short or is the public example value — using a random one (everyone is signed out on restart). Set a new random SESSION_SECRET in .env");
+  SESSION_SECRET_SOURCE = "file";
+  if (s) console.error("⚠ SESSION_SECRET is too short or is the public example value — using .session-secret instead. Set a new random SESSION_SECRET in .env");
+  try { fs.writeFileSync(SESSION_SECRET_FILE, crypto.randomBytes(32).toString("hex"), { flag: "wx", mode: 0o600 }); } catch (e) { if (e.code !== "EEXIST") console.error("⚠ cannot write .session-secret:", e.message); }
+  try { const f = fs.readFileSync(SESSION_SECRET_FILE, "utf8").trim(); if (f.length >= 32) return f; } catch { /* fall through */ }
+  SESSION_SECRET_SOURCE = "random";
+  console.error("⚠ no usable session secret — using a random one (everyone is signed out on restart)");
   return crypto.randomBytes(32).toString("hex");
 })();
 const LS_WEBHOOK_SECRET = (process.env.LS_WEBHOOK_SECRET || "").trim();
@@ -360,7 +368,7 @@ app.post("/api/license/verify", express.json({ limit: "8kb" }), async (req, res)
 app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nDisallow: /portal\nDisallow: /api\nAllow: /\n"));
 app.get("/api/health", async (req, res) => {
   const pay = payments.info();
-  const cfg = { company_complete: company().isComplete, payment_provider: pay.key, payment_api: pay.ready, payment_test_mode: pay.testMode, webhook_secret: pay.webhookReady, node: process.version };
+  const cfg = { company_complete: company().isComplete, payment_provider: pay.key, payment_api: pay.ready, payment_test_mode: pay.testMode, webhook_secret: pay.webhookReady, session_secret: SESSION_SECRET_SOURCE, node: process.version };
   try { await q("SELECT 1"); res.json({ ok: true, ...cfg }); } catch (e) { res.status(500).json({ ok: false, error: e.code || "db", ...cfg }); }
 });
 
