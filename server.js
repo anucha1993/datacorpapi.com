@@ -34,6 +34,7 @@ const platform = require("./lib/platform");
 const admins = require("./lib/admins");
 const ai = require("./lib/aigateway");
 const ework = require("./lib/ework");
+const paylinks = require("./lib/paylinks");
 const QRCode = require("qrcode");
 
 const PORT = Number(process.env.PORT || 3000);
@@ -243,11 +244,19 @@ api.post("/authorize", async (req, res, next) => {
     send(res, await platform.authorize(q, product, b.key || b.api_key, { units: b.units ?? 1, dryRun: !!b.dry_run }));
   } catch (e) { next(e); }
 });
-/** GET /api/v1/usage   (ลูกค้าเรียกด้วย API key ของตัวเอง) → แพ็กเกจ + โควตาเดือนนี้ */
+/**
+ * GET /api/v1/usage   (ลูกค้าเรียกด้วย API key ของตัวเอง) → แพ็กเกจ + โควตารอบนี้ + billing (ลิงก์จ่าย/อัปเกรด เปิดได้ไม่ต้อง login)
+ *   ถูกบล็อก (หมดอายุ/ค้างชำระ) → มี action_url ด้วย
+ */
 api.get("/usage", async (req, res, next) => {
   try {
     if (!hit("usage:" + req.ip, 120, 60 * 1000)) return res.status(429).json({ ok: false, error: "rate_limited", message: "Too many requests" });
-    send(res, await platform.keyStatus(q, bearer(req)));
+    const r = await platform.keyStatus(q, bearer(req));
+    if (r.ok || ["inactive", "payment_required"].includes(r.error)) {
+      r.billing = await paylinks.linksForKey(q, { secret: SESSION_SECRET, base: siteUrl(), rawKey: bearer(req) });
+      if (!r.ok) r.action_url = paylinks.actionFor(r.error, r.billing);
+    }
+    send(res, r);
   } catch (e) { next(e); }
 });
 /**
@@ -292,6 +301,41 @@ app.post("/api/v1/ework/usage", express.json({ limit: "1mb" }), async (req, res)
   }
 });
 app.use("/api/v1", api);
+ai.setPayLink(async (rawKey, error) => paylinks.actionFor(error, await paylinks.linksForKey(q, { secret: SESSION_SECRET, base: siteUrl(), rawKey })));
+
+/**
+ * GET /pay/<token>  (ลิงก์จาก action_url / billing.upgrade_url ที่โปรแกรมของลูกค้าเปิด) → หน้าชำระเงิน Polar ของแพ็กเกจเป้าหมาย
+ * ไม่ต้อง login: token ลงลายเซ็นไว้ ผูกกับ key + แพ็กเกจ + วันหมดอายุ (7 วัน)
+ */
+app.get("/pay/:token", async (req, res, next) => {
+  const fail = (title, message, status = 400) => res.status(status).render("site/error", { co: company(), path: req.path, title, message, detail: "" });
+  try {
+    if (!hit("pay:" + req.ip, 30, 10 * 60 * 1000)) return fail("Too many attempts", "Please wait a few minutes and try again.", 429);
+    const t = paylinks.verify(SESSION_SECRET, req.params.token);
+    if (!t) return fail("Link expired", "This payment link is invalid or has expired. Open the program again to get a new one, or sign in to the customer portal.", 410);
+    const key = (await q("SELECT id, operator, subscription_id FROM access_keys WHERE id = ? AND revoked_at IS NULL", [t.k]))[0];
+    const plan = await platform.getPlan(q, t.p);
+    if (!key || !plan || !paylinks.isPaid(plan)) return fail("Link no longer valid", "Please sign in to the customer portal to choose a plan.", 410);
+    if (payments.info().key !== "polar" || !payments.info().ready) return fail("Payments unavailable", "Online payment is not available right now. Please contact support.", 503);
+    const op = key.operator, base = siteUrl();
+    const existing = await platform.activeForProduct(q, op, plan.product_id);
+    if (existing && existing.plan_id === plan.id && existing.source === "polar" && existing.status === "active")
+      return res.redirect(`${base}/portal/subscriptions/${existing.id}`);
+    const pend = (await q("SELECT id FROM subscriptions WHERE operator = ? AND plan_id = ? AND status = 'pending' ORDER BY id DESC LIMIT 1", [op, plan.id]))[0];
+    const subId = pend ? pend.id : await platform.createSubscription(q, op, plan, { note: "Checkout from app link" });
+    const cu = (await q("SELECT * FROM portal_users WHERE operator = ?", [op]))[0] || { operator: op };
+    const r = await polar.createSubscriptionCheckout({
+      productId: plan.polar_product_id, email: cu.billing_email || cu.email || "", name: cu.company_name || cu.display_name || op,
+      customerKey: op, taxNumber: cu.tax_id || "", metadata: { subscription_ref: subId, operator: op, plan_id: plan.id },
+      successUrl: base ? `${base}/thanks` : undefined,
+    });
+    res.redirect(r.url);
+  } catch (e) {
+    if (isDbError(e)) return next(e);
+    console.error("[pay link]", e.message);
+    fail("Could not start the payment", "Please try again in a moment or sign in to the customer portal. (" + e.message + ")", 502);
+  }
+});
 // ตัดรอบอัตโนมัติ: ตั้งแต่วันตัดรอบเป็นต้นไป ออก/อัปเดตบิลส่วนเกินของ "รอบที่แล้ว" (ทำซ้ำได้ ไม่สร้างบิลซ้ำ) — ปิดด้วย AUTO_INVOICE=false
 const AUTO_INVOICE = !/^(0|false|no|off)$/i.test(String(process.env.AUTO_INVOICE || "true"));
 const AUTO_INVOICE_FROM = String(process.env.AUTO_INVOICE_FROM || "2026-10"); // ไม่ย้อนไปออกบิลรอบก่อนเริ่มใช้ระบบนี้

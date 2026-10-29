@@ -148,9 +148,55 @@ Content-Type: application/json
 
 <section class="card" id="ai">
   <h2>6. AI API (แบบเดียวกับ OpenAI)</h2>
+  <p class="small">ลูกค้าเรียกตรงด้วย API key ของตัวเอง — ระบบตรวจ key/โควตา ส่งต่อ OpenAI และนับ credits ให้เอง ไม่ต้องส่งยอดใช้งานแยก</p>
   <pre class="code">from openai import OpenAI
 client = OpenAI(base_url="<%= base %>/v1", api_key="dca_sk_…")
-r = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": "สวัสดี"}])</pre>
-  <p class="small">ราคา/โมเดลตั้งที่ <a href="/admin/ai-models">AI models</a> · error แบบ OpenAI (<code>{ "error": { "message", "code" } }</code>) — <code>429 quota_exceeded</code> เมื่อโควตาหมด</p>
+r = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": "สวัสดี"}])
+print(r.choices[0].message.content)
+
+# streaming
+for chunk in client.chat.completions.create(model="gpt-4o-mini", stream=True, messages=[…]):
+    print(chunk.choices[0].delta.content or "", end="")</pre>
+  <ul class="small">
+    <li><code>GET /v1/models</code> — โมเดลที่แพ็กเกจใช้ได้ · ราคา/โมเดลตั้งที่ <a href="/admin/ai-models">AI models</a></li>
+    <li><code>GET /api/v1/usage</code> — credits ที่ใช้/เหลือ + <code>billing.upgrade_url</code> (ปุ่ม "จ่าย/อัปเกรด" ได้ตลอด เช่นระหว่างทดลองใช้)</li>
+  </ul>
+  <table class="small"><thead><tr><th>HTTP · error.code</th><th>ความหมาย</th><th>error.action_url</th></tr></thead><tbody>
+    <tr><td><code>401 invalid_key / revoked_key</code></td><td>key ผิด/ถูกยกเลิก</td><td>—</td></tr>
+    <tr><td><code>402 payment_required</code></td><td>ค้างชำระ</td><td>หน้าชำระบิล</td></tr>
+    <tr><td><code>403 inactive</code></td><td>แพ็กเกจหมดอายุ (เช่นทดลองใช้ครบ 7 วัน)</td><td>หน้าจ่ายแพ็กเกจจริง (ไม่ต้อง login)</td></tr>
+    <tr><td><code>429 quota_exceeded</code></td><td>credits หมด</td><td>หน้าจ่าย/อัปเกรด (ไม่ต้อง login)</td></tr>
+    <tr><td><code>429 rate_limited</code> · <code>503</code></td><td>ถี่เกินไป / ฝั่ง AI มีปัญหา — ลองใหม่</td><td>—</td></tr>
+  </tbody></table>
+</section>
+
+<section class="card" id="ai-pay">
+  <h2>7. AI API — เด้งหน้าชำระเงิน / อัปเกรดในโปรแกรมของลูกค้า</h2>
+  <p class="small"><b>หมดอายุหรือ credits หมด:</b> error จะมี <code>action_url</code> (และต่อท้ายใน <code>message</code>) เปิดแล้วไปหน้าชำระเงิน Polar ของแพ็กเกจที่ควรจ่ายทันที —
+    แพ็กเกจทดลอง "X Trial" → จ่ายแพ็กเกจ "X" · แพ็กเกจที่จ่ายอยู่ → ต่ออายุแพ็กเกจเดิม จ่ายเสร็จ key เดิมใช้ต่อได้เลย</p>
+  <p class="small"><b>ระหว่างทดลองใช้ (ยังไม่หมด):</b> เรียก <code>GET /api/v1/usage</code> แล้วใช้ <code>billing.upgrade_url</code> ทำปุ่ม "สมัครใช้จริง" ได้ตลอด — ลิงก์ใช้ได้ 7 วัน ขอใหม่ได้ทุกครั้ง</p>
+  <pre class="code">import webbrowser, requests
+from openai import OpenAI, APIStatusError
+
+BASE, KEY = "<%= base %>", "dca_sk_…"
+client = OpenAI(base_url=f"{BASE}/v1", api_key=KEY)
+
+try:
+    r = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": "สวัสดี"}])
+except APIStatusError as e:
+    err = (e.body or {}).get("error", e.body or {})        # {"message", "code", "action_url"}
+    if err.get("action_url"):                              # inactive / quota_exceeded / payment_required
+        if ask_yes_no(err["message"].split(" — ")[0] + "\nไปหน้าชำระเงินตอนนี้ไหม?"):
+            webbrowser.open(err["action_url"])
+    else:
+        raise
+
+# ปุ่ม "สมัครใช้จริง / ชำระเงิน" ระหว่างทดลองใช้
+u = requests.get(f"{BASE}/api/v1/usage", headers={"Authorization": f"Bearer {KEY}"}, timeout=15).json()
+# u = { "plan": "Business Trial", "quota": { "used": 1200, "included": 10000, … },
+#       "billing": { "upgrade_url": "<%= base %>/pay/…", "upgrade_plan": "Business", "upgrade_price_thb": 2990, … } }
+if u["billing"]["upgrade_url"]:
+    show_button(f"สมัคร {u['billing']['upgrade_plan']} ฿{u['billing']['upgrade_price_thb']:,}/เดือน",
+                lambda: webbrowser.open(u["billing"]["upgrade_url"]))</pre>
 </section>
 <%- include('partials/footer') %>
