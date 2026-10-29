@@ -1202,8 +1202,23 @@ admin.get("/customers/:operator", async (req, res, next) => {
       platform.listProducts(q),
     ]);
     for (const s of subs) { s.used = Number((use.find(u => u.subscription_id === s.id) || {}).units || 0); s.live = platform.isLive(s); s.keys = await platform.listKeys(q, s.id); }
-    res.render("customer", { title: "Customers", acct, subs, invoices: inv, devices, products, ym, today: new Date().toISOString().slice(0, 10), msg: req.query.msg || null, error: req.query.error || null });
+    res.render("customer", { title: "Customers", acct, subs, invoices: inv, devices, products, ym, keyReady: require("./lib/secretbox").ready(), today: new Date().toISOString().slice(0, 10), msg: req.query.msg || null, error: req.query.error || null });
   } catch (e) { next(e); }
+});
+
+// ---- OpenAI key รายลูกค้า (AI API) ----
+admin.post("/customers/:operator/openai-key", async (req, res, next) => {
+  const op = String(req.params.operator).slice(0, 100), url = `/admin/customers/${encodeURIComponent(op)}`;
+  try {
+    if (req.body.action === "test") {
+      const k = await ai.customerKey(q, op);
+      if (k === false) return back(res, url, "The saved key cannot be decrypted — enter it again", true);
+      const r = await ai.upstreamStatus(k || null);
+      return back(res, url, `${k ? "Customer key" : "Default key (.env)"}: ${r.message}`, !r.ok);
+    }
+    await ai.setCustomerKey(q, op, req.body.action === "remove" ? "" : req.body.openai_key);
+    back(res, url, req.body.action === "remove" ? "Customer OpenAI key removed — AI requests now use the default key" : "Customer OpenAI key saved (encrypted) — AI requests of this customer now use it");
+  } catch (e) { if (isDbError(e)) return next(e); back(res, url, e.message, true); }
 });
 
 // ---- ผู้ให้บริการรับชำระเงิน (ตั้งค่า + webhook ล่าสุด) ----

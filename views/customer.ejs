@@ -94,6 +94,24 @@
       </dl>
     </section>
     <section class="card">
+      <div class="section-title">OpenAI key (AI API)</div>
+      <% if (acct.openai_key_hint) { %>
+        <p style="margin:0 0 4px"><span class="badge b-active">Own key</span> <span class="mono small"><%= acct.openai_key_hint %></span></p>
+        <p class="muted small" style="margin:0 0 10px">Set <%= String(acct.openai_key_set_at || '').slice(0, 16) %> · this customer's AI requests are sent with this key</p>
+      <% } else { %>
+        <p class="muted small" style="margin:0 0 10px">Not set — uses the default <code>OPENAI_API_KEY</code> from <code>.env</code>. Paste a key from this customer's OpenAI Project to keep its spend separate.</p>
+      <% } %>
+      <% if (!keyReady) { %><p class="alert small" style="margin:0 0 10px">Set <code>DATA_ENCRYPTION_KEY</code> in <code>.env</code> (same value on every server) before saving customer keys.</p><% } %>
+      <form method="post" action="/admin/customers/<%= encodeURIComponent(acct.operator) %>/openai-key" class="stack" autocomplete="off">
+        <input name="openai_key" type="password" placeholder="sk-proj-…" autocomplete="new-password" aria-label="OpenAI API key">
+        <div class="btnrow">
+          <button class="primary" name="action" value="save"><%= acct.openai_key_hint ? 'Replace' : 'Save' %></button>
+          <button name="action" value="test" formnovalidate>Test</button>
+          <% if (acct.openai_key_hint) { %><button class="danger" name="action" value="remove" formnovalidate onclick="return confirm('Remove this key? Requests go back to the default key.')">Remove</button><% } %>
+        </div>
+      </form>
+    </section>
+    <section class="card">
       <div class="section-title">Account serial (SN)</div>
       <p class="mono" style="margin:0 0 6px;font-weight:600"><%= acct.serial_no || '—' %></p>
       <p class="muted small" style="margin:0">Verified via <code>/api/license/verify</code><%= acct.last_verified_at ? ' · last ' + acct.last_verified_at : '' %> · max devices <%= Number(acct.max_devices) || 'unlimited' %></p>
