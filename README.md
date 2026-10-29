@@ -27,6 +27,7 @@ mysql -h HOST -u USER -p DATABASE < sql/admin_users.sql        # บัญชี
 mysql -h HOST -u USER -p DATABASE < sql/ai_gateway.sql         # AI gateway: ราคาโมเดล + จำกัดโมเดลต่อแพ็กเกจ
 mysql -h HOST -u USER -p DATABASE < sql/ework_billing.sql      # E-work: token ต่อโหมด, ฟรีครั้งเดียว, สินค้า/แพ็กเกจ e-work (ต้องมี usage_runs จาก usage_schema เดิม)
 mysql -h HOST -u USER -p DATABASE < sql/ai_customer_keys.sql     # OpenAI key รายลูกค้า (เข้ารหัส) — ต้องตั้ง DATA_ENCRYPTION_KEY
+mysql -h HOST -u USER -p DATABASE < sql/ai_vision.sql           # OCR (Google Vision) ผ่าน AI API key — ต้องตั้ง GOOGLE_VISION_API_KEY
 ```
 อัปเกรดจากระบบเดิม (Ework): รัน `services_receipts.sql` (ถ้ายังไม่ได้รัน) และ `platform_schema.sql` แล้ว **สำรองข้อมูลก่อน** จึงรัน `sql/drop_ework.sql` เพื่อลบตารางการใช้งานของ Ework (`usage_runs`, `usage_prices`, view `v_usage_*`, `billing_usage_reports`) — SN, บัญชีลูกค้า และใบแจ้งหนี้เดิมยังอยู่ครบ
 

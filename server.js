@@ -367,7 +367,7 @@ setInterval(chargeEwork, 5 * 60 * 1000).unref();
 // ลูกค้า: OpenAI(base_url="SITE_URL/v1", api_key="dca_sk_…") — ดู lib/aigateway.js
 const v1 = express.Router();
 v1.use((req, res, next) => { res.set("Access-Control-Allow-Origin", "*"); next(); });
-v1.use(express.json({ limit: "12mb" }));
+v1.use(express.json({ limit: "30mb" })); // OCR ส่ง PDF ทั้งไฟล์เป็น base64
 const v1wrap = (fn) => async (req, res) => {
   try { await fn(q, req, res); } catch (e) {
     console.error("[ai]", e);
@@ -377,11 +377,12 @@ const v1wrap = (fn) => async (req, res) => {
 };
 v1.get("/models", v1wrap(ai.listModels));
 v1.post("/chat/completions", v1wrap(ai.chatCompletions));
-v1.use((req, res) => res.status(404).json({ error: { message: `Unknown endpoint ${req.method} /v1${req.path} — supported: POST /v1/chat/completions, GET /v1/models`, type: "invalid_request_error", code: "not_found", param: null } }));
+v1.post(/^\/vision\/(images|files):annotate$/, v1wrap((q, req, res) => ai.vision(q, req, res, req.params[0])));
+v1.use((req, res) => res.status(404).json({ error: { message: `Unknown endpoint ${req.method} /v1${req.path} — supported: POST /v1/chat/completions, GET /v1/models, POST /v1/vision/images:annotate, POST /v1/vision/files:annotate`, type: "invalid_request_error", code: "not_found", param: null } }));
 // eslint-disable-next-line no-unused-vars
 v1.use((err, req, res, _next) => {
   const parse = err && err.type === "entity.parse.failed", big = err && err.type === "entity.too.large";
-  res.status(big ? 413 : parse ? 400 : 500).json({ error: { message: big ? "Request body is too large (max 12 MB)" : parse ? "Request body must be valid JSON" : "Server error", type: "invalid_request_error", code: big ? "too_large" : parse ? "invalid_json" : "server_error", param: null } });
+  res.status(big ? 413 : parse ? 400 : 500).json({ error: { message: big ? "Request body is too large (max 30 MB)" : parse ? "Request body must be valid JSON" : "Server error", type: "invalid_request_error", code: big ? "too_large" : parse ? "invalid_json" : "server_error", param: null } });
 });
 app.use("/v1", v1);
 
@@ -588,8 +589,9 @@ async function renderSubscription(req, res, sub, extra = {}) {
     runs: await q("SELECT mode, status, record_count, tokens, billable_tokens, started_at, IF(mode = 'manual_adjustment', error_msg, '') error_msg FROM usage_runs WHERE operator = ? ORDER BY id DESC LIMIT 15", [sub.operator]),
   } : null;
   const aiModels = isAi ? (await ai.modelsForPlan(q, sub)).map(m => ({ ...m, rates: ai.rates(m) })) : [];
+  const aiOcr = isAi ? (await ai.modelsForPlan(q, sub, "ocr")).map(m => ({ ...m, rates: ai.rates(m) }))[0] || null : null;
   if (eworkInfo) sub.ework = eworkInfo.summary;
-  pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null, isAi, aiModels, isEwork, eworkInfo, charges: periodCharges(sub),
+  pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null, isAi, aiModels, aiOcr, isEwork, eworkInfo, charges: periodCharges(sub),
     msg: req.query.msg || null, error: req.query.error || null, welcome: req.query.welcome === "1", base: siteUrl(), ...extra });
 }
 const loadMySub = async (req, res) => {

@@ -170,6 +170,23 @@ for chunk in client.chat.completions.create(model="gpt-4o-mini", stream=True, me
   </tbody></table>
 </section>
 
+<section class="card" id="ai-ocr">
+  <h2>6.1 AI API — OCR (Google Vision) ด้วย key เดียวกัน</h2>
+  <p class="small">แพ็กเกจที่มี OCR (Business / Business Trial — หรือแพ็กเกจที่ติ๊ก <code>google-vision-ocr</code> ใน Products) ใช้ key <code>dca_sk_…</code> เดิมเรียก OCR ได้เลย ไม่ต้องมี Google key ฝั่งลูกค้า
+    — body/ผลลัพธ์รูปแบบเดียวกับ Google Vision ทุกอย่าง แค่เปลี่ยน URL · คิด credits ต่อหน้า/รูปที่อ่านสำเร็จ (ดูราคาที่ <a href="/admin/ai-models">AI models</a>)</p>
+  <pre class="code">POST <%= base %>/v1/vision/images:annotate        // รูป (JPG/PNG/WEBP)
+POST <%= base %>/v1/vision/files:annotate         // PDF (สูงสุด 5 หน้า/ครั้ง ตามข้อจำกัดของ Google)
+Authorization: Bearer dca_sk_…
+Content-Type: application/json
+
+{ "requests": [ { "image": { "content": "&lt;base64&gt;" },
+                  "features": [ { "type": "DOCUMENT_TEXT_DETECTION" } ] } ] }
+
+200 → ผลของ Google Vision ตามเดิม + header X-DataCorp-Pages, X-DataCorp-Credits
+403 feature_not_available (แพ็กเกจไม่มี OCR) · 429 quota_exceeded / 403 inactive (มี error.action_url เหมือนข้อ 6)</pre>
+  <p class="small">โค้ดเดิมที่เรียก <code>https://vision.googleapis.com/v1/images:annotate?key=…</code> → เปลี่ยนเป็น <code><%= base %>/v1/vision/images:annotate</code> + header <code>Authorization: Bearer dca_sk_…</code> (ตัวอย่างจริง: <code>labour_tip/app/Services/GoogleVisionOcr.php</code>)</p>
+</section>
+
 <section class="card" id="ai-pay">
   <h2>7. AI API — เด้งหน้าชำระเงิน / อัปเกรดในโปรแกรมของลูกค้า</h2>
   <p class="small"><b>หมดอายุหรือ credits หมด:</b> error จะมี <code>action_url</code> (และต่อท้ายใน <code>message</code>) เปิดแล้วไปหน้าชำระเงิน Polar ของแพ็กเกจที่ควรจ่ายทันที —

@@ -22,8 +22,9 @@
           <tr class="<%= editing && editing.id === m.id ? 'hl' : '' %>">
             <td class="nowrap"><b class="mono"><%= m.model %></b><% if (m.label && m.label !== m.model) { %><br><small class="muted"><%= m.label %></small><% } %></td>
             <td class="r nowrap">$<%= Number(m.input_usd_per_1m) %> · $<%= Number(m.output_usd_per_1m) %></td>
-            <td class="r"><%= m.rates.input %></td>
-            <td class="r"><%= m.rates.output %></td>
+            <% if ((m.kind || 'chat') === 'ocr') { %><td class="r" colspan="2"><%= m.rates.perUnit %> / page <small class="muted">(OCR)</small></td>
+            <% } else { %><td class="r"><%= m.rates.input %></td>
+            <td class="r"><%= m.rates.output %></td><% } %>
             <td><span class="badge b-<%= m.is_active ? 'active' : 'hidden' %>"><%= m.is_active ? 'On' : 'Off' %></span></td>
             <td class="r nowrap">
               <a class="btn small" href="/admin/ai-models?edit=<%= m.id %>">Edit</a>

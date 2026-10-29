@@ -160,6 +160,7 @@ print(r.choices[0].message.content)</pre>
         <table class="small"><thead><tr><th>Model</th><th class="r">Credits / 1K in</th><th class="r">/ 1K out</th></tr></thead><tbody>
           <% for (const m of aiModels) { %><tr><td class="mono nowrap"><%= m.model %></td><td class="r"><%= m.rates.input %></td><td class="r"><%= m.rates.output %></td></tr><% } %>
         </tbody></table>
+        <% if (aiOcr) { %><p class="small" style="margin:8px 0"><b>OCR (Google Vision)</b> included — <%= aiOcr.rates.perUnit %> credits per page/image. Same key: <code>POST <%= base || '' %>/v1/vision/files:annotate</code> (PDF) or <code>/v1/vision/images:annotate</code>, request body in Google Vision format.</p><% } %>
         <p class="muted small"><%= Number(sub.max_output_tokens) ? 'Max ' + fmtNum(sub.max_output_tokens) + ' output tokens per request. ' : '' %>Streaming is supported. Check your balance at <code>GET /api/v1/usage</code>.</p>
         <p class="muted small">Keep keys secret — never put them in a browser or mobile app. Revoke a key immediately if it leaks.</p>
       <% } else { %>
