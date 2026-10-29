@@ -1,0 +1,85 @@
+<%- include('partials/header') %>
+<% const plan = plans.find(p => p.is_active) || plans[0]; const editing = rates.find(r => r.mode === editMode); %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>E-work license</h1>
+    <p class="subtitle">Each job of the desktop program is converted to tokens by task. Every customer gets a one-time free allowance; tokens beyond it are invoiced monthly at the plan's price.</p>
+  </div>
+  <% if (prod) { %><div class="tools"><a class="btn" href="/admin/products/<%= prod.id %><%= plan ? '?plan=' + plan.id + '#planform' : '' %>">Edit price &amp; free allowance</a></div><% } %>
+</div>
+<% if (msg) { %><p class="ok"><%= msg %></p><% } %>
+<% if (error) { %><p class="alert"><%= error %></p><% } %>
+<% if (!prod) { %><p class="alert">Product <code>e-work</code> not found — run <code>sql/ework_billing.sql</code>.</p><% } %>
+
+<% if (plan) { %>
+<div class="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px">
+  <section class="card" style="margin:0"><div class="muted small">Monthly fee</div><div class="strong" style="font-size:22px"><%= Number(plan.price_thb) ? '฿' + fmtMoney(plan.price_thb) : '—' %></div><div class="muted small"><%= Number(plan.price_thb) ? (plan.polar_product_id ? 'Polar ✓' : 'needs Polar product') : 'not set' %></div></section>
+  <section class="card" style="margin:0"><div class="muted small">Free allowance (one-time)</div><div class="strong" style="font-size:22px"><%= fmtNum(plan.lifetime_free_units) %></div><div class="muted small">tokens per customer</div></section>
+  <section class="card" style="margin:0"><div class="muted small">After that</div><div class="strong" style="font-size:22px">฿<%= fmtUnit(plan.unit_price_thb) %></div><div class="muted small">per token, invoiced on the 1st</div></section>
+</div>
+<% } %>
+
+<section class="card flush">
+  <div class="card-head"><h2>Customers <span class="muted">· <%= customers.length %></span></h2><span class="muted small">this month = <%= ym %></span></div>
+  <div class="scroll"><table>
+    <thead><tr><th>Customer</th><th>License</th><th class="r">Used (total)</th><th class="r">Free left</th><th class="r">This month</th><th class="r">Billable</th><th class="r">Est. overage</th><th>Free allowance</th></tr></thead>
+    <tbody><% for (const c of customers) { %>
+      <tr>
+        <td><a href="/admin/customers/<%= encodeURIComponent(c.operator) %>"><b><%= c.operator %></b></a><br><small class="muted mono"><%= c.serial_no || 'no SN' %></small></td>
+        <td><% if (c.status === 'none') { %>
+              <form method="post" action="/admin/ework/customers/<%= encodeURIComponent(c.operator) %>/license" class="inline"><button class="btn small primary">Grant license</button></form>
+            <% } else { %><span class="badge b-<%= c.status %>"><%= SUB_STATUS[c.status] || c.status %></span><br><small class="muted"><%= c.plan %></small><% } %></td>
+        <td class="r"><%= fmtNum(c.tokens_used_total) %></td>
+        <td class="r <%= c.free_remaining ? '' : 'strong' %>"><%= fmtNum(c.free_remaining) %></td>
+        <td class="r"><%= fmtNum(c.month_tokens) %><br><small class="muted"><%= c.month_runs %> jobs</small></td>
+        <td class="r"><%= fmtNum(c.month_billable_tokens) %></td>
+        <td class="r strong"><%= c.month_overage_thb ? '฿' + fmtMoney(c.month_overage_thb) : '—' %></td>
+        <td><form method="post" action="/admin/ework/customers/<%= encodeURIComponent(c.operator) %>/free" class="inline" style="display:flex;gap:6px">
+          <input name="free_tokens" type="number" min="0" step="1" value="<%= c.free_override ? c.free_tokens : '' %>" placeholder="<%= fmtNum(c.free_tokens) %> (plan)" style="width:130px" aria-label="Free tokens for <%= c.operator %>">
+          <button class="btn small">Save</button></form></td>
+      </tr>
+    <% } %></tbody>
+  </table></div>
+  <p class="muted small" style="padding:0 20px 14px;margin:0">Leave the allowance blank to use the plan's. Raising it later does not refund tokens already billed. Overage invoices are created with <a href="/admin/invoices">Invoices → Generate</a> like other plans.</p>
+</section>
+
+<div class="layout-side wider">
+  <section class="card flush">
+    <div class="card-head"><h2>Tokens per job</h2><span class="muted small">changes apply to new jobs only</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Task (mode)</th><th class="r">Per record</th><th class="r">Per run</th><th></th></tr></thead>
+      <tbody><% for (const r of rates) { %>
+        <tr class="<%= editing && editing.mode === r.mode ? 'hl' : '' %>"><td><b><%= r.label || r.mode %></b><br><small class="muted mono"><%= r.mode %></small></td>
+          <td class="r"><%= Number(r.tokens_per_record) %></td><td class="r"><%= Number(r.tokens_per_run) %></td>
+          <td class="r"><a class="btn small" href="/admin/ework?mode=<%= encodeURIComponent(r.mode) %>#rateform">Edit</a></td></tr>
+      <% } %></tbody>
+    </table></div>
+  </section>
+
+  <section class="card" id="rateform">
+    <h2><%= editing ? 'Edit ' + editing.mode : 'Add a task' %></h2>
+    <form method="post" action="/admin/ework/rates" class="stack">
+      <label>Mode <span class="hint">As sent by the program</span><input name="mode" value="<%= editing ? editing.mode : '' %>" required maxlength="40" class="mono" <%= editing ? 'readonly' : '' %> placeholder="etracking"></label>
+      <label>Label<input name="label" value="<%= editing ? editing.label : '' %>" maxlength="120"></label>
+      <div class="form-grid">
+        <label>Tokens per record<input name="tokens_per_record" type="number" min="0" step="0.01" value="<%= editing ? Number(editing.tokens_per_record) : '' %>" required></label>
+        <label>Tokens per run <span class="hint">Only if the job succeeded</span><input name="tokens_per_run" type="number" min="0" step="0.01" value="<%= editing ? Number(editing.tokens_per_run) : 0 %>"></label>
+      </div>
+      <p class="muted small" style="margin:0">Job tokens = records × per record + per run, rounded up. Unknown modes cost 0 — add them here.</p>
+      <div class="btnrow"><button class="primary">Save</button><% if (editing) { %><a class="btn" href="/admin/ework">Cancel</a><% } %></div>
+    </form>
+  </section>
+</div>
+
+<section class="card flush">
+  <div class="card-head"><h2>Latest jobs</h2></div>
+  <div class="scroll"><table>
+    <thead><tr><th>When</th><th>Customer</th><th>Task</th><th>Status</th><th class="r">Records</th><th class="r">Tokens</th><th class="r">Billable</th><th>Version</th></tr></thead>
+    <tbody><% for (const r of recent) { %>
+      <tr><td class="nowrap muted"><%= String(r.started_at).slice(0, 16) %></td><td><%= r.operator %></td><td><%= (rates.find(x => x.mode === r.mode) || {}).label || r.mode %></td>
+        <td><span class="badge b-<%= r.status === 'ok' ? 'paid' : r.status === 'error' ? 'void' : 'open' %>"><%= r.status %></span></td>
+        <td class="r"><%= fmtNum(r.record_count) %></td><td class="r"><%= r.tokens == null ? '…' : fmtNum(r.tokens) %></td><td class="r"><%= fmtNum(r.billable_tokens) %></td><td class="muted"><%= r.app_version %></td></tr>
+    <% } %></tbody>
+  </table></div>
+</section>
+<%- include('partials/footer') %>

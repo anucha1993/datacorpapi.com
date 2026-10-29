@@ -39,7 +39,7 @@ const bad = (m) => console.log("✗ " + m);
     ok(`MySQL ต่อได้ (${process.env.DB_USER}@${process.env.DB_HOST}/${process.env.DB_NAME})`);
     const [t] = await c.query("SHOW TABLES");
     const names = t.map(x => Object.values(x)[0]);
-    for (const need of ["portal_users", "billing_invoices", "service_catalog", "billing_attachments", "admin_users", "ai_models", "products", "product_plans", "subscriptions", "access_keys", "usage_counters", "contact_messages"]) names.includes(need) ? ok("table " + need) : bad("table " + need + " ไม่พบ → รัน sql/*.sql");
+    for (const need of ["portal_users", "billing_invoices", "service_catalog", "billing_attachments", "admin_users", "ai_models", "ework_token_rates", "ework_accounts", "usage_runs", "products", "product_plans", "subscriptions", "access_keys", "usage_counters", "contact_messages"]) names.includes(need) ? ok("table " + need) : bad("table " + need + " ไม่พบ → รัน sql/*.sql");
     await c.end();
   } catch (e) { bad("MySQL ต่อไม่ได้: " + (e.code || "") + " " + e.message); }
 

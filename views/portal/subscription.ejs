@@ -29,6 +29,30 @@
 
 <div class="layout-side">
   <div>
+    <% if (isEwork) { const t = eworkInfo.summary; const pctFree = t.free_tokens ? Math.min(100, Math.round(t.tokens_used_total / t.free_tokens * 100)) : 100; %>
+    <section class="card">
+      <div class="card-head"><h2>Tokens</h2><span class="muted small">free allowance is one-time</span></div>
+      <div class="usage-big">
+        <div><span class="num"><%= fmtNum(t.free_remaining) %></span> <span class="muted">free tokens left of <%= fmtNum(t.free_tokens) %></span></div>
+        <div class="muted small"><%= fmtNum(t.tokens_used_total) %> used in total</div>
+      </div>
+      <div class="meter lg <%= pctFree >= 100 ? 'over' : pctFree >= 80 ? 'warn' : '' %>"><span style="width:<%= pctFree %>%"></span></div>
+      <dl class="kv" style="grid-template-columns:200px 1fr;font-size:13.5px;margin-top:16px">
+        <dt>This month (<%= t.month %>)</dt><dd><%= fmtNum(t.month_tokens) %> tokens · <%= t.month_runs %> jobs</dd>
+        <dt>Beyond the free allowance</dt><dd><%= fmtNum(t.month_billable_tokens) %> tokens × ฿<%= fmtUnit(t.price_per_token_thb) %> = <b>฿<%= fmtMoney(t.month_overage_thb) %></b><% if (t.month_overage_thb) { %> <span class="muted">· invoiced on the 1st</span><% } %></dd>
+      </dl>
+    </section>
+    <section class="card flush">
+      <div class="card-head"><h2>Recent jobs</h2></div>
+      <% if (!eworkInfo.runs.length) { %><div class="empty" style="padding:24px"><p>No jobs yet — they appear here after the program finishes a task.</p></div><% } else { %>
+      <div class="scroll"><table>
+        <thead><tr><th>When</th><th>Task</th><th>Status</th><th class="r">Records</th><th class="r">Tokens</th></tr></thead>
+        <tbody><% for (const r of eworkInfo.runs) { %><tr><td class="muted nowrap"><%= String(r.started_at).slice(0, 16) %></td><td><%= (eworkInfo.rates.find(x => x.mode === r.mode) || {}).label || r.mode %></td>
+          <td><%= r.status === 'ok' ? 'Done' : r.status === 'cancelled' ? 'Cancelled' : 'Error' %></td><td class="r"><%= fmtNum(r.record_count) %></td><td class="r"><%= r.tokens == null ? '…' : fmtNum(r.tokens) %></td></tr><% } %></tbody>
+      </table></div>
+      <% } %>
+    </section>
+    <% } else { %>
     <section class="card">
       <div class="card-head"><h2>Usage this month</h2><span class="muted small">resets on the 1st</span></div>
       <div class="usage-big">
@@ -48,7 +72,9 @@
       </div>
       <% } %>
     </section>
+    <% } %>
 
+    <% if (!isEwork) { %>
     <section class="card flush">
       <div class="card-head"><h2><%= isLic ? 'License keys' : 'API keys' %> <span class="muted">· <%= activeKeys.length %> / <%= sub.max_keys %></span></h2></div>
       <% if (!keys.length) { %><div class="empty" style="padding:24px"><p>No keys yet — create one below.</p></div><% } else { %>
@@ -76,6 +102,7 @@
       </form>
       <% } %>
     </section>
+    <% } %>
 
     <% if (invoices.length) { %>
     <section class="card flush">
@@ -90,8 +117,15 @@
 
   <aside>
     <section class="card">
-      <div class="section-title"><%= isLic ? 'Activate in your app' : 'Use your key' %></div>
-      <% if (isLic) { %>
+      <div class="section-title"><%= isEwork ? 'Activate the program' : isLic ? 'Activate in your app' : 'Use your key' %></div>
+      <% if (isEwork) { %>
+        <p class="small" style="margin-top:0">Enter your account Serial Number in the program header and click verify:</p>
+        <div class="inputgroup"><input value="<%= eworkInfo.serial || 'Ask support for your SN' %>" readonly class="mono" aria-label="Serial number"><button type="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Copied'">Copy</button></div>
+        <div class="section-title" style="margin-top:16px">Tokens per job</div>
+        <table class="small"><thead><tr><th>Task</th><th class="r">Per record</th></tr></thead><tbody>
+          <% for (const r of eworkInfo.rates.filter(x => Number(x.tokens_per_record) || Number(x.tokens_per_run))) { %><tr><td><%= r.label || r.mode %></td><td class="r nowrap"><%= Number(r.tokens_per_record) %><%= Number(r.tokens_per_run) ? ' + ' + Number(r.tokens_per_run) + '/run' : '' %></td></tr><% } %>
+        </tbody></table>
+      <% } else if (isLic) { %>
         <p class="small" style="margin-top:0">Open the app → Settings → License, paste your license key and sign in. Each key works on up to <b><%= Number(sub.max_devices) || 'unlimited' %></b> device<%= Number(sub.max_devices) === 1 ? '' : 's' %>; remove an old device above to move it.</p>
       <% } else if (isAi) { %>
         <p class="small" style="margin-top:0">Works with the official OpenAI SDKs — just change the base URL and use your DataCorp key.</p>

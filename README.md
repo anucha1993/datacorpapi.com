@@ -25,6 +25,7 @@ mysql -h HOST -u USER -p DATABASE < sql/services_receipts.sql  # ลิงก์
 mysql -h HOST -u USER -p DATABASE < sql/platform_schema.sql    # สินค้า แพ็กเกจ subscription key โควตา
 mysql -h HOST -u USER -p DATABASE < sql/admin_users.sql        # บัญชีแอดมิน
 mysql -h HOST -u USER -p DATABASE < sql/ai_gateway.sql         # AI gateway: ราคาโมเดล + จำกัดโมเดลต่อแพ็กเกจ
+mysql -h HOST -u USER -p DATABASE < sql/ework_billing.sql      # E-work: token ต่อโหมด, ฟรีครั้งเดียว, สินค้า/แพ็กเกจ e-work (ต้องมี usage_runs จาก usage_schema เดิม)
 ```
 อัปเกรดจากระบบเดิม (Ework): รัน `services_receipts.sql` (ถ้ายังไม่ได้รัน) และ `platform_schema.sql` แล้ว **สำรองข้อมูลก่อน** จึงรัน `sql/drop_ework.sql` เพื่อลบตารางการใช้งานของ Ework (`usage_runs`, `usage_prices`, view `v_usage_*`, `billing_usage_reports`) — SN, บัญชีลูกค้า และใบแจ้งหนี้เดิมยังอยู่ครบ
 
@@ -99,6 +100,12 @@ client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "
 - 1 credit = ฿0.001 ของต้นทุน OpenAI = (prompt × ราคา input + completion × ราคา output) ÷ 1M × `AI_USD_THB` × 1000 — แก้ราคา/เปิดปิดโมเดลที่ **Admin → AI models** (มีปุ่มทดสอบการเชื่อมต่อ OpenAI)
 - error จาก OpenAI ที่เป็นเรื่องบัญชีเรา (401/403/429) ลูกค้าเห็นแค่ `503 service_unavailable/upstream_busy` — ดูรายละเอียดใน log `[ai]`
 - ตั้ง **monthly budget** ของ Project ใน OpenAI ด้วยเสมอ
+
+**E-work (โปรแกรมเดสก์ท็อป) — license + token:**
+- โปรแกรมส่งงานที่ทำเสร็จ: `POST /api/v1/ework/usage { "serial": "DCA-…", "rows": [ { event_id, mode, status, record_count, progress_done, started_at, … } ] }` (≤200 แถว/ครั้ง กันซ้ำด้วย `event_id`) → `{ ok, accepted, duplicates, tokens }`
+- token ต่องาน = รายการ × `tokens_per_record` (+ `tokens_per_run` ถ้าสำเร็จ) ตาม `ework_token_rates` · ฟรีครั้งเดียวต่อลูกค้า = `lifetime_free_units` ของแพ็กเกจ (แก้รายคนได้) · ส่วนเกินเข้า `usage_counters` ของ subscription → ออกบิลรายเดือนตาม `unit_price_thb`
+- ตรวจ SN (`/api/license/verify`) ต้องมี subscription สินค้า `e-work` ที่ใช้งานได้ และคืนยอด token กลับไปด้วย
+- หลังบ้าน **E-work license**: ยอดต่อลูกค้า, ให้ license, แก้ token ต่อโหมด, ฟรีรายคน — โปรแกรมรุ่นเก่าที่ยังเขียน `usage_runs` ตรงจะถูกคิดให้ทุก 5 นาที
 
 **SN ของบัญชี (เดิม):** `POST /api/license/verify { serial, install_id, machine, windows_user, app_version }` — ไม่เปลี่ยน
 

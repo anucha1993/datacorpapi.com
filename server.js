@@ -33,6 +33,7 @@ const polar = require("./lib/polar");
 const platform = require("./lib/platform");
 const admins = require("./lib/admins");
 const ai = require("./lib/aigateway");
+const ework = require("./lib/ework");
 const QRCode = require("qrcode");
 
 const PORT = Number(process.env.PORT || 3000);
@@ -258,7 +259,34 @@ api.use((err, req, res, _next) => {
   console.error("[api]", err);
   res.status(500).json({ ok: false, error: "server", message: "Server error" });
 });
+/**
+ * POST /api/v1/ework/usage   (โปรแกรม E-work ส่งงานที่ทำเสร็จ — แทนการต่อ MySQL ตรง)
+ *   { "serial": "DCA-XXXX-XXXX-XXXX", "rows": [ { event_id, mode, status, record_count, started_at, finished_at, … } ] }  (สูงสุด 200 แถว/ครั้ง)
+ * → 200 { ok, accepted, duplicates, rejected, tokens: { free_remaining, month_tokens, … } }   ส่งซ้ำได้ (กันซ้ำด้วย event_id)
+ */
+app.post("/api/v1/ework/usage", express.json({ limit: "1mb" }), async (req, res) => {
+  if (!hit("ework:" + req.ip, 120, 10 * 60 * 1000)) return res.status(429).json({ ok: false, error: "rate_limited", message: "Too many requests" });
+  try {
+    const b = req.body || {};
+    const sn = portal.normalizeSerial(b.serial);
+    const u = sn ? (await q("SELECT operator, is_active FROM portal_users WHERE serial_no = ? LIMIT 1", [sn]))[0] : null;
+    if (!u) return res.status(401).json({ ok: false, error: "invalid_serial", message: "Serial number not found" });
+    if (!u.is_active) return res.status(403).json({ ok: false, error: "suspended", message: "This account is suspended" });
+    const rows = Array.isArray(b.rows) ? b.rows : [];
+    if (rows.length > ework.MAX_ROWS) return res.status(413).json({ ok: false, error: "too_many_rows", message: `Send at most ${ework.MAX_ROWS} rows per request` });
+    const r = await ework.ingest(q, u.operator, rows);
+    await ework.chargePending(q);
+    res.json({ ok: true, ...r, tokens: await ework.summary(q, u.operator) });
+  } catch (e) {
+    if (e && e.type === "entity.parse.failed") return res.status(400).json({ ok: false, error: "invalid_json", message: "Request body must be valid JSON" });
+    console.error("[ework usage]", e); res.status(500).json({ ok: false, error: "server", message: "Server error" });
+  }
+});
 app.use("/api/v1", api);
+// โปรแกรม E-work รุ่นเก่ายังเขียนลง usage_runs ตรง → คิด token ให้ทุก 5 นาที
+const chargeEwork = () => ework.chargePending(q).then(r => { if (r.charged) console.log(`[ework] charged ${r.charged} job(s)`); }).catch(e => { if (e.code !== "ER_NO_SUCH_TABLE" && e.code !== "ER_BAD_FIELD_ERROR") console.error("[ework charge]", e.message); });
+setTimeout(chargeEwork, 15000).unref();
+setInterval(chargeEwork, 5 * 60 * 1000).unref();
 
 // =========================== AI gateway (/v1, รูปแบบเดียวกับ OpenAI) ===========================
 // ลูกค้า: OpenAI(base_url="SITE_URL/v1", api_key="dca_sk_…") — ดู lib/aigateway.js
@@ -323,7 +351,10 @@ app.post("/api/license/verify", express.json({ limit: "8kb" }), async (req, res)
   try {
     const b = req.body || {};
     const r = await portal.verifySerial(q, { serial: b.serial, install_id: b.install_id, machine: b.machine, windows_user: b.windows_user, app_version: b.app_version, ip: String(req.ip).slice(0, 64) });
-    res.status(r.ok ? 200 : 403).json(r);
+    if (!r.ok) return res.status(403).json(r);
+    const lic = await ework.licenseCheck(q, r.operator);
+    if (!lic.ok) return res.status(403).json({ ok: false, operator: r.operator, error: lic.error, message: lic.message });
+    res.json({ ...r, tokens: lic.sub ? await ework.summary(q, r.operator, lic.sub) : null });
   } catch (e) { console.error("[license]", e.message); res.status(500).json({ ok: false, error: "server", message: "Server error" }); }
 });
 app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nDisallow: /portal\nDisallow: /api\nAllow: /\n"));
@@ -457,8 +488,14 @@ async function renderSubscription(req, res, sub, extra = {}) {
     q("SELECT invoice_no, kind, title, amount_thb, status, issued_at FROM billing_invoices WHERE subscription_id = ? ORDER BY id DESC LIMIT 12", [sub.id]),
   ]);
   const isAi = sub.product_slug === ai.cfg().slug;
+  const isEwork = sub.product_slug === ework.SLUG();
+  const eworkInfo = isEwork ? {
+    summary: await ework.summary(q, sub.operator), rates: await ework.rates(q),
+    serial: ((await q("SELECT serial_no FROM portal_users WHERE operator = ?", [sub.operator]))[0] || {}).serial_no || "",
+    runs: await q("SELECT mode, status, record_count, tokens, billable_tokens, started_at FROM usage_runs WHERE operator = ? ORDER BY id DESC LIMIT 15", [sub.operator]),
+  } : null;
   const aiModels = isAi ? (await ai.modelsForPlan(q, sub)).map(m => ({ ...m, rates: ai.rates(m) })) : [];
-  pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null, isAi, aiModels,
+  pview(req, res, "subscription", { title: "Overview", pageTitle: sub.product_name, sub, keys, history, invoices: inv, newKey: null, isAi, aiModels, isEwork, eworkInfo,
     msg: req.query.msg || null, error: req.query.error || null, welcome: req.query.welcome === "1", base: siteUrl(), ...extra });
 }
 const loadMySub = async (req, res) => {
@@ -766,8 +803,9 @@ async function renderProduct(req, res, id, extra = {}) {
   const subs = id ? (await q("SELECT plan_id, COUNT(*) n FROM subscriptions WHERE product_id = ? AND status = 'active' GROUP BY plan_id", [id])) : [];
   const editPlan = product && req.query.plan ? product.plans.find(p => p.id === Number(req.query.plan)) : null;
   const isAi = !!product && product.slug === ai.cfg().slug;
+  const isEwork = !!product && product.slug === ework.SLUG();
   res.render("product", { title: "Products", product, form: null, editPlan, planForm: null, subsByPlan: Object.fromEntries(subs.map(s => [s.plan_id, s.n])),
-    pay: payments.info(), base: siteUrl(), secret: null, isAi, aiModels: isAi ? await ai.models(q, { fresh: true }) : [], aiKeySet: !!ai.cfg().key, msg: req.query.msg || null, error: req.query.error || null, ...extra });
+    pay: payments.info(), base: siteUrl(), secret: null, isAi, isEwork, aiModels: isAi ? await ai.models(q, { fresh: true }) : [], aiKeySet: !!ai.cfg().key, msg: req.query.msg || null, error: req.query.error || null, ...extra });
 }
 admin.get("/products/new", (req, res, next) => renderProduct(req, res, null).catch(next));
 admin.get("/products/:id(\\d+)", (req, res, next) => renderProduct(req, res, req.params.id).catch(next));
@@ -1188,6 +1226,38 @@ admin.post("/admins/:id(\\d+)/reset-2fa", ...adminAction(async (req, id) => {
   await admins.signOutEverywhere(q, id);
   return "Two-factor authentication removed — they can set it up again from My account";
 }));
+
+// ---- E-work: อัตรา token ต่อโหมด + ยอดลูกค้า ----
+async function renderEwork(req, res, extra = {}) {
+  await ework.chargePending(q).catch(() => {});
+  const prod = await ework.product(q);
+  const plans = prod ? await q("SELECT * FROM product_plans WHERE product_id = ? ORDER BY sort_order, id", [prod.id]) : [];
+  const users = await q(`SELECT u.operator, u.display_name, u.serial_no, u.is_active FROM portal_users u
+                         WHERE u.serial_no IS NOT NULL OR EXISTS (SELECT 1 FROM usage_runs r WHERE r.operator = u.operator) ORDER BY u.operator`);
+  const customers = [];
+  for (const u of users) customers.push({ ...u, ...(await ework.summary(q, u.operator)) });
+  const recent = await q("SELECT operator, mode, status, record_count, tokens, billable_tokens, started_at, app_version FROM usage_runs ORDER BY id DESC LIMIT 30");
+  res.render("ework", { title: "E-work", prod, plans, rates: await ework.rates(q), customers, recent, editMode: String(req.query.mode || ""),
+    ym: thisMonth(), msg: req.query.msg || null, error: req.query.error || null, ...extra });
+}
+admin.get("/ework", (req, res, next) => renderEwork(req, res).catch(next));
+admin.post("/ework/rates", async (req, res, next) => {
+  try { await ework.saveRate(q, req.body); back(res, "/admin/ework", `Rate for ${req.body.mode} saved — applies to new jobs`); }
+  catch (e) { if (isDbError(e)) return next(e); back(res, "/admin/ework", e.message, true); }
+});
+admin.post("/ework/customers/:operator/free", async (req, res, next) => {
+  try { await ework.setFreeOverride(q, req.params.operator, req.body.free_tokens); back(res, "/admin/ework", `Free allowance updated for ${req.params.operator}`); } catch (e) { next(e); }
+});
+admin.post("/ework/customers/:operator/license", async (req, res, next) => {
+  try {
+    const prod = await ework.product(q);
+    const plan = prod && (await q("SELECT id FROM product_plans WHERE product_id = ? ORDER BY is_active DESC, sort_order, id LIMIT 1", [prod.id]))[0];
+    if (!plan) return back(res, "/admin/ework", "Create the E-work product and plan first (sql/ework_billing.sql)", true);
+    if (await ework.subscriptionFor(q, req.params.operator)) return back(res, "/admin/ework", `${req.params.operator} already has an E-work license`, true);
+    await platform.createSubscription(q, req.params.operator, await platform.getPlan(q, plan.id), { source: "manual", note: "E-work license granted by admin" });
+    back(res, "/admin/ework", `E-work license granted to ${req.params.operator}`);
+  } catch (e) { next(e); }
+});
 
 // ---- AI models (ราคาต้นทุน OpenAI → credits ที่คิดลูกค้า) ----
 async function renderAiModels(req, res, extra = {}) {
