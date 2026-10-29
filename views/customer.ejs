@@ -93,24 +93,29 @@
         <dt>Last login</dt><dd><%= acct.last_login_at || 'never' %></dd>
       </dl>
     </section>
+    <% for (const kp of [
+         { id: 'openai', title: 'OpenAI key (AI API)', col: 'openai_key', env: 'OPENAI_API_KEY', ph: 'sk-proj-…', where: "this customer's OpenAI Project" },
+         { id: 'google', title: 'Google Vision key (OCR)', col: 'google_key', env: 'GOOGLE_VISION_API_KEY', ph: 'AIza…', where: "this customer's Google Cloud project (Cloud Vision API enabled)" } ]) {
+         const hintVal = acct[kp.col + '_hint'], setAt = acct[kp.col + '_set_at']; %>
     <section class="card">
-      <div class="section-title">OpenAI key (AI API)</div>
-      <% if (acct.openai_key_hint) { %>
-        <p style="margin:0 0 4px"><span class="badge b-active">Own key</span> <span class="mono small"><%= acct.openai_key_hint %></span></p>
-        <p class="muted small" style="margin:0 0 10px">Set <%= String(acct.openai_key_set_at || '').slice(0, 16) %> · this customer's AI requests are sent with this key</p>
+      <div class="section-title"><%= kp.title %></div>
+      <% if (hintVal) { %>
+        <p style="margin:0 0 4px"><span class="badge b-active">Own key</span> <span class="mono small"><%= hintVal %></span></p>
+        <p class="muted small" style="margin:0 0 10px">Set <%= String(setAt || '').slice(0, 16) %> · this customer's requests are sent with this key</p>
       <% } else { %>
-        <p class="muted small" style="margin:0 0 10px">Not set — uses the default <code>OPENAI_API_KEY</code> from <code>.env</code>. Paste a key from this customer's OpenAI Project to keep its spend separate.</p>
+        <p class="muted small" style="margin:0 0 10px">Not set — uses the default <code><%= kp.env %></code> from <code>.env</code>. Paste a key from <%= kp.where %> to keep its cost separate.</p>
       <% } %>
       <% if (!keyReady) { %><p class="alert small" style="margin:0 0 10px">Set <code>DATA_ENCRYPTION_KEY</code> in <code>.env</code> (same value on every server) before saving customer keys.</p><% } %>
-      <form method="post" action="/admin/customers/<%= encodeURIComponent(acct.operator) %>/openai-key" class="stack" autocomplete="off">
-        <input name="openai_key" type="password" placeholder="sk-proj-…" autocomplete="new-password" aria-label="OpenAI API key">
+      <form method="post" action="/admin/customers/<%= encodeURIComponent(acct.operator) %>/<%= kp.id %>-key" class="stack" autocomplete="off">
+        <input name="key" type="password" placeholder="<%= kp.ph %>" autocomplete="new-password" aria-label="<%= kp.title %>">
         <div class="btnrow">
-          <button class="primary" name="action" value="save"><%= acct.openai_key_hint ? 'Replace' : 'Save' %></button>
+          <button class="primary" name="action" value="save"><%= hintVal ? 'Replace' : 'Save' %></button>
           <button name="action" value="test" formnovalidate>Test</button>
-          <% if (acct.openai_key_hint) { %><button class="danger" name="action" value="remove" formnovalidate onclick="return confirm('Remove this key? Requests go back to the default key.')">Remove</button><% } %>
+          <% if (hintVal) { %><button class="danger" name="action" value="remove" formnovalidate onclick="return confirm('Remove this key? Requests go back to the default key.')">Remove</button><% } %>
         </div>
       </form>
     </section>
+    <% } %>
     <section class="card">
       <div class="section-title">Account serial (SN)</div>
       <p class="mono" style="margin:0 0 6px;font-weight:600"><%= acct.serial_no || '—' %></p>

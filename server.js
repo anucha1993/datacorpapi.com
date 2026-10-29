@@ -1209,17 +1209,19 @@ admin.get("/customers/:operator", async (req, res, next) => {
 });
 
 // ---- OpenAI key รายลูกค้า (AI API) ----
-admin.post("/customers/:operator/openai-key", async (req, res, next) => {
+// :provider = openai | google (Vision OCR)
+admin.post("/customers/:operator/:provider(openai|google)-key", async (req, res, next) => {
   const op = String(req.params.operator).slice(0, 100), url = `/admin/customers/${encodeURIComponent(op)}`;
+  const prov = req.params.provider, name = prov === "google" ? "Google Vision key" : "OpenAI key";
   try {
     if (req.body.action === "test") {
-      const k = await ai.customerKey(q, op);
-      if (k === false) return back(res, url, "The saved key cannot be decrypted — enter it again", true);
-      const r = await ai.upstreamStatus(k || null);
-      return back(res, url, `${k ? "Customer key" : "Default key (.env)"}: ${r.message}`, !r.ok);
+      const k = await ai.customerKey(q, op, prov);
+      if (k === false) return back(res, url, `The saved ${name} cannot be decrypted — enter it again`, true);
+      const r = prov === "google" ? await ai.visionStatus(k || null) : await ai.upstreamStatus(k || null);
+      return back(res, url, `${name} (${k ? "customer" : "default from .env"}): ${r.message}`, !r.ok);
     }
-    await ai.setCustomerKey(q, op, req.body.action === "remove" ? "" : req.body.openai_key);
-    back(res, url, req.body.action === "remove" ? "Customer OpenAI key removed — AI requests now use the default key" : "Customer OpenAI key saved (encrypted) — AI requests of this customer now use it");
+    await ai.setCustomerKey(q, op, req.body.action === "remove" ? "" : req.body.key, prov);
+    back(res, url, req.body.action === "remove" ? `Customer ${name} removed — requests now use the default key` : `Customer ${name} saved (encrypted) — this customer's requests now use it`);
   } catch (e) { if (isDbError(e)) return next(e); back(res, url, e.message, true); }
 });
 

@@ -4,3 +4,8 @@
 ALTER TABLE portal_users ADD COLUMN IF NOT EXISTS openai_key_enc  TEXT         NULL;
 ALTER TABLE portal_users ADD COLUMN IF NOT EXISTS openai_key_hint VARCHAR(40)  NOT NULL DEFAULT '';
 ALTER TABLE portal_users ADD COLUMN IF NOT EXISTS openai_key_set_at DATETIME   NULL;
+
+-- Per-customer Google Vision key (OCR through /v1/vision/*) — empty = GOOGLE_VISION_API_KEY from .env
+ALTER TABLE portal_users ADD COLUMN IF NOT EXISTS google_key_enc    TEXT        NULL;
+ALTER TABLE portal_users ADD COLUMN IF NOT EXISTS google_key_hint   VARCHAR(40) NOT NULL DEFAULT '';
+ALTER TABLE portal_users ADD COLUMN IF NOT EXISTS google_key_set_at DATETIME    NULL;
