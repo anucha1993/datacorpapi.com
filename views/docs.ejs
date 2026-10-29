@@ -1,0 +1,155 @@
+<%- include('partials/header') %>
+<% const ework = products.find(p => p.slug === eworkSlug); const aiProd = products.find(p => p.slug === aiSlug); %>
+<div class="pagehead">
+  <div class="titles">
+    <h1>คู่มือ API</h1>
+    <p class="subtitle">สำหรับเขียนโปรแกรมของลูกค้า / บริการของเรา ให้ตรวจสิทธิ์ ส่งยอดการใช้งาน และพาลูกค้าไปชำระเงิน — ทุก endpoint รับ/ส่ง JSON ผ่าน HTTPS ที่ <code><%= base %></code></p>
+  </div>
+</div>
+
+<section class="card">
+  <h2>เลือกแบบที่ตรงกับสินค้า</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>สินค้า</th><th>ลูกค้ายืนยันตัวด้วย</th><th>ตรวจสิทธิ์</th><th>ส่งยอดใช้งาน</th></tr></thead>
+    <tbody>
+      <tr><td><b>โปรแกรมเดสก์ท็อป</b> (<%= ework ? ework.name : 'AI Web Tools' %>)</td><td>Serial Number ของบัญชี <code>DCA-XXXX-XXXX-XXXX</code></td><td><a href="#sn-verify"><code>POST /api/license/verify</code></a></td><td><a href="#sn-usage"><code>POST /api/v1/ework/usage</code></a> (คิด token ฝั่งเซิร์ฟเวอร์)</td></tr>
+      <tr><td><b>API ที่เราให้บริการ</b> (OCR, แปลภาษา ฯลฯ)</td><td>API key ลูกค้า <code>dca_sk_…</code></td><td colspan="2"><a href="#authorize"><code>POST /api/v1/authorize</code></a> — backend ของเราเรียก ตรวจ + นับในครั้งเดียว</td></tr>
+      <tr><td><b>โปรแกรมที่ขายแบบ license key</b></td><td>License key <code>DCL-XXXX-…</code></td><td><a href="#lic"><code>POST /api/v1/license/verify</code></a></td><td>—</td></tr>
+      <tr><td><b>AI API</b><%= aiProd ? ' (' + aiProd.name + ')' : '' %></td><td>API key ลูกค้า</td><td colspan="2"><a href="#ai"><code>POST /v1/chat/completions</code></a> — แบบเดียวกับ OpenAI นับ credits ให้อัตโนมัติ</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card" id="sn-verify">
+  <h2>1. โปรแกรมเดสก์ท็อป — ตรวจ License ตอนเปิดโปรแกรม</h2>
+  <p class="small">เรียกตอนเปิดโปรแกรม/ก่อนเริ่มงาน แล้วเก็บผลไว้ (แนะนำให้ใช้ผลล่าสุดได้ไม่เกิน 7 วันถ้าเน็ตล่ม) ไม่ต้องมี secret</p>
+  <pre class="code">POST <%= base %>/api/license/verify
+Content-Type: application/json
+
+{ "serial": "DCA-JQ6F-9FXF-YPAN",       // ลูกค้ากรอก
+  "install_id": "uuid ประจำเครื่อง",          // สร้างครั้งแรกแล้วเก็บไว้ (นับจำนวนเครื่อง)
+  "machine": "PC-01", "windows_user": "somchai", "app_version": "2.3.0" }</pre>
+  <div class="layout-side">
+    <div>
+      <div class="section-title">ผ่าน → 200</div>
+      <pre class="code">{ "ok": true, "operator": "thefirst", "display_name": "The First …",
+  "tokens": { "quota_type": "monthly", "month_tokens": 30000, "month_included": 50000,
+              "month_remaining": 20000, "month_overage_thb": 0,
+              "period_start": "2026-10-23", "period_end": "2026-11-22", "next_bill": "2026-11-23" },
+  "billing": { "open_invoices": 1, "amount_due_thb": 1250.00, "oldest_due": "2026-12-08",
+               "pay_url": "<%= base %>/portal/invoices/INV-202611-0001",
+               "checkout_url": "https://buy.polar.sh/…",
+               "renew_url": "<%= base %>/portal/plans", "portal_url": "<%= base %>/portal" } }</pre>
+    </div>
+    <div>
+      <div class="section-title">ไม่ผ่าน → 403</div>
+      <pre class="code">{ "ok": false, "error": "license_expired",
+  "message": "Your E-work license has expired — please renew … — <%= base %>/portal/plans",
+  "action_url": "<%= base %>/portal/plans",
+  "billing": { … } }</pre>
+      <table class="small"><thead><tr><th>error</th><th>ความหมาย</th><th>action_url</th></tr></thead><tbody>
+        <tr><td><code>not_found</code></td><td>ไม่พบ Serial</td><td>—</td></tr>
+        <tr><td><code>suspended</code></td><td>บัญชีถูกระงับ</td><td>—</td></tr>
+        <tr><td><code>device_limit</code></td><td>เครื่องเกินจำนวน</td><td>—</td></tr>
+        <tr><td><code>no_license</code></td><td>ยังไม่มี License</td><td>หน้าเลือกแพ็กเกจ</td></tr>
+        <tr><td><code>license_expired</code></td><td>หมดอายุ</td><td>หน้าเลือกแพ็กเกจ</td></tr>
+        <tr><td><code>payment_required</code></td><td>ค้างชำระ / ตัดบัตรไม่ผ่าน</td><td>หน้าชำระเงิน</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</section>
+
+<section class="card" id="paylink">
+  <h2>2. แสดงปุ่ม "ชำระเงิน / ต่ออายุ" ในโปรแกรมของลูกค้า</h2>
+  <p class="small">ใช้ลิงก์จากผลตรวจด้านบนได้เลย ไม่ต้องสร้างเอง:</p>
+  <ul class="small">
+    <li><b><code>action_url</code></b> — มีเมื่อถูกบล็อก: เปิดลิงก์นี้ให้ลูกค้าจ่าย/ต่ออายุ (ข้อความ <code>message</code> ก็แนบลิงก์ไว้ท้ายแล้ว โปรแกรมเก่าที่แสดงแค่ข้อความก็เห็น)</li>
+    <li><b><code>billing.checkout_url</code></b> — หน้าชำระเงิน Polar ของบิลที่ค้างใบแรก จ่ายได้ทันทีไม่ต้อง login (อาจเป็น <code>null</code> ถ้ายังไม่ได้สร้างลิงก์)</li>
+    <li><b><code>billing.pay_url</code></b> — หน้าใบแจ้งหนี้ในพอร์ทัล (ต้อง login) ใช้ได้เสมอ — ใช้เมื่อ <code>checkout_url</code> ว่าง</li>
+    <li><b><code>billing.open_invoices</code> &gt; 0</b> ขณะที่ยังใช้งานได้ → แสดงแถบเตือน "มียอดค้าง ฿…" พร้อมปุ่มชำระ</li>
+  </ul>
+  <pre class="code">import requests, webbrowser
+
+BASE = "<%= base %>"
+r = requests.post(f"{BASE}/api/license/verify", timeout=15, json={
+    "serial": serial, "install_id": install_id, "app_version": APP_VERSION}).json()
+
+if not r.get("ok"):
+    show_error(r.get("message"))                     # ข้อความพร้อมลิงก์
+    if r.get("action_url") and ask_yes_no("ไปหน้าชำระเงิน/ต่ออายุตอนนี้ไหม?"):
+        webbrowser.open(r["action_url"])
+else:
+    b = r["billing"]
+    if b["open_invoices"]:
+        show_banner(f"มียอดค้างชำระ ฿{b['amount_due_thb']:,.2f} (ครบกำหนด {b['oldest_due']})",
+                    button="ชำระเงิน", url=b["checkout_url"] or b["pay_url"])
+    t = r["tokens"]
+    show_status(f"Token รอบนี้ {t['month_tokens']:,} / {t.get('month_included', 0):,}")</pre>
+</section>
+
+<section class="card" id="sn-usage">
+  <h2>3. โปรแกรมเดสก์ท็อป — ส่งยอดการใช้งาน (token)</h2>
+  <p class="small">ส่ง <b>งานที่ทำเสร็จ</b> ไม่ต้องคำนวณ token เอง — เซิร์ฟเวอร์แปลงเป็น token ตามตาราง <a href="/admin/ework">AI Web Tools → Tokens per job</a> × ตัวคูณของแพ็กเกจ</p>
+  <pre class="code">POST <%= base %>/api/v1/ework/usage
+Content-Type: application/json
+
+{ "serial": "DCA-JQ6F-9FXF-YPAN",
+  "rows": [ {
+    "event_id": "6f1c0c1e-3b0a-4c55-9d7e-2a8f0d1c9b11",   // UUID ใหม่ทุกงาน — ส่งซ้ำได้ ไม่นับซ้ำ
+    "mode": "results",                                    // ชื่อโหมดงาน (ต้องมีในตาราง token)
+    "status": "ok",                                       // ok | cancelled | error
+    "record_count": 120,                                  // จำนวนรายการที่ได้
+    "progress_done": 120,                                 // งานที่ยกเลิก/error คิดตามค่านี้
+    "started_at": "2026-10-29 09:00:00", "finished_at": "2026-10-29 09:12:30",
+    "install_id": "…", "app_version": "2.3.0", "ewp_username": "…"   // ไม่บังคับ
+  } ] }</pre>
+  <pre class="code">200 { "ok": true, "accepted": 1, "duplicates": 0, "rejected": 0,
+      "tokens": { "month_tokens": 30384, "month_remaining": 19616, … },
+      "billing": { "open_invoices": 0, … } }
+401 invalid_serial · 403 suspended · 413 ส่งเกิน 200 แถว/ครั้ง · 429 ถี่เกินไป</pre>
+  <ul class="small">
+    <li>เขียนงานลงไฟล์คิวในเครื่องก่อนเสมอ แล้วค่อยส่ง — ส่งไม่ได้ให้เก็บไว้ส่งรอบหน้า (ใช้ <code>event_id</code> เดิม)</li>
+    <li>ตัวอย่างที่ใช้จริง: <code>E-work/usage_tracker.py</code> (<code>flush()</code>)</li>
+    <li>ลูกค้าดูยอดได้ที่พอร์ทัล — ตัดรอบ/ออกบิลส่วนเกินทุกวันที่ <%= CYCLE.label %></li>
+  </ul>
+  <% if (rates.length) { %>
+  <details><summary class="small strong">โหมดงานและ token ปัจจุบัน (<%= rates.length %>)</summary>
+    <table class="small"><thead><tr><th>mode</th><th>งาน</th><th class="r">ต่อรายการ</th><th class="r">ต่อครั้ง</th></tr></thead><tbody>
+      <% for (const r of rates) { %><tr><td class="mono"><%= r.mode %></td><td><%= r.label %></td><td class="r"><%= Number(r.tokens_per_record) %></td><td class="r"><%= Number(r.tokens_per_run) %></td></tr><% } %>
+    </tbody></table></details>
+  <% } %>
+</section>
+
+<section class="card" id="authorize">
+  <h2>4. API ที่เราให้บริการ — ตรวจ key + นับการใช้งาน</h2>
+  <p class="small">backend ของบริการ (เช่นเซิร์ฟเวอร์ OCR) เรียกทุกครั้งที่ลูกค้าเรียกใช้ ด้วย <b>service secret</b> ของสินค้า (สร้างที่ Products → สินค้า → Generate secret) — ห้ามใส่ secret ในโปรแกรมลูกค้า</p>
+  <pre class="code">POST <%= base %>/api/v1/authorize
+Authorization: Bearer dca_svc_…            // service secret ของสินค้า
+Content-Type: application/json
+
+{ "key": "dca_sk_… (key ของลูกค้า)", "units": 3 }      // "dry_run": true = ตรวจอย่างเดียวไม่นับ
+
+200 { "ok": true, "customer": "thefirst", "plan": "Pro", "quota": { "used": 1203, "included": 10000, "remaining": 8797 } }
+401 invalid_key/revoked_key · 402 payment_required · 403 inactive/suspended · 429 quota_exceeded/rate_limited</pre>
+  <p class="small">ลูกค้าเช็กโควตาเองได้: <code>GET <%= base %>/api/v1/usage</code> + <code>Authorization: Bearer dca_sk_…</code></p>
+</section>
+
+<section class="card" id="lic">
+  <h2>5. โปรแกรมที่ขายแบบ license key</h2>
+  <pre class="code">POST <%= base %>/api/v1/license/verify
+{ "license_key": "DCL-XXXX-XXXX-XXXX-XXXX", "product": "slug-ของสินค้า",
+  "device_id": "รหัสเครื่องที่คงที่", "device_name": "PC-01", "app_version": "1.0" }
+
+200 { "ok": true, "plan": "Pro", "expires_at": "2026-11-23 …", "features": [ … ], "max_devices": 2 }
+403 device_limit (ให้ลูกค้าลบเครื่องเก่าในพอร์ทัล) · 402 payment_required · 403 inactive</pre>
+  <p class="small">หมดอายุ/ค้างชำระ: ให้เปิด <code><%= base %>/portal/plans</code> หรือ <code><%= base %>/portal/billing</code> ให้ลูกค้า</p>
+</section>
+
+<section class="card" id="ai">
+  <h2>6. AI API (แบบเดียวกับ OpenAI)</h2>
+  <pre class="code">from openai import OpenAI
+client = OpenAI(base_url="<%= base %>/v1", api_key="dca_sk_…")
+r = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": "สวัสดี"}])</pre>
+  <p class="small">ราคา/โมเดลตั้งที่ <a href="/admin/ai-models">AI models</a> · error แบบ OpenAI (<code>{ "error": { "message", "code" } }</code>) — <code>429 quota_exceeded</code> เมื่อโควตาหมด</p>
+</section>
+<%- include('partials/footer') %>

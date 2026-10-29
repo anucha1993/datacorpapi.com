@@ -285,7 +285,7 @@ app.post("/api/v1/ework/usage", express.json({ limit: "1mb" }), async (req, res)
     if (rows.length > ework.MAX_ROWS) return res.status(413).json({ ok: false, error: "too_many_rows", message: `Send at most ${ework.MAX_ROWS} rows per request` });
     const r = await ework.ingest(q, u.operator, rows);
     await ework.chargePending(q);
-    res.json({ ok: true, ...r, tokens: await ework.summary(q, u.operator) });
+    res.json({ ok: true, ...r, tokens: await ework.summary(q, u.operator), billing: await ework.billingInfo(q, u.operator, siteUrl()) });
   } catch (e) {
     if (e && e.type === "entity.parse.failed") return res.status(400).json({ ok: false, error: "invalid_json", message: "Request body must be valid JSON" });
     console.error("[ework usage]", e); res.status(500).json({ ok: false, error: "server", message: "Server error" });
@@ -384,8 +384,12 @@ app.post("/api/license/verify", express.json({ limit: "8kb" }), async (req, res)
     const r = await portal.verifySerial(q, { serial: b.serial, install_id: b.install_id, machine: b.machine, windows_user: b.windows_user, app_version: b.app_version, ip: String(req.ip).slice(0, 64) });
     if (!r.ok) return res.status(403).json(r);
     const lic = await ework.licenseCheck(q, r.operator);
-    if (!lic.ok) return res.status(403).json({ ok: false, operator: r.operator, error: lic.error, message: lic.message });
-    res.json({ ...r, tokens: lic.sub ? await ework.summary(q, r.operator, lic.sub) : null });
+    const billing = await ework.billingInfo(q, r.operator, siteUrl());
+    if (!lic.ok) {
+      const action_url = ework.actionUrl(lic.error, billing);
+      return res.status(403).json({ ok: false, operator: r.operator, error: lic.error, message: lic.message + (action_url ? ` — ${action_url}` : ""), action_url, billing });
+    }
+    res.json({ ...r, tokens: lic.sub ? await ework.summary(q, r.operator, lic.sub) : null, billing });
   } catch (e) { console.error("[license]", e.message); res.status(500).json({ ok: false, error: "server", message: "Server error" }); }
 });
 app.get("/robots.txt", (req, res) => res.type("text/plain").send("User-agent: *\nDisallow: /admin\nDisallow: /login\nDisallow: /portal\nDisallow: /api\nAllow: /\n"));
@@ -1325,6 +1329,14 @@ admin.post("/ework/customers/:operator/license", async (req, res, next) => {
     if (await ework.subscriptionFor(q, req.params.operator)) return back(res, "/admin/ework", `${req.params.operator} already has an E-work license`, true);
     await platform.createSubscription(q, req.params.operator, await platform.getPlan(q, plan.id), { source: "manual", note: "E-work license granted by admin" });
     back(res, "/admin/ework", `E-work license granted to ${req.params.operator}`);
+  } catch (e) { next(e); }
+});
+
+// ---- คู่มือ API สำหรับนักพัฒนา (โปรแกรมของลูกค้า / บริการของเรา) ----
+admin.get("/docs", async (req, res, next) => {
+  try {
+    const [products, rates] = await Promise.all([platform.listProducts(q), ework.rates(q).catch(() => [])]);
+    res.render("docs", { title: "API guide", base: siteUrl() || "https://datacorpapi.com", products, rates, eworkSlug: ework.SLUG(), aiSlug: ai.cfg().slug });
   } catch (e) { next(e); }
 });
 
