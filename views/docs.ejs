@@ -191,6 +191,8 @@ Content-Type: application/json
   <h2>7. AI API — เด้งหน้าชำระเงิน / อัปเกรดในโปรแกรมของลูกค้า</h2>
   <p class="small"><b>หมดอายุหรือ credits หมด:</b> error จะมี <code>action_url</code> (และต่อท้ายใน <code>message</code>) เปิดแล้วไปหน้าชำระเงิน Polar ของแพ็กเกจที่ควรจ่ายทันที —
     แพ็กเกจทดลอง "X Trial" → จ่ายแพ็กเกจ "X" · แพ็กเกจที่จ่ายอยู่ → ต่ออายุแพ็กเกจเดิม จ่ายเสร็จ key เดิมใช้ต่อได้เลย</p>
+  <p class="small"><b>ใกล้หมดอายุ (ภายใน 3 วัน — ตั้งได้ด้วย <code>RENEW_NOTICE_DAYS</code>):</b> <code>GET /api/v1/usage</code> → <code>billing.renew_due = true</code>, <code>billing.days_left</code> และ <code>billing.upgrade_url</code> = ลิงก์ต่ออายุแพ็กเกจเดิม
+    (แพ็กเกจที่ตัดบัตรอัตโนมัติ <code>billing.auto_renew = true</code> ลิงก์จะพาไปหน้าแพ็กเกจในพอร์ทัล ไม่สร้างการสมัครซ้ำ) · แพ็กเกจที่จ่ายแล้วและยังไม่ใกล้หมด <code>upgrade_url = null</code> ไม่ต้องแสดงปุ่ม</p>
   <p class="small"><b>ระหว่างทดลองใช้ (ยังไม่หมด):</b> เรียก <code>GET /api/v1/usage</code> แล้วใช้ <code>billing.upgrade_url</code> ทำปุ่ม "สมัครใช้จริง" ได้ตลอด — ลิงก์ใช้ได้ 7 วัน ขอใหม่ได้ทุกครั้ง</p>
   <pre class="code">import webbrowser, requests
 from openai import OpenAI, APIStatusError
