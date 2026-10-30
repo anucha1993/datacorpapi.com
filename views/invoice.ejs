@@ -5,7 +5,7 @@
     <h1><%= inv.invoice_no %> <span class="badge b-<%= overdue ? 'overdue' : inv.status %>" style="vertical-align:middle"><%= overdue ? 'Overdue' : (STATUS_INV[inv.status] || inv.status) %></span></h1>
     <p class="subtitle"><a href="/admin/customers/<%= encodeURIComponent(inv.operator) %>"><%= inv.operator %></a><%= buyer.company_name ? ' · ' + buyer.company_name : '' %> · ฿<%= fmtMoney(inv.amount_thb) %></p>
   </div>
-  <div class="tools no-print"><button type="button" onclick="window.print()">Print / Save PDF</button></div>
+  <% if (inv.receipt_url) { %><div class="tools no-print"><a class="btn" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Official invoice (Polar) ↗</a></div><% } %>
 </div>
 <% if (msg) { %><p class="ok no-print"><%= msg %></p><% } %>
 <% if (error) { %><p class="alert no-print"><%= error %></p><% } %>

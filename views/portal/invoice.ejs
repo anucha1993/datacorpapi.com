@@ -1,12 +1,12 @@
 <%- include('partials/header') %>
 <div class="pagehead">
   <div class="titles">
-    <a href="/portal/billing" class="muted small no-print">← All invoices</a>
-    <h1><%= inv.invoice_no %></h1>
+    <a href="/portal/billing" class="muted small no-print">← All payments</a>
+    <h1>Payment <%= inv.invoice_no %></h1>
   </div>
-  <div class="tools no-print">
-    <button type="button" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / Save PDF</button>
-  </div>
+  <% if (inv.receipt_url) { %><div class="tools no-print">
+    <a class="btn" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Official invoice / receipt (<%= co.PAY.name %>) ↗</a>
+  </div><% } %>
 </div>
 
 <div class="layout-side">
@@ -37,10 +37,10 @@
     <section class="card">
       <div class="section-title">Receipts &amp; documents</div>
       <% if (!inv.receipt_url && !files.length) { %>
-        <p class="muted small" style="margin:0"><%= inv.status === 'paid' ? 'Your receipt is being generated and will appear here within a few minutes.' : 'Receipts appear here after payment.' %></p>
+        <p class="muted small" style="margin:0"><%= inv.status === 'paid' ? co.PAY.name + ' is generating your official invoice/receipt — it appears here within a few minutes.' : 'After payment, ' + co.PAY.name + ' issues the official invoice/receipt — it appears here.' %></p>
       <% } else { %>
         <ul class="filelist">
-          <% if (inv.receipt_url) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="fname">Payment receipt (<%= co.PAY.name %>)</span><a href="<%= inv.receipt_url %>" target="_blank" rel="noopener" class="btn small">Open</a></li><% } %>
+          <% if (inv.receipt_url) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="fname">Official invoice / receipt (<%= co.PAY.name %>)</span><a href="<%= inv.receipt_url %>" target="_blank" rel="noopener" class="btn small">Open</a></li><% } %>
           <% for (const f of files) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="fname" title="<%= f.filename %>"><%= f.kind === 'tax_invoice' ? 'Tax invoice' : f.kind === 'receipt' ? 'Receipt' : 'Document' %> · <%= f.filename %></span><a href="/portal/attachments/<%= f.id %>" target="_blank" class="btn small">Download</a></li><% } %>
         </ul>
       <% } %>

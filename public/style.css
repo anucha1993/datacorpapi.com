@@ -299,6 +299,7 @@ body.center { display: grid; place-items: center; min-height: 100vh;
 .doc-brand { display: flex; gap: 12px; align-items: flex-start; }
 .doc-brand .brand-mark { width: 42px; height: 42px; font-size: 19px; border-radius: 11px; }
 .doc-brand b { font-size: 17px; display: block; }
+.doc-brand .polar-mark { width: 44px; height: 44px; border-radius: 12px; background: #0a0a0a; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; letter-spacing: -.02em; flex: 0 0 auto; }
 .doc-brand .muted { font-size: 13px; line-height: 1.5; }
 .doc-title { text-align: right; }
 .doc-title h2 { font-size: 26px; letter-spacing: .08em; margin: 0 0 6px; font-weight: 800; }
