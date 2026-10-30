@@ -1,0 +1,21 @@
+<%# Plain payment summary (not a document). Official invoices/receipts come only from Polar's own pages (inv.receipt_url).
+    locals: co, inv, lines, overdue %>
+<section class="card">
+  <div class="card-head"><h2>Payment details</h2><span class="muted small">Ref. <%= inv.invoice_no %></span></div>
+  <dl class="kv" style="grid-template-columns:140px 1fr;font-size:14px">
+    <dt>Status</dt><dd><span class="badge b-<%= overdue ? 'overdue' : inv.status %>"><%= overdue ? 'Overdue' : (STATUS_INV[inv.status] || inv.status) %></span><%= inv.status === 'paid' && inv.paid_at ? ' · ' + String(inv.paid_at).slice(0, 10) : '' %></dd>
+    <dt>Requested</dt><dd><%= String(inv.issued_at || '').slice(0, 10) %></dd>
+    <% if (inv.status === 'open') { %><dt>Due</dt><dd><%= inv.due_at || '—' %></dd><% } %>
+  </dl>
+  <div class="scroll" style="margin-top:12px"><table>
+    <thead><tr><th>Item</th><th class="r">Amount (THB)</th></tr></thead>
+    <tbody>
+    <% for (const l of lines) { %>
+      <tr><td><b><%= l.name %></b><% if (l.desc) { %><br><small class="muted"><%= l.desc %></small><% } %><% if (l.qty > 1) { %><br><small class="muted"><%= fmtNum(l.qty) %> × <%= l.unitPrecise ? fmtUnit(l.unit) : fmtMoney(l.unit) %></small><% } %></td>
+        <td class="r strong"><%= fmtMoney(l.amount) %></td></tr>
+    <% } %>
+    <tr><td class="strong"><%= inv.status === 'paid' ? 'Paid' : 'Total' %></td><td class="r strong" style="font-size:16px">฿<%= fmtMoney(inv.amount_thb) %></td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted small" style="margin:12px 0 0">Payments are processed by <%= co.PAY.legalName %> (<%= co.PAY.name %>), the Merchant of Record. The invoice and receipt are issued by <%= co.PAY.name %> on its own site after payment.</p>
+</section>

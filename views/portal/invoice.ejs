@@ -5,12 +5,12 @@
     <h1>Payment <%= inv.invoice_no %></h1>
   </div>
   <% if (inv.receipt_url) { %><div class="tools no-print">
-    <a class="btn" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Official invoice / receipt (<%= co.PAY.name %>) ↗</a>
+    <a class="btn" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Invoice / receipt on <%= co.PAY.name %> ↗</a>
   </div><% } %>
 </div>
 
 <div class="layout-side">
-  <%- include('../partials/invoice_doc') %>
+  <div><%- include('../partials/payment_summary') %></div>
 
   <aside class="sticky no-print mobile-first">
     <section class="card">
@@ -40,7 +40,7 @@
         <p class="muted small" style="margin:0"><%= inv.status === 'paid' ? co.PAY.name + ' is generating your official invoice/receipt — it appears here within a few minutes.' : 'After payment, ' + co.PAY.name + ' issues the official invoice/receipt — it appears here.' %></p>
       <% } else { %>
         <ul class="filelist">
-          <% if (inv.receipt_url) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="fname">Official invoice / receipt (<%= co.PAY.name %>)</span><a href="<%= inv.receipt_url %>" target="_blank" rel="noopener" class="btn small">Open</a></li><% } %>
+          <% if (inv.receipt_url) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="fname">Invoice / receipt on <%= co.PAY.name %></span><a href="<%= inv.receipt_url %>" target="_blank" rel="noopener" class="btn small">Open</a></li><% } %>
           <% for (const f of files) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="fname" title="<%= f.filename %>"><%= f.kind === 'tax_invoice' ? 'Tax invoice' : f.kind === 'receipt' ? 'Receipt' : 'Document' %> · <%= f.filename %></span><a href="/portal/attachments/<%= f.id %>" target="_blank" class="btn small">Download</a></li><% } %>
         </ul>
       <% } %>

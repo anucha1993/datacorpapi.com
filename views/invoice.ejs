@@ -5,13 +5,13 @@
     <h1><%= inv.invoice_no %> <span class="badge b-<%= overdue ? 'overdue' : inv.status %>" style="vertical-align:middle"><%= overdue ? 'Overdue' : (STATUS_INV[inv.status] || inv.status) %></span></h1>
     <p class="subtitle"><a href="/admin/customers/<%= encodeURIComponent(inv.operator) %>"><%= inv.operator %></a><%= buyer.company_name ? ' · ' + buyer.company_name : '' %> · ฿<%= fmtMoney(inv.amount_thb) %></p>
   </div>
-  <% if (inv.receipt_url) { %><div class="tools no-print"><a class="btn" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Official invoice (Polar) ↗</a></div><% } %>
+  <% if (inv.receipt_url) { %><div class="tools no-print"><a class="btn" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Invoice / receipt on Polar ↗</a></div><% } %>
 </div>
 <% if (msg) { %><p class="ok no-print"><%= msg %></p><% } %>
 <% if (error) { %><p class="alert no-print"><%= error %></p><% } %>
 
 <div class="layout-side wide">
-  <%- include('partials/invoice_doc') %>
+  <div><%- include('partials/payment_summary') %></div>
 
   <aside class="no-print">
     <% if (inv.status === 'open') { %>
@@ -38,10 +38,11 @@
     <% } %>
 
     <section class="card">
-      <div class="section-title">Receipts &amp; documents</div>
+      <div class="section-title">Polar invoice / receipt</div>
+      <p class="muted small" style="margin-top:0">Filled in automatically from Polar after payment. We do not issue our own documents.</p>
       <% if (inv.receipt_url || files.length) { %>
       <ul class="filelist" style="margin-bottom:14px">
-        <% if (inv.receipt_url) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="fname">Receipt link</span><a class="btn small" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Open</a></li><% } %>
+        <% if (inv.receipt_url) { %><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="fname">Invoice / receipt on Polar</span><a class="btn small" href="<%= inv.receipt_url %>" target="_blank" rel="noopener">Open</a></li><% } %>
         <% for (const f of files) { %>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <span class="fname" title="<%= f.filename %> · <%= Math.ceil(f.size / 1024) %> KB · <%= f.uploaded_at %>"><%= ATTACH_KINDS[f.kind] %> · <%= f.filename %></span>
@@ -51,18 +52,9 @@
         <% } %>
       </ul>
       <% } %>
-      <form method="post" action="/admin/invoices/<%= inv.id %>/attachments" enctype="multipart/form-data" class="stack">
-        <label>Attach file <span class="hint">PDF, PNG, JPG or WebP · max 5 MB · visible to the customer</span>
-          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" required></label>
-        <label>Document type
-          <select name="kind"><% for (const [k, v] of Object.entries(ATTACH_KINDS)) { %><option value="<%= k %>"><%= v %></option><% } %></select></label>
-        <% if (inv.status !== 'paid') { %><label class="check"><input type="checkbox" name="mark_paid" value="1"> <span>Also mark this invoice as paid (e.g. bank transfer received)</span></label><% } %>
-        <button class="primary">Upload</button>
-      </form>
-      <hr class="divider">
       <form method="post" action="/admin/invoices/<%= inv.id %>/receipt-url" class="stack">
         <input type="hidden" name="back" value="detail">
-        <label>Or link to an external receipt <span class="hint">e.g. a Polar / Google Drive URL — leave empty to remove</span>
+        <label>Polar invoice/receipt link <span class="hint">Only if it did not arrive automatically — leave empty to remove</span>
           <input name="receipt_url" type="url" value="<%= inv.receipt_url %>" placeholder="https://…" maxlength="700"></label>
         <button>Save link</button>
       </form>

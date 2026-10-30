@@ -128,7 +128,7 @@ const profileComplete = (u) => !!(u.company_name && u.address && u.zip && (u.bil
 const siteUrl = () => company().SITE_URL || "";
 
 /**
- * ข้อมูลสำหรับเอกสารใบแจ้งหนี้ (views/partials/invoice_doc.ejs): ผู้ซื้อ รายการ ไฟล์แนบ
+ * ข้อมูลสรุปการชำระเงิน (views/partials/payment_summary.ejs): ผู้ซื้อ รายการ ไฟล์แนบ
  */
 async function invoiceDoc(inv) {
   const [buyerRows, files] = await Promise.all([
