@@ -8,12 +8,14 @@
       <% if (sub.status === 'active') { %> · <%= sub.cancel_at_period_end ? 'ends' : sub.period_end ? 'renews' : 'no end date' %> <%= sub.period_end ? fmtDate(sub.period_end) : '' %><% } %></p>
   </div>
   <div class="tools">
+    <% if (sub.status === 'pending' && !welcome) { %><a class="btn primary" href="/portal/plans/<%= sub.plan_id %>">Complete payment</a><% } %>
     <a class="btn" href="/portal/plans"><%= sub.status === 'active' ? 'Change plan' : 'Choose a plan' %></a>
     <% if (sub.source === 'polar' && co.PAY.key === 'polar') { %><a class="btn" href="/portal/payment-methods">Payment method</a><% } %>
   </div>
 </div>
 
 <% if (welcome && sub.status === 'pending') { %><p class="info">Thanks! We're confirming your payment with <%= co.PAY.name %> — this page updates within a minute. <a href="">Refresh</a></p>
+<% } else if (sub.status === 'pending') { %><p class="info">This plan is not paid yet. <a href="/portal/plans/<%= sub.plan_id %>">Complete payment</a> to activate it — unpaid requests are cleared after 24 hours.</p>
 <% } else if (welcome) { %><p class="ok">Your plan is active. Create your first <%= isLic ? 'license key' : 'API key' %> below.</p><% } %>
 <% if (msg) { %><p class="ok"><%= msg %></p><% } %>
 <% if (error) { %><p class="alert"><%= error %></p><% } %>
