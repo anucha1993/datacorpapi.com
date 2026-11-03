@@ -23,6 +23,8 @@
             <td class="nowrap"><b class="mono"><%= m.model %></b><% if (m.label && m.label !== m.model) { %><br><small class="muted"><%= m.label %></small><% } %></td>
             <td class="r nowrap">$<%= Number(m.input_usd_per_1m) %> · $<%= Number(m.output_usd_per_1m) %></td>
             <% if ((m.kind || 'chat') === 'ocr') { %><td class="r" colspan="2"><%= m.rates.perUnit %> / page <small class="muted">(OCR)</small></td>
+            <% } else if (m.kind === 'image') { %><td class="r"><%= m.rates.input %></td>
+            <td class="r"><%= m.rates.output %> <small class="muted">(image)</small></td>
             <% } else { %><td class="r"><%= m.rates.input %></td>
             <td class="r"><%= m.rates.output %></td><% } %>
             <td><span class="badge b-<%= m.is_active ? 'active' : 'hidden' %>"><%= m.is_active ? 'On' : 'Off' %></span></td>
@@ -41,6 +43,7 @@
         <div class="form-grid">
           <label>OpenAI model ID <span class="hint">Exact name, e.g. gpt-4o-mini</span><input name="model" value="<%= f.model || '' %>" required maxlength="100" class="mono" placeholder="gpt-4o-mini"></label>
           <label>Label<input name="label" value="<%= f.label || '' %>" maxlength="120" placeholder="GPT-4o mini"></label>
+          <label>Type <span class="hint">Image: input = image input price, output = image output price</span><select name="kind"><% for (const [k, t] of [['chat', 'Chat (/v1/chat/completions)'], ['image', 'Image (/v1/images)'], ['ocr', 'OCR (per page)']]) { %><option value="<%= k %>" <%= (f.kind || 'chat') === k ? 'selected' : '' %>><%= t %></option><% } %></select></label>
           <label>Input price (USD / 1M tokens)<input name="input_usd_per_1m" type="number" min="0" step="0.0001" value="<%= f.input_usd_per_1m ?? '' %>" required placeholder="0.15"></label>
           <label>Output price (USD / 1M tokens)<input name="output_usd_per_1m" type="number" min="0" step="0.0001" value="<%= f.output_usd_per_1m ?? '' %>" required placeholder="0.60"></label>
           <label>Sort order<input name="sort_order" type="number" value="<%= f.sort_order ?? 0 %>"></label>

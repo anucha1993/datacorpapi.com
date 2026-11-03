@@ -187,6 +187,24 @@ Content-Type: application/json
   <p class="small">โค้ดเดิมที่เรียก <code>https://vision.googleapis.com/v1/images:annotate?key=…</code> → เปลี่ยนเป็น <code><%= base %>/v1/vision/images:annotate</code> + header <code>Authorization: Bearer dca_sk_…</code> (ตัวอย่างจริง: <code>labour_tip/app/Services/GoogleVisionOcr.php</code>)</p>
 </section>
 
+<section class="card" id="ai-images">
+  <h2>6.2 AI API — สร้าง / แก้ภาพ (GPT Image) ด้วย key เดียวกัน</h2>
+  <p class="small">แพ็กเกจที่มีโมเดลประเภท image (Business — หรือแพ็กเกจที่ติ๊ก <code>gpt-image-…</code> ใน Products) ใช้ key <code>dca_sk_…</code> เดิม ไม่ต้องมี key แยก
+    — body รูปแบบ JSON เดียวกับ OpenAI · ไม่ระบุ <code>model</code> = โมเดลภาพตัวแรกที่แพ็กเกจใช้ได้ · คิด credits จาก usage จริง (ดูราคาที่ <a href="/admin/ai-models">AI models</a>)</p>
+  <pre class="code">POST <%= base %>/v1/images/generations   // สร้างภาพจากข้อความ
+POST <%= base %>/v1/images/edits         // แก้ภาพ / รีทัชรูป
+Authorization: Bearer dca_sk_…
+Content-Type: application/json            // ไม่รับ multipart — ส่งรูปเป็น data URL
+
+{ "model": "gpt-image-2", "prompt": "Retouch for a job application photo, plain white background",
+  "images": [ { "image_url": "data:image/jpeg;base64,&lt;base64&gt;" } ],
+  "size": "1024x1024", "quality": "high", "output_format": "jpeg" }
+
+200 → ผลของ OpenAI ตามเดิม (data[0].b64_json) + header X-DataCorp-Images, X-DataCorp-Credits
+403 feature_not_available (แพ็กเกจไม่มีภาพ) · 429 quota_exceeded / 403 inactive (มี error.action_url เหมือนข้อ 6)</pre>
+  <p class="small">ตัวอย่างจริง: <code>labour_tip/app/Services/Ai/OpenAiClient.php</code> → <code>editImage()</code> (ผู้ช่วย AI สั่ง "รีทัชรูป …")</p>
+</section>
+
 <section class="card" id="ai-pay">
   <h2>7. AI API — เด้งหน้าชำระเงิน / อัปเกรดในโปรแกรมของลูกค้า</h2>
   <p class="small"><b>หมดอายุหรือ credits หมด:</b> error จะมี <code>action_url</code> (และต่อท้ายใน <code>message</code>) เปิดแล้วไปหน้าชำระเงิน Polar ของแพ็กเกจที่ควรจ่ายทันที —

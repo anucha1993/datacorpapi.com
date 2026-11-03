@@ -378,7 +378,8 @@ const v1wrap = (fn) => async (req, res) => {
 v1.get("/models", v1wrap(ai.listModels));
 v1.post("/chat/completions", v1wrap(ai.chatCompletions));
 v1.post(/^\/vision\/(images|files):annotate$/, v1wrap((q, req, res) => ai.vision(q, req, res, req.params[0])));
-v1.use((req, res) => res.status(404).json({ error: { message: `Unknown endpoint ${req.method} /v1${req.path} — supported: POST /v1/chat/completions, GET /v1/models, POST /v1/vision/images:annotate, POST /v1/vision/files:annotate`, type: "invalid_request_error", code: "not_found", param: null } }));
+v1.post(/^\/images\/(generations|edits)$/, v1wrap((q, req, res) => ai.images(q, req, res, req.params[0])));
+v1.use((req, res) => res.status(404).json({ error: { message: `Unknown endpoint ${req.method} /v1${req.path} — supported: POST /v1/chat/completions, GET /v1/models, POST /v1/images/generations, POST /v1/images/edits, POST /v1/vision/images:annotate, POST /v1/vision/files:annotate`, type: "invalid_request_error", code: "not_found", param: null } }));
 // eslint-disable-next-line no-unused-vars
 v1.use((err, req, res, _next) => {
   const parse = err && err.type === "entity.parse.failed", big = err && err.type === "entity.too.large";
