@@ -27,10 +27,10 @@
   </div>
   <% } %>
   <% if (!products.length) { %><p class="muted">API and software plans are coming soon. <a href="/contact">Contact us</a> for early access.</p><% } %>
-  <p class="muted small center">Subscribing requires a customer account — <a href="/contact">contact us</a> to open one, or <a href="/portal/login">sign in</a>.</p>
+  <p class="muted small center">Subscribing requires a customer account. <a href="/contact">Request an account</a> or <a href="/portal/login">sign in</a>.</p>
 
   <% if (plans.length) { %>
-  <h2>Projects &amp; consulting</h2>
+  <h2>Custom builds &amp; hosting</h2>
   <div class="plans">
     <% for (const p of plans) { %>
     <div class="plan <%= p.featured ? 'featured' : '' %>" id="plan-<%= p.key %>">
@@ -57,9 +57,13 @@
     <li>No monthly fee and no card on file. Usage beyond any free allowance is invoiced on the <%= CYCLE.label %> of each month, payable within <%= DUE_DAYS %> days by the payment link in your portal.</li>
     <li>Usage is visible in real time in the customer portal. Monthly amounts below ฿<%= MIN_THB %> are carried forward (payment-provider minimum).</li>
   </ul>
-  <h3>Projects</h3>
+  <h3>Custom builds</h3>
   <ul class="bullets">
-    <li>Written proposal with scope, deliverables, timeline and price; 50% deposit on acceptance and the balance on delivery, invoiced through a <%= co.PAY.name %> payment link.</li>
+    <li>Fixed price per written specification. 50% on order and the balance on delivery of the software, paid through a <%= co.PAY.name %> payment link.</li>
+  </ul>
+  <h3>Managed hosting</h3>
+  <ul class="bullets">
+    <li>Billed monthly in advance. Cancel any time in the customer portal; hosting continues until the end of the paid month.</li>
   </ul>
   <p>Price changes for any recurring plan are announced by email at least 30 days in advance. See the <a href="/refund">Refund &amp; Cancellation Policy</a>.</p>
 </section>

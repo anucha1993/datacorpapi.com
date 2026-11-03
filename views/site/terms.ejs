@@ -4,29 +4,29 @@
   <p class="muted">Effective <%= co.EFFECTIVE_DATE %> · Provider: <%= co.COMPANY_NAME %><% if (co.COMPANY_NAME_EN) { %> (<%= co.COMPANY_NAME_EN %>)<% } %>, trading as <%= co.PRODUCT_NAME %> ("we", "us")</p>
 
   <h2>1. Acceptance</h2>
-  <p>These Terms apply to all services we provide: consulting, software and web development, system integration, maintenance, and software tools we license or operate for you (the "Services"). By accepting a proposal, paying an invoice, opening a customer account or using one of our tools, you ("you", the "Customer") agree to these Terms, our <a href="/privacy">Privacy Policy</a> and our <a href="/refund">Refund &amp; Cancellation Policy</a>. If you act on behalf of an organisation, you confirm that you are authorised to bind it. A signed proposal or statement of work prevails over these Terms where they conflict.</p>
+  <p>These Terms apply to all products we provide: API subscriptions, licensed automation software, fixed-price custom software builds and managed hosting (the "Services"). By subscribing to a plan, accepting a proposal, paying an invoice, opening a customer account or using one of our tools, you ("you", the "Customer") agree to these Terms, our <a href="/privacy">Privacy Policy</a> and our <a href="/refund">Refund &amp; Cancellation Policy</a>. If you act on behalf of an organisation, you confirm that you are authorised to bind it. A signed proposal or statement of work prevails over these Terms where they conflict.</p>
 
-  <h2>2. Proposals, scope and changes</h2>
+  <h2>2. Plans, specifications and changes</h2>
   <ul>
-    <li>Project work is described in a written proposal (scope, deliverables, timeline, price, payment schedule). The proposal is accepted when you confirm it in writing or pay the deposit invoice.</li>
-    <li>Work outside the agreed scope is quoted separately and starts only after your written approval.</li>
-    <li>Estimates for hourly work are indicative. We report hours at least weekly and will warn you before an estimate is exceeded.</li>
+    <li>API and software plans are described on the <a href="/pricing">Pricing</a> page (price, billing period, quota and overage price).</li>
+    <li>Custom builds are described in a written specification (deliverables, delivery date, fixed price, payment schedule). The specification is accepted when you confirm it in writing or pay the first invoice.</li>
+    <li>Features outside the agreed specification are quoted separately at a fixed price and start only after your written approval.</li>
     <li>Timelines depend on timely input from you (content, access, feedback, decisions). Delays on your side extend the timeline accordingly.</li>
   </ul>
 
   <h2>3. Fees, invoicing and payment</h2>
   <ul>
     <li>Prices are in Thai Baht and exclude VAT/sales tax, which is added at checkout where applicable.</li>
-    <li>Projects: 50% deposit on acceptance, balance on delivery, or per milestone as stated in the proposal. Hourly work: invoiced monthly in arrears. Pay-as-you-go tools: invoiced on the <%= CYCLE.label %> of each month for the previous billing period's recorded usage at the unit prices agreed with you. Maintenance plans: invoiced monthly in advance.</li>
+    <li>Monthly and yearly plans: charged in advance for each billing period. Pay-as-you-go tools: invoiced on the <%= CYCLE.label %> of each month for the previous period's recorded usage at the published unit prices. Custom builds: 50% on order, balance on delivery, or per milestone as stated in the specification. Managed hosting: invoiced monthly in advance.</li>
     <li>Invoices are payable within 15 days through the payment link we send or the customer portal. Amounts below the payment provider's minimum are carried forward to the next invoice.</li>
     <li>Online payments are processed by <b><%= co.PAY.legalName %></b> as our authorised reseller and Merchant of Record. <%= co.PAY.name %> issues the receipt, collects applicable taxes and handles payment, refund and chargeback matters under the <a href="<%= co.PAY.buyerTermsUrl %>" rel="noopener" target="_blank"><%= co.PAY.name %> Buyer Terms</a>.</li>
     <li>If an invoice remains unpaid after its due date we may pause work, suspend access to tools or portals, and withhold deliverables until payment is received.</li>
-    <li>Changes to recurring prices (maintenance plans, unit prices for tools) are announced by email at least 30 days in advance.</li>
+    <li>Changes to recurring prices (plans, hosting, unit prices for tools) are announced by email at least 30 days in advance.</li>
   </ul>
 
   <h2>4. Your responsibilities</h2>
   <ul>
-    <li>Provide accurate information, content, test data and the system access needed for the work, and ensure you are entitled to give us that access.</li>
+    <li>Provide accurate account information and, for custom builds, the specifications, test data and system access needed, and ensure you are entitled to give us that access.</li>
     <li>Review and test deliverables and the output of automation tools before relying on them, in particular before anything is submitted to a government authority, a customer or a payment system. Our tools ask for confirmation before such steps where technically possible.</li>
     <li>Use the Services lawfully and in line with the terms of any third-party system they interact with (web portals, APIs, platforms).</li>
     <li>For tools licensed to you, usage is attributed to your customer account and serial number. You are responsible for all usage recorded under them and for keeping your portal password confidential.</li>
@@ -36,15 +36,15 @@
   <ul>
     <li><b>Deliverables</b> (custom code, designs, documents) created specifically for you are transferred to you on full payment of the related invoices. Until then we retain ownership and grant you a licence to evaluate them.</li>
     <li><b>Our pre-existing materials</b> (frameworks, libraries, internal tools and know-how) remain ours. Where they are embedded in deliverables, you receive a perpetual, non-exclusive, royalty-free licence to use them as part of those deliverables.</li>
-    <li><b>Licensed tools</b> (software we operate for you on a pay-as-you-go basis) are licensed, not sold: you may install and use them within your organisation under your account; you may not resell, sublicense, decompile or operate them as a service for third parties.</li>
-    <li>Third-party components and AI services are subject to their own licences, which we identify in the proposal.</li>
+    <li><b>Licensed tools and APIs</b> are licensed, not sold: you may install and use them within your organisation under your account; you may not resell, sublicense, decompile or operate them as a service for third parties.</li>
+    <li>Third-party components and AI services are subject to their own licences, which we identify in the product documentation or specification.</li>
   </ul>
 
   <h2>6. Acceptance, warranty and support</h2>
   <ul>
     <li>Deliverables are deemed accepted when you confirm acceptance or 10 business days after delivery without written objection, or when you put them into productive use.</li>
-    <li>We correct defects reported within 30 days of acceptance free of charge where the deliverable does not materially conform to the proposal. Changes in third-party systems, platforms or APIs after delivery are not defects; we fix them under a maintenance plan or a separate quote.</li>
-    <li>Support is provided by email<% if (co.COMPANY_EMAIL) { %> (<%= co.COMPANY_EMAIL %>)<% } %> during <%= co.SUPPORT_HOURS %>. Response times and uptime commitments apply only where a maintenance plan says so.</li>
+    <li>We correct defects reported within 30 days of acceptance free of charge where the deliverable does not materially conform to the specification. Changes in third-party systems, platforms or APIs after delivery are not defects; updates are offered at a fixed price.</li>
+    <li>Product support is provided by email<% if (co.COMPANY_EMAIL) { %> (<%= co.COMPANY_EMAIL %>)<% } %> during <%= co.SUPPORT_HOURS %>. Uptime commitments apply only where a plan states them.</li>
     <li>AI-based features produce probabilistic output. We design, test and document their limits, but we do not warrant that every AI result is correct; human review remains your responsibility.</li>
   </ul>
 
@@ -52,13 +52,13 @@
   <p>Each party keeps the other's non-public information confidential and uses it only for the Services. We may name you as a customer and describe the project in general terms unless you ask us not to.</p>
 
   <h2>8. Term and termination</h2>
-  <p>Project engagements end on delivery. Either party may terminate a project for convenience with 14 days' written notice; you pay for work completed to that date (see the Refund &amp; Cancellation Policy). Maintenance plans run month to month and can be cancelled with 30 days' notice. Pay-as-you-go tools have no fixed term; months without usage are not invoiced. We may suspend or terminate for non-payment or material breach that is not cured within 14 days of notice.</p>
+  <p>Monthly and yearly plans renew automatically and can be cancelled at any time in the customer portal; access continues until the end of the paid period. Custom builds end on delivery; either party may cancel an order with 14 days' written notice, and you pay for the milestones delivered to that date (see the Refund &amp; Cancellation Policy). Managed hosting runs month to month and can be cancelled at any time. Pay-as-you-go tools have no fixed term; months without usage are not invoiced. We may suspend or terminate for non-payment or material breach that is not cured within 14 days of notice.</p>
 
   <h2>9. Liability</h2>
   <p>The Services are provided with reasonable skill and care. To the extent permitted by law, our total liability for any claim is limited to the fees you paid us for the Service concerned in the 3 months before the event giving rise to the claim. We are not liable for indirect or consequential loss, lost profits, government fees or penalties, or decisions made by third parties or authorities. Nothing limits liability for fraud or wilful misconduct.</p>
 
   <h2>10. Personal data</h2>
-  <p>We process personal data as described in our <a href="/privacy">Privacy Policy</a>, in accordance with Thailand's Personal Data Protection Act B.E. 2562 (2019). Where we process personal data on your behalf during a project, we do so on your instructions and under a data processing agreement if you require one.</p>
+  <p>We process personal data as described in our <a href="/privacy">Privacy Policy</a>, in accordance with Thailand's Personal Data Protection Act B.E. 2562 (2019). Where we process personal data on your behalf, we do so on your instructions and under a data processing agreement if you require one.</p>
 
   <h2>11. Governing law</h2>
   <p>These Terms are governed by the laws of Thailand. Disputes are subject to the jurisdiction of the Thai courts.</p>

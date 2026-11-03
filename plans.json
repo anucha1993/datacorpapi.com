@@ -1,54 +1,38 @@
 {
-  "_comment": "Project/consulting cards shown under the API & software plans on /pricing. API/license plans are managed in Admin → Products.",
+  "_comment": "Fixed-price software cards shown under the API & software plans on /pricing. API/license plans are managed in Admin → Products. No hourly, consulting or labour-based items here.",
   "currency": "THB",
   "plans": [
     {
-      "key": "consulting",
-      "name": "AI consulting & system design",
-      "type": "hourly",
-      "price_label": "฿1,500 / hour",
-      "unit_label": "Minimum 2 hours. Workshops, process analysis, AI feasibility and architecture, proof-of-concepts. Billed on time actually spent, reported weekly.",
-      "checkout_url": "",
-      "featured": false,
-      "cta": "Book a discovery call",
-      "features": [
-        "Process mapping and automation roadmap",
-        "AI use-case assessment, model and vendor selection",
-        "Architecture, data flow and security design",
-        "Proof-of-concept builds and cost estimates"
-      ]
-    },
-    {
       "key": "projects",
-      "name": "Automation, web & integration projects",
+      "name": "Custom automation & integration build",
       "type": "project",
       "price_label": "from ฿15,000 / project",
-      "unit_label": "Fixed price after a free discovery call and written proposal. 50% deposit on acceptance, balance on delivery; milestones for larger projects.",
+      "unit_label": "Fixed price per written specification. 50% on order, balance on delivery of the software; milestone payments for larger builds.",
       "checkout_url": "",
       "featured": true,
       "cta": "Request a quote",
       "features": [
-        "Software robots for web portals and back-office tasks",
-        "Websites, customer portals and admin dashboards",
-        "API integrations (ERP, CRM, accounting, LINE, payments)",
-        "Data pipelines, databases and BI dashboards",
-        "Source code handed over, 30-day defect warranty"
+        "Automation bots for web portals and back-office tasks",
+        "Customer portals and admin dashboards",
+        "API connectors (ERP, CRM, accounting, LINE, payments)",
+        "Data pipelines and BI dashboards",
+        "Source code delivered, 30-day defect warranty"
       ]
     },
     {
-      "key": "support",
-      "name": "Maintenance & support",
+      "key": "hosting",
+      "name": "Managed hosting & monitoring",
       "type": "monthly",
       "price_label": "from ฿2,000 / month",
-      "unit_label": "Hosting, monitoring, security updates and bug fixes for systems we built or took over. Cancel with 30 days' notice.",
+      "unit_label": "Automated hosting, backups, uptime monitoring and security updates for software delivered by us. Cancel any time from the customer portal.",
       "checkout_url": "",
       "featured": false,
-      "cta": "Ask about support plans",
+      "cta": "Get started",
       "features": [
-        "Email support within 1 business day (faster SLAs available)",
-        "Monthly health check and dependency updates",
-        "Backups and uptime monitoring",
-        "Small changes included up to the plan's monthly hours"
+        "Managed hosting with SSL",
+        "Daily automated backups",
+        "24/7 uptime monitoring and alerts",
+        "Automatic security and dependency updates"
       ]
     }
   ]

@@ -3,7 +3,7 @@
   <div class="wrap cols">
     <div>
       <div class="fh"><%= co.PRODUCT_NAME %></div>
-      <div class="muted">AI system design · Business automation · Web &amp; API development · Data &amp; dashboards</div>
+      <div class="muted">AI APIs · Automation tools · Integration APIs · Usage-based billing</div>
       <div class="muted" style="margin-top:6px"><%= co.COMPANY_NAME %><% if (co.COMPANY_NAME_EN) { %><br><%= co.COMPANY_NAME_EN %><% } %></div>
       <% if (co.COMPANY_TAX_ID) { %><div class="muted">Tax ID <%= co.COMPANY_TAX_ID %></div><% } %>
       <% if (co.COMPANY_ADDRESS) { %><div class="muted"><%= co.COMPANY_ADDRESS %></div><% } %>
@@ -14,7 +14,7 @@
       <% if (co.COMPANY_PHONE) { %><div><a href="tel:<%= co.COMPANY_PHONE.replace(/[^0-9+]/g, '') %>"><%= co.COMPANY_PHONE %></a></div><% } %>
       <% if (co.COMPANY_LINE) { %><div>LINE: <%= co.COMPANY_LINE %></div><% } %>
       <div class="muted"><%= co.SUPPORT_HOURS %></div>
-      <div style="margin-top:8px"><a href="/contact">Request a quote</a> · <a href="/portal/login">Customer login</a></div>
+      <div style="margin-top:8px"><a href="/pricing">Plans &amp; pricing</a> · <a href="/portal/login">Customer login</a></div>
     </div>
     <div>
       <div class="fh">Legal</div>
