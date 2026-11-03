@@ -1,25 +1,40 @@
 <%- include('partials/head') %>
+<%
+  // ทุกอย่างในส่วนสินค้าดึงจากหลังบ้าน (Admin → Products) — เฉพาะสินค้าและแพ็กเกจที่เปิดให้ลูกค้าเห็น
+  const FALLBACK = {
+    license: { ic: '⚙️', text: 'Licensed desktop automation for web portals: bulk extraction, document downloads and Excel-driven form filling. Billed by tokens per record processed.' },
+    api: { ic: '🤖', text: 'One OpenAI-compatible API key for chat completions, vision/OCR on images and PDFs, and image generation. Credit quota, multiple keys and rate limits per plan.' },
+  };
+  const info = (p) => FALLBACK[p.kind === 'license' ? 'license' : 'api'];
+  const fromPrice = (p) => {
+    const paid = p.plans.filter(pl => Number(pl.price_thb) > 0 && pl.billing !== 'usage');
+    if (!paid.length) return p.plans.some(pl => pl.billing === 'usage') ? 'Pay as you go' : 'Free';
+    const m = paid.map(pl => pl.billing === 'year' ? { v: Number(pl.price_thb), per: 'year' } : { v: Number(pl.price_thb), per: 'month' })
+      .sort((a, b) => (a.per === 'year' ? a.v / 12 : a.v) - (b.per === 'year' ? b.v / 12 : b.v))[0];
+    return 'From ฿' + fmtMoney(m.v) + ' / ' + m.per;
+  };
+%>
 <section class="hero">
   <div>
-    <span class="pill">APIs · Automation software · Integrations</span>
-    <h1>APIs and automation software that do the repetitive work for you<br><small>Ready-to-use APIs, licensed automation tools and fixed-price software builds</small></h1>
-    <p class="lead">Subscribe to an API plan and get your key instantly, run our automation tools on a pay-per-use basis, or order a custom build at a fixed price.
-      Every plan has a clear quota and price, and usage is visible in real time in your customer portal.</p>
+    <span class="pill">AI APIs · Automation software · Usage-based billing</span>
+    <h1>AI APIs and automation software that do the repetitive work for you<br><small>Subscription plans with a clear monthly quota and real-time usage</small></h1>
+    <p class="lead">Subscribe to a plan, get your API key or licence as soon as payment is confirmed, and track every call and job in your customer portal.</p>
     <div class="actions">
       <a href="/pricing" class="btn primary big">See plans &amp; pricing</a>
       <a href="/portal/login" class="btn big">Customer login</a>
     </div>
     <ul class="hero-points">
-      <li>API key issued as soon as payment is confirmed</li>
-      <li>Monthly or yearly plans with a fixed quota</li>
+      <li>API key or licence issued as soon as payment is confirmed</li>
+      <li>Clear monthly quota, resets on the <%= CYCLE.label %> of every month</li>
       <li>Pay by <%= co.PAY.paymentMethods %>, receipt with your company tax ID</li>
     </ul>
   </div>
   <div class="shot">
     <div class="hero-panel">
-      <div class="hp-row"><span class="hp-ic">🤖</span><div><b>AI API Key</b><br><span class="muted">Chat, vision/OCR, image generation</span></div></div>
-      <div class="hp-row"><span class="hp-ic">⚙️</span><div><b>AI Web Tools</b><br><span class="muted">Web-portal bots, bulk extraction, Excel workflows</span></div></div>
-      <div class="hp-row"><span class="hp-ic">📊</span><div><b>Usage dashboard</b><br><span class="muted">Real-time metering, invoices and receipts</span></div></div>
+      <% for (const p of products) { %>
+      <div class="hp-row"><span class="hp-ic"><%= info(p).ic %></span><div><b><%= p.name %></b><br><span class="muted"><%= fromPrice(p) %></span></div></div>
+      <% } %>
+      <div class="hp-row"><span class="hp-ic">📊</span><div><b>Usage portal</b><br><span class="muted">Real-time metering, invoices and receipts</span></div></div>
       <div class="hp-foot muted small">Self-service portal · API keys · usage-based billing</div>
     </div>
   </div>
@@ -28,32 +43,30 @@
 <section id="services" class="features">
   <h2>Products</h2>
   <div class="grid3">
-    <div class="feat"><div class="ic">🤖</div><h3>AI API Key</h3>
-      <p>One OpenAI-compatible API key for chat completions, vision/OCR on images and PDFs, and image generation. Monthly plans with a credit quota, multiple keys and rate limits per plan.</p></div>
-    <div class="feat"><div class="ic">⚙️</div><h3>AI Web Tools</h3>
-      <p>Licensed desktop automation for web portals: bulk extraction, document downloads and Excel-driven form filling. Billed by tokens per record processed, with dry-run mode and confirmation steps.</p></div>
+    <% for (const p of products) { %>
+    <div class="feat"><div class="ic"><%= info(p).ic %></div><h3><%= p.name %></h3>
+      <p><%= p.tagline || info(p).text %></p>
+      <p><a href="/pricing#<%= p.slug %>"><%= fromPrice(p) %> →</a></p></div>
+    <% } %>
     <div class="feat"><div class="ic">📊</div><h3>Usage portal</h3>
       <p>Every API call and tool job is metered in real time. Keys, licences, invoices and receipts in one customer portal.</p></div>
-    <div class="feat"><div class="ic">🧩</div><h3>Fixed-price custom builds</h3>
-      <p>Need a bot, portal or connector we don't offer off the shelf? We build it to a written specification at a fixed price and deliver the source code.</p></div>
-    <div class="feat"><div class="ic">☁️</div><h3>Managed hosting</h3>
-      <p>Hosting, automated backups, uptime monitoring and security updates for software we delivered, billed monthly.</p></div>
   </div>
+  <% if (!products.length) { %><p class="muted center">Plans are coming soon. <a href="/contact">Contact us</a> for early access.</p><% } %>
 </section>
 
 <section id="process" class="how">
   <h2>How it works</h2>
   <ol class="steps">
-    <li><b>Choose a plan</b> on the pricing page: monthly, yearly or pay-as-you-go.</li>
+    <li><b>Open a customer account</b> via the <a href="/contact">contact form</a>, then choose a plan on the pricing page.</li>
     <li><b>Pay online</b> by <%= co.PAY.paymentMethods %>. Your receipt is issued automatically.</li>
-    <li><b>Get your API key or licence</b> straight away in the customer portal.</li>
+    <li><b>Get your API key or licence</b> in the customer portal as soon as payment is confirmed.</li>
     <li><b>Track usage</b> in real time; invoices and receipts are generated automatically.</li>
   </ol>
 </section>
 
 <section id="pricing" class="pricing">
   <h2>Pricing</h2>
-  <p class="lead">API and software plans are billed monthly or yearly with a clear monthly quota. Pay-as-you-go tools are billed per unit used. Custom builds have a fixed price.
+  <p class="lead">Every plan has a fixed price and a clear monthly quota. When you reach the quota, the plan either pauses until the next cycle or bills the extra usage per unit, as shown on each plan.
     All payments go through <%= co.PAY.name %>, and receipts carry your company name and tax ID.</p>
   <p class="center"><a href="/pricing" class="btn primary">See plans &amp; pricing →</a></p>
 </section>
@@ -62,11 +75,11 @@
   <h2>Frequently asked questions</h2>
   <details><summary>What is <%= co.PRODUCT_NAME %>?</summary><p><%= co.PRODUCT_NAME %> is an API and automation software platform operated by <%= co.COMPANY_NAME %>, Pathum Thani, Thailand.</p></details>
   <details><summary>How fast can I start?</summary><p>Request a customer account, then subscribe in the portal. Your API key or licence is issued as soon as payment is confirmed.</p></details>
-  <details><summary>How am I charged?</summary><p>Three options: a <b>monthly or yearly plan</b> with a fixed quota, <b>pay-as-you-go</b> per unit used, or a <b>fixed price</b> for a custom build. See <a href="/pricing">Pricing</a>.</p></details>
-  <details><summary>What happens when I reach my quota?</summary><p>Plans without overage pricing pause until the quota resets. Plans with overage pricing keep running and the extra usage is billed per unit on your next invoice.</p></details>
+  <details><summary>How am I charged?</summary><p>Each plan is billed monthly or yearly in advance and includes a monthly quota. Some plans also bill extra usage per unit on the next invoice. See <a href="/pricing">Pricing</a>.</p></details>
+  <details><summary>What happens when I reach my quota?</summary><p>Plans without overage pricing pause until the quota resets on the <%= CYCLE.label %>. Plans with overage pricing keep running and the extra usage is billed per unit on your next invoice.</p></details>
   <details><summary>Who owns my data?</summary><p>You do. Data sent to our APIs is processed only to return your result. Our automation tools keep your business data on your own systems; we receive only usage counts for billing. See the <a href="/privacy">Privacy Policy</a>.</p></details>
   <details><summary>Who issues the receipt?</summary><p><%= co.PAY.name %> processes payments as Merchant of Record, issues the receipt, handles sales tax and appears on your card statement. You can add your company name, address and tax ID.</p></details>
-  <details><summary>Can I cancel?</summary><p>Yes, at any time in the customer portal. You keep access until the end of the paid period. Pay-as-you-go tools have no minimum; months without usage are not invoiced.</p></details>
+  <details><summary>Can I cancel?</summary><p>Yes, at any time in the customer portal. You keep access until the end of the paid period.</p></details>
 </section>
 
 <section class="contactcta">

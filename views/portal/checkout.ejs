@@ -1,13 +1,13 @@
 <%- include('partials/header') %>
 <div class="pagehead">
   <div class="titles">
-    <a href="/portal/services" class="muted small">← Back to services</a>
+    <a href="/portal/services" class="muted small">← Back to add-ons</a>
     <h1>Review your order</h1>
   </div>
 </div>
 
 <div class="steps" aria-label="Checkout steps">
-  <span class="s done"><span class="n">✓</span>Choose service</span><span class="sep"></span>
+  <span class="s done"><span class="n">✓</span>Choose add-on</span><span class="sep"></span>
   <span class="s on"><span class="n">2</span>Review order</span><span class="sep"></span>
   <span class="s"><span class="n">3</span>Secure payment</span><span class="sep"></span>
   <span class="s"><span class="n">4</span>Receipt</span>
@@ -18,7 +18,7 @@
 <form method="post" action="/portal/services/<%= svc.id %>/buy" class="layout-side">
   <div>
     <section class="card">
-      <div class="section-title">Service</div>
+      <div class="section-title">Add-on</div>
       <h2 style="font-size:19px;margin:0 0 6px"><%= svc.name %></h2>
       <% if (svc.description) { %><p class="muted" style="margin:0;white-space:pre-line"><%= svc.description %></p><% } %>
     </section>

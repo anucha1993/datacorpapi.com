@@ -119,7 +119,7 @@ async function invoiceMonths() {
   const rows = await q("SELECT DISTINCT ym FROM billing_invoices ORDER BY ym DESC LIMIT 36");
   return [...new Set([thisMonth(), ...rows.map(r => r.ym)])].sort().reverse();
 }
-/** บริการแบบโปรเจกต์/ที่ปรึกษา จาก plans.json (แสดงใต้แพ็กเกจในหน้า Pricing) */
+/** การ์ดเสริมจาก plans.json (แสดงใต้แพ็กเกจในหน้า Pricing) — ห้ามใส่งานบริการ/ที่ปรึกษา (นโยบาย Polar) */
 function loadPlans() {
   try { return JSON.parse(fs.readFileSync(path.join(__dirname, "plans.json"), "utf8")).plans || []; }
   catch (e) { console.error("[plans.json]", e.message); return []; }

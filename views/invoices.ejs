@@ -44,7 +44,7 @@
           <option value="">— Custom charge —</option>
           <% for (const s of services) { %><option value="<%= s.id %>" data-name="<%= s.name %>" data-price="<%= s.price_thb %>" data-desc="<%= s.description %>"><%= s.name %> · ฿<%= fmtMoney(s.price_thb) %><%= s.payment_link ? ' · Polar link' : '' %></option><% } %>
         </select></label>
-      <label>Title <span class="hint">Shown to the customer</span><input name="title" maxlength="190" placeholder="Setup &amp; training"></label>
+      <label>Title <span class="hint">Shown to the customer</span><input name="title" maxlength="190" placeholder="Usage over quota, October 2026"></label>
       <label>Amount (THB) <span class="hint">Minimum ฿<%= MIN_THB %></span><input name="amount" type="number" step="0.01" min="<%= MIN_THB %>" placeholder="500.00"></label>
       <label class="full">Description <span class="hint">Optional — appears on the invoice</span><textarea name="note" maxlength="500" rows="2"></textarea></label>
       <label>Due in (days)<input name="due_days" type="number" min="1" max="90" value="<%= DUE_DAYS %>"></label>

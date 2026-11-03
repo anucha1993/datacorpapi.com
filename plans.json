@@ -1,39 +1,5 @@
 {
-  "_comment": "Fixed-price software cards shown under the API & software plans on /pricing. API/license plans are managed in Admin → Products. No hourly, consulting or labour-based items here.",
+  "_comment": "Extra cards shown under the API & software plans on /pricing. Kept empty so the public site only shows what is sold in Admin → Products. No hourly, consulting or labour-based items here.",
   "currency": "THB",
-  "plans": [
-    {
-      "key": "projects",
-      "name": "Custom automation & integration build",
-      "type": "project",
-      "price_label": "from ฿15,000 / project",
-      "unit_label": "Fixed price per written specification. 50% on order, balance on delivery of the software; milestone payments for larger builds.",
-      "checkout_url": "",
-      "featured": true,
-      "cta": "Request a quote",
-      "features": [
-        "Automation bots for web portals and back-office tasks",
-        "Customer portals and admin dashboards",
-        "API connectors (ERP, CRM, accounting, LINE, payments)",
-        "Data pipelines and BI dashboards",
-        "Source code delivered, 30-day defect warranty"
-      ]
-    },
-    {
-      "key": "hosting",
-      "name": "Managed hosting & monitoring",
-      "type": "monthly",
-      "price_label": "from ฿2,000 / month",
-      "unit_label": "Automated hosting, backups, uptime monitoring and security updates for software delivered by us. Cancel any time from the customer portal.",
-      "checkout_url": "",
-      "featured": false,
-      "cta": "Get started",
-      "features": [
-        "Managed hosting with SSL",
-        "Daily automated backups",
-        "24/7 uptime monitoring and alerts",
-        "Automatic security and dependency updates"
-      ]
-    }
-  ]
+  "plans": []
 }
