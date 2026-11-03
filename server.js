@@ -681,7 +681,7 @@ app.get("/portal/billing", requirePortal, async (req, res, next) => {
     const files = {};
     for (const a of await invoices.listAttachments(q, inv.map(r => r.id))) (files[a.invoice_id] ||= []).push(a);
     // ค่าใช้งานเกินโควตาที่สะสมเดือนนี้ (ยังไม่ออกบิล)
-    const meter = await q(`SELECT COALESCE(SUM(GREATEST(0, c.units - COALESCE(pl.included_units, c.units)) * pl.unit_price_thb), 0) amt
+    const meter = await q(`SELECT COALESCE(SUM(GREATEST(0, c.units - COALESCE(s.included_units_override, pl.included_units, c.units)) * pl.unit_price_thb), 0) amt
                            FROM usage_counters c JOIN subscriptions s ON s.id = c.subscription_id JOIN product_plans pl ON pl.id = s.plan_id
                            WHERE s.operator = ? AND c.ym = ? AND pl.unit_price_thb > 0`, [op, thisMonth()]);
     pview(req, res, "billing", { title: "Billing", pageTitle: "Invoices & payments", invoices: inv, files, sum, currentEstimate: Number(meter[0].amt || 0),
@@ -877,7 +877,7 @@ admin.get("/", async (req, res, next) => {
                 COUNT(DISTINCT CASE WHEN status = 'active' THEN operator END) customers FROM subscriptions`, [ym]),
       q("SELECT COALESCE(SUM(amount_thb), 0) s, COUNT(*) n FROM billing_invoices WHERE status = 'paid' AND DATE_FORMAT(paid_at, '%Y-%m') = ?", [ym]),
       q("SELECT COALESCE(SUM(amount_thb), 0) s, COUNT(*) n, SUM(due_at < CURDATE()) overdue FROM billing_invoices WHERE status = 'open'"),
-      q(`SELECT c.units, c.requests, s.id, s.operator, p.name product_name, p.unit_label, pl.name plan_name, pl.included_units
+      q(`SELECT c.units, c.requests, s.id, s.operator, p.name product_name, p.unit_label, pl.name plan_name, COALESCE(s.included_units_override, pl.included_units) included_units
          FROM usage_counters c JOIN subscriptions s ON s.id = c.subscription_id JOIN products p ON p.id = s.product_id JOIN product_plans pl ON pl.id = s.plan_id
          WHERE c.ym = ? ORDER BY c.units DESC LIMIT 10`, [ym]),
       q(`${platform.SUB_SELECT} ORDER BY s.created_at DESC LIMIT 8`),
@@ -988,6 +988,19 @@ admin.post("/subscriptions/:id(\\d+)/cancel", async (req, res, next) => {
     }
     await platform.setStatus(q, sub.id, "cancelled", { cancel_at_period_end: 0, period_end: new Date() });
     back(res, ret, `Subscription #${sub.id} cancelled — keys stop working immediately`);
+  } catch (e) { next(e); }
+});
+// โควตาเฉพาะลูกค้ารายนี้ (แทนโควตาของแพ็กเกจ) — ว่าง = กลับไปใช้ของแพ็กเกจ
+admin.post("/subscriptions/:id(\\d+)/quota", async (req, res, next) => {
+  const ret = req.body.back || "/admin/subscriptions";
+  try {
+    const sub = await platform.getSubscription(q, req.params.id);
+    if (!sub) return back(res, ret, "Subscription not found", true);
+    const raw = String(req.body.included ?? "").replace(/[,\s]/g, "");
+    if (raw !== "" && !/^\d{1,10}$/.test(raw)) return back(res, ret, "Enter a whole number, or leave it empty to use the plan's quota", true);
+    await q("UPDATE subscriptions SET included_units_override = ? WHERE id = ?", [raw === "" ? null : Number(raw), sub.id]);
+    back(res, ret, raw === "" ? `Subscription #${sub.id} uses the plan's quota again`
+      : `Subscription #${sub.id} (${sub.operator}): ${Number(raw).toLocaleString("en-US")} ${sub.unit_label || "units"} / month for this customer only`);
   } catch (e) { next(e); }
 });
 admin.post("/subscriptions/:id(\\d+)/extend", async (req, res, next) => {

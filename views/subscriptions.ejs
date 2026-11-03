@@ -41,7 +41,12 @@
         <td><a href="/admin/customers/<%= encodeURIComponent(s.operator) %>"><%= s.operator %></a></td>
         <td><b><%= s.product_name %></b> · <%= s.plan_name %><br><small class="muted"><%= BILLING_LABELS[s.billing] %><%= Number(s.price_thb) ? ' · ฿' + fmtMoney(s.price_thb) : '' %></small></td>
         <td><span class="badge b-<%= s.status %>"><%= SUB_STATUS[s.status] %></span><% if (s.cancel_at_period_end) { %><br><small class="muted">cancels at period end</small><% } %></td>
-        <td class="r nowrap"><%= fmtNum(s.used) %><small class="muted"><%= inc != null ? ' / ' + fmtNum(inc) : '' %> <%= s.unit_label %></small></td>
+        <td class="r nowrap"><%= fmtNum(s.used) %><small class="muted"><%= inc != null ? ' / ' + fmtNum(inc) : '' %> <%= s.unit_label %></small>
+          <% if (s.included_units_override != null) { %><br><small class="badge b-active" title="Plan quota: <%= s.plan_included_units == null ? 'unlimited' : fmtNum(s.plan_included_units) %>">custom quota</small><% } %>
+          <% if (['active', 'past_due', 'pending'].includes(s.status) && s.billing !== 'usage') { %>
+          <form method="post" action="/admin/subscriptions/<%= s.id %>/quota" style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px">
+            <input name="included" value="<%= s.included_units_override ?? '' %>" placeholder="<%= s.plan_included_units == null ? 'plan' : fmtNum(s.plan_included_units) %>" style="width:110px" class="mono" title="Quota for this customer only — empty = the plan's quota">
+            <button class="btn small">Set quota</button></form><% } %></td>
         <td class="nowrap muted"><%= s.period_end ? fmtDate(s.period_end) : 'no end' %></td>
         <td class="muted"><%= s.source %></td>
         <td class="r nowrap">
